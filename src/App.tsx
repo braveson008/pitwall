@@ -616,10 +616,14 @@ const THEME_OPTIONS = [
   { value: "vt220", label: "VT220", hint: "amber phosphor", swatch: ["#0a0a08", "#e8a33c", "#6fd3e8"] },
   { value: "acme", label: "Acme", hint: "Plan 9 paper", swatch: ["#ffffea", "#1a1a1a", "#1d3fa0"] },
   { value: "night-city", label: "Night City", hint: "neon", swatch: ["#07080b", "#fcee0a", "#05d9e8"] },
+  { value: "green-screen", label: "Green Screen", hint: "green phosphor", swatch: ["#040a05", "#4af07a", "#7fe8e0"] },
+  { value: "daylight", label: "Daylight", hint: "bright paper", swatch: ["#fafafa", "#24292f", "#0969da"] },
+  { value: "synthwave", label: "Synthwave", hint: "neon dusk", swatch: ["#1a1033", "#ff7edb", "#36f9f6"] },
+  { value: "midnight", label: "Midnight", hint: "deep blue", swatch: ["#0e1320", "#7aa2f7", "#bb9af7"] },
 ] as const;
 
 // The terminal themes each have one ground; Light/Dark/System only applies to Pitwall's own.
-const THEME_BASE: Partial<Record<string, "light" | "dark">> = { vt220: "dark", acme: "light", "night-city": "dark" };
+const THEME_BASE: Partial<Record<string, "light" | "dark">> = { vt220: "dark", acme: "light", "night-city": "dark", "green-screen": "dark", daylight: "light", synthwave: "dark", midnight: "dark" };
 
 /**
  * The faces the interface can be set in.

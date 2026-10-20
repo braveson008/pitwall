@@ -22,11 +22,15 @@ Pitwall drives the agent CLIs you already use — Claude Code, Codex, Gemini, Gr
 | **Extensions** | Per-project MCP servers and skills, with their sign-ins kept per project. |
 | **Recovery** | Sessions survive a crash or restart: Pitwall reattaches to what was running and tells you what it could not bring back. |
 | **Voice** | An optional wake word and spoken requests, transcribed on your Mac. See [VOICE.md](VOICE.md). |
-| **Themes** | Pitwall, VT220, Acme and Night City. |
+| **Themes** | Pitwall (light or dark), VT220, Acme, Night City, Green Screen, Daylight, Synthwave and Midnight. |
 
 ![The Changes view in the Night City theme](docs/screenshots/night-city-changes.png)
 
 ![The Acme theme](docs/screenshots/acme-work.png)
+
+![Synthwave](docs/screenshots/synthwave-changes.png)
+
+![Green Screen](docs/screenshots/green-screen-work.png)
 
 ![Settings: agents, privacy and the theme switcher](docs/screenshots/settings.png)
 

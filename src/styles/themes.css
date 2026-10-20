@@ -151,10 +151,207 @@
   --t-pressed: rgba(5, 217, 232, 0.14);
 }
 
-/* Shared by all three: the terminal look. */
+:root[data-color-theme="green-screen"] {
+  --page: #040a05;
+  --window: #040a05;
+  --panel: #08140b;
+  --surface: #061008;
+  --surface-soft: #050c06;
+  --elevated: #0b1a0f;
+  --chrome: #06100a;
+  --line: #12361c;
+  --line-strong: #1f6b33;
+  --text: #4af07a;
+  --muted: #3cc464;
+  --faint: #2f9a50;
+  --blue: #7fe8e0;
+  --blue-soft: rgba(127, 232, 224, 0.14);
+  --accent-rgb: 127, 232, 224;
+  --accent-ink: #040a05;
+  --green: #8dffaa;
+  --green-soft: rgba(141, 255, 170, 0.14);
+  --amber: #d8f56a;
+  --amber-soft: rgba(216, 245, 106, 0.14);
+  --danger: #ff7a59;
+  --hover: #0b1f10;
+  --pressed: #12301a;
+  --chip: #0a170d;
+  --selected: #0f2a16;
+  --syntax-keyword: #c49bff;
+  --syntax-string: #8dffaa;
+  --syntax-comment: #2f9a50;
+  --syntax-number: #d8f56a;
+  --syntax-type: #7fe8e0;
+  --syntax-function: #b6ffc8;
+  --syntax-property: #ff9c82;
+  --syntax-punctuation: #2f9a50;
+  --t-accent: #b6ffc8;
+  --t-success: #8dffaa;
+  --t-bg: #040a05;
+  --t-panel: #08140b;
+  --t-card: #050c06;
+  --t-inset: #030703;
+  --t-line: #12361c;
+  --t-card-line: #1f6b33;
+  --t-fg: #4af07a;
+  --t-muted: #2f9a50;
+  --t-hover: rgba(74, 240, 122, 0.06);
+  --t-pressed: rgba(74, 240, 122, 0.1);
+}
+
+:root[data-color-theme="daylight"] {
+  --page: #fafafa;
+  --window: #fafafa;
+  --panel: #f3f4f6;
+  --surface: #ffffff;
+  --surface-soft: #f6f8fa;
+  --elevated: #ffffff;
+  --chrome: #f3f4f6;
+  --line: #d8dee4;
+  --line-strong: #afb8c1;
+  --text: #24292f;
+  --muted: #57606a;
+  --faint: #6e7781;
+  --blue: #0969da;
+  --blue-soft: rgba(9, 105, 218, 0.14);
+  --accent-rgb: 9, 105, 218;
+  --accent-ink: #ffffff;
+  --green: #1a7f37;
+  --green-soft: rgba(26, 127, 55, 0.14);
+  --amber: #9a6700;
+  --amber-soft: rgba(154, 103, 0, 0.14);
+  --danger: #cf222e;
+  --hover: #eef1f4;
+  --pressed: #e1e6eb;
+  --chip: #eef1f4;
+  --selected: #dbe7f7;
+  --syntax-keyword: #8250df;
+  --syntax-string: #1a7f37;
+  --syntax-comment: #6e7781;
+  --syntax-number: #9a6700;
+  --syntax-type: #1b7c83;
+  --syntax-function: #0969da;
+  --syntax-property: #cf222e;
+  --syntax-punctuation: #57606a;
+  --t-accent: #0969da;
+  --t-success: #1a7f37;
+  --t-bg: #fafafa;
+  --t-panel: #f3f4f6;
+  --t-card: #f6f8fa;
+  --t-inset: #f0f2f4;
+  --t-line: #d8dee4;
+  --t-card-line: #afb8c1;
+  --t-fg: #24292f;
+  --t-muted: #6e7781;
+  --t-hover: rgba(0, 0, 0, 0.04);
+  --t-pressed: rgba(0, 0, 0, 0.08);
+  --shadow: none;
+}
+
+:root[data-color-theme="synthwave"] {
+  --page: #1a1033;
+  --window: #1a1033;
+  --panel: #22163f;
+  --surface: #1e1339;
+  --surface-soft: #1c1236;
+  --elevated: #2a1c4d;
+  --chrome: #1e1339;
+  --line: #3a2a63;
+  --line-strong: #6d4f9e;
+  --text: #f3e8ff;
+  --muted: #c8b6e6;
+  --faint: #9d8bc0;
+  --blue: #36f9f6;
+  --blue-soft: rgba(54, 249, 246, 0.14);
+  --accent-rgb: 54, 249, 246;
+  --accent-ink: #1a1033;
+  --green: #72f1b8;
+  --green-soft: rgba(114, 241, 184, 0.14);
+  --amber: #fede5d;
+  --amber-soft: rgba(254, 222, 93, 0.14);
+  --danger: #fe4450;
+  --hover: rgba(255, 126, 219, 0.08);
+  --pressed: rgba(255, 126, 219, 0.18);
+  --chip: #2a1c4d;
+  --selected: rgba(255, 126, 219, 0.16);
+  --syntax-keyword: #ff7edb;
+  --syntax-string: #72f1b8;
+  --syntax-comment: #9d8bc0;
+  --syntax-number: #fede5d;
+  --syntax-type: #36f9f6;
+  --syntax-function: #6d77ff;
+  --syntax-property: #ff8b39;
+  --syntax-punctuation: #c8b6e6;
+  --t-accent: #ff7edb;
+  --t-success: #72f1b8;
+  --t-bg: #1a1033;
+  --t-panel: #22163f;
+  --t-card: #1c1236;
+  --t-inset: #150c2b;
+  --t-line: #3a2a63;
+  --t-card-line: #6d4f9e;
+  --t-fg: #f3e8ff;
+  --t-muted: #9d8bc0;
+  --t-hover: rgba(255, 126, 219, 0.08);
+  --t-pressed: rgba(255, 126, 219, 0.16);
+}
+
+:root[data-color-theme="midnight"] {
+  --page: #0e1320;
+  --window: #0e1320;
+  --panel: #141a2b;
+  --surface: #111726;
+  --surface-soft: #0f1523;
+  --elevated: #182034;
+  --chrome: #111726;
+  --line: #222c44;
+  --line-strong: #3a4867;
+  --text: #c9d4e5;
+  --muted: #9aa7bf;
+  --faint: #7684a0;
+  --blue: #7aa2f7;
+  --blue-soft: rgba(122, 162, 247, 0.14);
+  --accent-rgb: 122, 162, 247;
+  --accent-ink: #0e1320;
+  --green: #9ece6a;
+  --green-soft: rgba(158, 206, 106, 0.14);
+  --amber: #e0af68;
+  --amber-soft: rgba(224, 175, 104, 0.14);
+  --danger: #f7768e;
+  --hover: #182034;
+  --pressed: #1f2a47;
+  --chip: #182034;
+  --selected: #1f2a47;
+  --syntax-keyword: #bb9af7;
+  --syntax-string: #9ece6a;
+  --syntax-comment: #7684a0;
+  --syntax-number: #e0af68;
+  --syntax-type: #7dcfff;
+  --syntax-function: #7aa2f7;
+  --syntax-property: #f7768e;
+  --syntax-punctuation: #9aa7bf;
+  --t-accent: #7aa2f7;
+  --t-success: #9ece6a;
+  --t-bg: #0e1320;
+  --t-panel: #141a2b;
+  --t-card: #0f1523;
+  --t-inset: #0b0f1a;
+  --t-line: #222c44;
+  --t-card-line: #3a4867;
+  --t-fg: #c9d4e5;
+  --t-muted: #7684a0;
+  --t-hover: rgba(122, 162, 247, 0.06);
+  --t-pressed: rgba(122, 162, 247, 0.12);
+}
+
+/* Shared by all of them: the terminal look. */
 :root[data-color-theme="vt220"],
 :root[data-color-theme="acme"],
-:root[data-color-theme="night-city"] {
+:root[data-color-theme="night-city"],
+:root[data-color-theme="green-screen"],
+:root[data-color-theme="daylight"],
+:root[data-color-theme="synthwave"],
+:root[data-color-theme="midnight"] {
   --font-sans: "JetBrains Mono", "SF Mono", Menlo, monospace !important;
   --r-xs: 0;
   --r-sm: 0;
@@ -166,18 +363,22 @@
 :root[data-color-theme="vt220"] .xterm { text-shadow: none; }
 
 /* No decorative gradients anywhere; the checkbox tick (a data URL) is left alone. */
-:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .project-hub,
-:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .task-inspector,
-:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .task-id-field input,
-:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .dk-request-description.is-waiting,
-:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .dk-request-message.is-waiting { background-image: none; }
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"], [data-color-theme="green-screen"], [data-color-theme="daylight"], [data-color-theme="synthwave"], [data-color-theme="midnight"]) .project-hub,
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"], [data-color-theme="green-screen"], [data-color-theme="daylight"], [data-color-theme="synthwave"], [data-color-theme="midnight"]) .task-inspector,
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"], [data-color-theme="green-screen"], [data-color-theme="daylight"], [data-color-theme="synthwave"], [data-color-theme="midnight"]) .task-id-field input,
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"], [data-color-theme="green-screen"], [data-color-theme="daylight"], [data-color-theme="synthwave"], [data-color-theme="midnight"]) .dk-request-description.is-waiting,
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"], [data-color-theme="green-screen"], [data-color-theme="daylight"], [data-color-theme="synthwave"], [data-color-theme="midnight"]) .dk-request-message.is-waiting { background-image: none; }
 :root[data-color-theme="vt220"] .project-hub,
 :root[data-color-theme="acme"] .project-hub,
-:root[data-color-theme="night-city"] .project-hub { background: transparent; }
+:root[data-color-theme="night-city"] .project-hub,
+:root[data-color-theme="green-screen"] .project-hub,
+:root[data-color-theme="daylight"] .project-hub,
+:root[data-color-theme="synthwave"] .project-hub,
+:root[data-color-theme="midnight"] .project-hub { background: transparent; }
 
 /* The selected row is a flat fill, never a coloured bar on its edge. */
-:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .dk-tsb-row.is-current,
-:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .dk-tsb-group .dk-session.is-current { border-right-color: transparent; }
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"], [data-color-theme="green-screen"], [data-color-theme="daylight"], [data-color-theme="synthwave"], [data-color-theme="midnight"]) .dk-tsb-row.is-current,
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"], [data-color-theme="green-screen"], [data-color-theme="daylight"], [data-color-theme="synthwave"], [data-color-theme="midnight"]) .dk-tsb-group .dk-session.is-current { border-right-color: transparent; }
 
 /* Acme: commands and project chrome read as its pale blue tag line. */
 :root[data-color-theme="acme"] .dk-tsb-titlebar,
@@ -211,3 +412,30 @@
 
 /* Night City's hover is a see-through tint; the row's actions need a solid ground or the counts show through them. */
 :root[data-color-theme="night-city"] .dk-livechanges-actions { background: #0e1016; }
+
+/* Green Screen: faint scanlines, like the glass of an old monitor. */
+:root[data-color-theme="green-screen"] body { text-shadow: 0 0 3px rgba(74, 240, 122, 0.35); }
+:root[data-color-theme="green-screen"] .xterm { text-shadow: none; }
+:root[data-color-theme="green-screen"] .dk-shell { position: relative; }
+:root[data-color-theme="green-screen"] .dk-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 3px);
+}
+
+/* Synthwave: a pink rule under the title bar and a soft neon glow on headings. */
+:root[data-color-theme="synthwave"] .dk-tsb-titlebar,
+:root[data-color-theme="synthwave"] .dk-workbench-bar { border-bottom: 1px solid #ff7edb; }
+:root[data-color-theme="synthwave"] .dk-tsb-heading,
+:root[data-color-theme="synthwave"] .dk-section-title,
+:root[data-color-theme="synthwave"] .dk-label { letter-spacing: 0.08em; text-shadow: 0 0 8px rgba(255, 126, 219, 0.6); }
+:root[data-color-theme="synthwave"] .dk-btn--primary { border-color: #ff7edb; background: #ff7edb; color: #1a1033; }
+
+/* Daylight and Midnight: quiet, with spaced-out headings. */
+:root:is([data-color-theme="daylight"], [data-color-theme="midnight"]) .dk-tsb-heading,
+:root:is([data-color-theme="daylight"], [data-color-theme="midnight"]) .dk-section-title { letter-spacing: 0.06em; }
+/* Synthwave's hover is a see-through tint too, so the row's actions get a solid ground. */
+:root[data-color-theme="synthwave"] .dk-livechanges-actions { background: #22163f; }

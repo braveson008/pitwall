@@ -1,4 +1,4 @@
-// The VT220, Acme and Night City themes in the real app: picked from the theme
+// Every terminal-style theme in the real app: picked from the theme
 // switcher, applied to every surface, and to a live agent terminal.
 //   npm run build && node tests/themes-smoke.mjs
 import assert from "node:assert/strict";
@@ -44,7 +44,7 @@ try {
     localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
 
-  for (const theme of ["vt220", "acme", "night-city"]) {
+  for (const theme of ["vt220", "acme", "night-city", "green-screen", "daylight", "synthwave", "midnight"]) {
     await page.evaluate((value) => localStorage.setItem("braveli-color-theme", value), theme);
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.locator(".dk-workbench-bar").waitFor({ timeout: 20000 });

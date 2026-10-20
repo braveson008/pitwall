@@ -6,7 +6,11 @@ describe("terminal palettes for the Pitlane themes", () => {
     expect(terminalThemeForColorTheme("vt220").background).toBe("#0a0a08");
     expect(terminalThemeForColorTheme("acme").background).toBe("#ffffea");
     expect(terminalThemeForColorTheme("night-city").background).toBe("#07080b");
-    for (const id of ["vt220", "acme", "night-city"]) {
+    expect(terminalThemeForColorTheme("green-screen").background).toBe("#040a05");
+    expect(terminalThemeForColorTheme("daylight").background).toBe("#fafafa");
+    expect(terminalThemeForColorTheme("synthwave").background).toBe("#1a1033");
+    expect(terminalThemeForColorTheme("midnight").background).toBe("#0e1320");
+    for (const id of ["vt220", "acme", "night-city", "green-screen", "daylight", "midnight"]) {
       const theme = terminalThemeForColorTheme(id) as Record<string, string>;
       for (const key of ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white", "brightBlack", "brightRed", "brightGreen", "brightYellow", "brightBlue", "brightMagenta", "brightCyan", "brightWhite"]) {
         expect(theme[key], `${id}.${key}`).toMatch(/^#[0-9a-f]{6}$/i);

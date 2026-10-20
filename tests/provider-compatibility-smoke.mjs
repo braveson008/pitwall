@@ -12,7 +12,7 @@ const providers = [
   { id: "grok", command: "grok" },
   { id: "kimi", command: "kimi", requiredHelp: /--config-file\b/ },
 ];
-const required = new Set((process.env.BRAVELI_REQUIRE_PROVIDERS || "").split(",").map((item) => item.trim()).filter(Boolean));
+const required = new Set((process.env.PITWALL_REQUIRE_PROVIDERS || "").split(",").map((item) => item.trim()).filter(Boolean));
 
 function shell(command) {
   return execFileSync(process.env.SHELL || "/bin/zsh", ["-lc", command], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();

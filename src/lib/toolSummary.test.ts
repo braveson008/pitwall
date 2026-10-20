@@ -9,7 +9,7 @@ import {
   summariseTool,
 } from "./toolSummary";
 
-const WORKTREE = "/Users/someone/Library/Application Support/braveli/worktrees/d8d1248ed6574b28/web-815";
+const WORKTREE = "/Users/someone/Library/Application Support/pitwall/worktrees/d8d1248ed6574b28/web-815";
 
 describe("stripCommandPreamble", () => {
   it("drops the cd every command in a worktree session repeats", () => {

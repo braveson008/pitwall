@@ -119,7 +119,7 @@ describe("posting to GitHub", () => {
 
 describe("the store", () => {
   let directory = "";
-  beforeEach(() => { directory = mkdtempSync(join(tmpdir(), "braveli-watch-")); });
+  beforeEach(() => { directory = mkdtempSync(join(tmpdir(), "pitwall-watch-")); });
   afterEach(() => { rmSync(directory, { recursive: true, force: true }); });
 
   it("queues new requests once, again on new commits, and survives a restart", () => {
@@ -213,7 +213,7 @@ describe("watching your own requests", () => {
 
 describe("the store with several kinds", () => {
   let directory = "";
-  beforeEach(() => { directory = mkdtempSync(join(tmpdir(), "braveli-watch-kinds-")); });
+  beforeEach(() => { directory = mkdtempSync(join(tmpdir(), "pitwall-watch-kinds-")); });
   afterEach(() => { rmSync(directory, { recursive: true, force: true }); });
 
   it("adds one of each kind but many custom watches, and removing one takes its open findings", () => {
@@ -256,7 +256,7 @@ describe("talking to the agent about a draft", () => {
 describe("how often a watch looks", () => {
   const { watchIntervalMs, intervalChoices } = watch;
   let directory = "";
-  beforeEach(() => { directory = mkdtempSync(join(tmpdir(), "braveli-watch-pace-")); });
+  beforeEach(() => { directory = mkdtempSync(join(tmpdir(), "pitwall-watch-pace-")); });
   afterEach(() => { rmSync(directory, { recursive: true, force: true }); });
 
   it("uses the chosen interval, the kind's default otherwise, and refuses one not offered", () => {

@@ -51,7 +51,7 @@ export function TerminalComposer({
     const images = files.filter((file) => file.type.startsWith("image/"));
     if (images.length === 0) return;
 
-    const api = window.braveli;
+    const api = window.pitwall;
     if (!api?.stageTerminalImages || !api.stageTerminalImageData || !api.getPathForFile) {
       setAttachError("Image attachments are unavailable.");
       return;
@@ -194,7 +194,7 @@ export function TerminalComposer({
           className="dk-icon-btn dk-icon-btn--sm"
           disabled={attaching}
           onClick={() => void (async () => {
-            const api = window.braveli;
+            const api = window.pitwall;
             if (!api?.chooseTerminalImages) {
               setAttachError("Image attachments are unavailable.");
               return;

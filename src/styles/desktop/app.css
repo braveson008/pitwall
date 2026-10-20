@@ -297,21 +297,6 @@
 
 
 
-.dk-tsb-plan {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 11px;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.dk-tsb-plan:hover { color: var(--text); }
-
 .dk-tsb-project .dk-dropdown-trigger {
   height: 26px;
   padding: 0 6px 0 8px;
@@ -414,7 +399,7 @@
 .dk-hermes-models .dk-mono { color: var(--text); margin-right: 6px; }
 @media (max-width: 720px) { .dk-hermes-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* Braveli's session rows, inside the sidebar's group gutter. */
+/* Pitwall's session rows, inside the sidebar's group gutter. */
 .dk-tsb-group .dk-session-rows { padding: 0; }
 .dk-tsb-group .dk-session { width: 100%; padding: 0 10px 0 16px; border-right: 2px solid transparent; border-radius: 0; }
 .dk-tsb-group .dk-session.is-current { border-right-color: var(--blue); }
@@ -496,5 +481,4 @@ button.dk-status-item:hover { background: var(--hover); color: var(--text); }
 .dk-status-item.is-quiet { color: var(--faint); }
 .dk-status-item svg { flex-shrink: 0; }
 .dk-status-count { color: var(--amber); font-weight: 600; font-variant-numeric: tabular-nums; }
-.dk-statusbar .dk-tsb-plan { flex: 0 1 auto; max-width: 220px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
 .dk-statusbar .dk-tsb-seal { width: 14px; height: 14px; font-size: 8px; }

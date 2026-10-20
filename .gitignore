@@ -22,4 +22,3 @@ public/__*.html
 # Agent worktrees
 .claude/worktrees/
 .superpowers/
-build/credits-config.json

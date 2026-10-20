@@ -16,9 +16,9 @@ describe("resolveMcpTaskSource", () => {
     const result = resolveMcpTaskSource(
       { source: "plugin:atlassian:atlassian", target: "https://mcp.atlassian.com/v1/sse" },
       [{ name: "plugin:atlassian:atlassian", target: "https://mcp.atlassian.com/v1/sse", status: "connected" }],
-      [{ name: "Atlassian", alias: "braveli_atlassian_123", target: "https://mcp.atlassian.com/v1/sse", authenticatedAt: "now" }],
+      [{ name: "Atlassian", alias: "pitwall_atlassian_123", target: "https://mcp.atlassian.com/v1/sse", authenticatedAt: "now" }],
     );
-    expect(result.profile?.alias).toBe("braveli_atlassian_123");
+    expect(result.profile?.alias).toBe("pitwall_atlassian_123");
   });
 
   it("reads the alias Pitwall authenticated, not the user's same-named server", () => {
@@ -30,13 +30,27 @@ describe("resolveMcpTaskSource", () => {
       { source: "linear", target: "https://mcp.linear.app/mcp" },
       [
         { name: "linear", target: "https://mcp.linear.app/mcp", status: "needs-auth", statusText: "Needs authentication" },
+        { name: "pitwall_linear_3eb8a846c6", target: "https://mcp.linear.app/mcp", status: "connected" },
+      ],
+      [{ name: "linear", alias: "pitwall_linear_3eb8a846c6", target: "https://mcp.linear.app/mcp", authenticatedAt: "2026-08-20T00:00:00.000Z" }],
+    );
+    expect(result.server?.name).toBe("pitwall_linear_3eb8a846c6");
+    expect(result.server?.status).toBe("connected");
+    expect(result.profile?.alias).toBe("pitwall_linear_3eb8a846c6");
+  });
+
+  it("resolves an alias stored by an older version under its old prefix", () => {
+    const result = resolveMcpTaskSource(
+      { source: "linear", target: "https://mcp.linear.app/mcp" },
+      [
+        { name: "linear", target: "https://mcp.linear.app/mcp", status: "needs-auth" },
         { name: "braveli_linear_3eb8a846c6", target: "https://mcp.linear.app/mcp", status: "connected" },
       ],
       [{ name: "linear", alias: "braveli_linear_3eb8a846c6", target: "https://mcp.linear.app/mcp", authenticatedAt: "2026-08-20T00:00:00.000Z" }],
     );
     expect(result.server?.name).toBe("braveli_linear_3eb8a846c6");
     expect(result.server?.status).toBe("connected");
-    expect(result.profile?.alias).toBe("braveli_linear_3eb8a846c6");
+    expect(readOnlyTrackerToolNames({ source: "linear", server: result.server?.name })).toContain("mcp__braveli_linear_3eb8a846c6__get_issue");
   });
 
   it("still finds the server by name when no binding exists", () => {
@@ -74,9 +88,9 @@ describe("resolveMcpTaskSource", () => {
 
 describe("readOnlyTrackerToolNames", () => {
   it("grants exact audited reads and never tracker mutations", () => {
-    const tools = readOnlyTrackerToolNames({ source: "Jira", server: "braveli_atlassian_123" });
-    expect(tools).toContain("mcp__braveli_atlassian_123__searchJiraIssuesUsingJql");
-    expect(tools).toContain("mcp__braveli_atlassian_123__getJiraIssue");
+    const tools = readOnlyTrackerToolNames({ source: "Jira", server: "pitwall_atlassian_123" });
+    expect(tools).toContain("mcp__pitwall_atlassian_123__searchJiraIssuesUsingJql");
+    expect(tools).toContain("mcp__pitwall_atlassian_123__getJiraIssue");
     expect(tools.some((tool) => /__(?:create|update|transition|comment|addWorklog)/i.test(tool))).toBe(false);
   });
 

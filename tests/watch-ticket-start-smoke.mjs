@@ -52,16 +52,16 @@ const now = new Date().toISOString();
 const project = { id: "p", name: "repo", path: dir, branch: "main", status: "active", accent: "#5368dc", health: 100, openSessions: 0, queuedTasks: 0, lastCommit: "now", ci: "pending", sessions: [], queue: [], timeline: [] };
 const workspace = { version: 1, projects: [{ id: "p", name: "repo", path: dir, defaultBranch: "main", providerIds: ["claude", "codex"], createdAt: now, updatedAt: now }], tasks: [], contextEntries: [], contextSnapshots: [], sessions: [], activity: [], taskRuns: [], councilRuns: [], compareRuns: [] };
 
-const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: profile } });
+const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: profile } });
 try {
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(1000);
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "repo");
@@ -95,7 +95,7 @@ try {
   assert.equal(await page.locator(".dk-watch-card").count(), 0, "the Automations dialog closed");
   assert.equal(await row.getAttribute("aria-current"), "page", "and the new session is the highlighted row");
   console.log("PASS the started session is opened and highlighted");
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}"));
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}"));
   const task = stored.tasks.find((item) => item.title === "Prize filter on campaign page");
   assert.equal(task?.assignedAgent, "codex", "the task is Codex's");
   assert.equal(stored.sessions.find((item) => item.taskId === task.id)?.provider, "codex", "and Codex runs its session");

@@ -9,13 +9,13 @@ import os from "node:os";
 import path from "node:path";
 import { _electron as electron } from "playwright";
 
-const profile = await mkdtemp(path.join(realpathSync(os.tmpdir()), "braveli-cli-compat-"));
+const profile = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-cli-compat-"));
 // Pretend Pitwall last saw old versions, so both are checked now.
 await writeFile(path.join(profile, "cli-versions.json"), JSON.stringify({ claude: "0.0.1", codex: "0.0.1" }));
 const app = await electron.launch({
   args: [process.cwd()],
   cwd: process.cwd(),
-  env: { ...process.env, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: profile, BRAVELI_CLI_CHECK_DELAY_MS: "1500" },
+  env: { ...process.env, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: profile, PITWALL_CLI_CHECK_DELAY_MS: "1500" },
 });
 try {
   await app.firstWindow();

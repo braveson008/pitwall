@@ -125,7 +125,7 @@ export function ThreadMessage({
             className="dk-chip dk-msg-preview"
             key={index}
             type="button"
-            onClick={() => void window.braveli?.openExternalUrl?.(marker.url)}
+            onClick={() => void window.pitwall?.openExternalUrl?.(marker.url)}
           >
             <ExternalLink size={12} aria-hidden="true" />
             <strong>{marker.label}</strong>

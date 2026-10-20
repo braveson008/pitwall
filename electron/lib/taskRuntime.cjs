@@ -34,9 +34,9 @@ function canBindPort(port) {
 function taskRuntimeEnvironment(plan) {
   if (!plan) return {};
   return {
-    BRAVELI_PREVIEW_PORT: String(plan.previewPort),
-    BRAVELI_MOBILE_RUNTIME_ID: plan.mobileRuntimeId,
-    BRAVELI_MOBILE_DEVICE_NAME: plan.mobileDeviceName,
+    PITWALL_PREVIEW_PORT: String(plan.previewPort),
+    PITWALL_MOBILE_RUNTIME_ID: plan.mobileRuntimeId,
+    PITWALL_MOBILE_DEVICE_NAME: plan.mobileDeviceName,
     PORT: String(plan.previewPort),
     RCT_METRO_PORT: String(plan.previewPort),
     EXPO_PACKAGER_PORT: String(plan.previewPort),
@@ -75,7 +75,7 @@ function createTaskRuntimeAllocator(options = {}) {
 
     const identity = String(payload.taskIdentifier || payload.taskTitle || taskId).trim() || taskId;
     const unique = createHash("sha256").update(key).digest("hex").slice(0, 12);
-    const mobileRuntimeId = `braveli-${runtimeSlug(identity)}-${unique}`;
+    const mobileRuntimeId = `pitwall-${runtimeSlug(identity)}-${unique}`;
     const deviceLabel = identity
       .replace(/[^a-zA-Z0-9._-]+/g, "-")
       .replace(/^-+|-+$/g, "")

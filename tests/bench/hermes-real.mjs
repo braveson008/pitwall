@@ -16,7 +16,7 @@ import { _electron as electron } from "playwright";
 
 const root = process.cwd();
 const model = process.env.HERMES_MODEL || "poolside/laguna-s-2.1:free";
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-hermes-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-hermes-"));
 // A Hermes home that has already been run once: a brand-new one installs its
 // Python dependencies and asks about optional features on first start, which
 // is Hermes's own first run, not what this bench measures. Never your real one
@@ -37,16 +37,16 @@ execFileSync("git", ["-c", "user.email=a@b", "-c", "user.name=t", "commit", "-q"
 const launchApp = () => electron.launch({
   args: [root],
   cwd: root,
-  env: { ...process.env, HERMES_HOME: hermesHome, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HERMES_HOME: hermesHome, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 
 async function runTurn(page, payload, expect) {
   return page.evaluate(({ payload, expect }) => new Promise((resolve) => {
     const seen = { nativeId: null, completed: false, output: "" };
     const stops = [
-      window.braveli.onSessionNativeId((event) => { if (event.sessionId === payload.sessionId) seen.nativeId = event.nativeSessionId; }),
-      window.braveli.onTerminalData((event) => { if (event.sessionId === payload.sessionId) seen.output = (seen.output + event.data).slice(-200_000); }),
-      window.braveli.onAgentCompleted((event) => {
+      window.pitwall.onSessionNativeId((event) => { if (event.sessionId === payload.sessionId) seen.nativeId = event.nativeSessionId; }),
+      window.pitwall.onTerminalData((event) => { if (event.sessionId === payload.sessionId) seen.output = (seen.output + event.data).slice(-200_000); }),
+      window.pitwall.onAgentCompleted((event) => {
         if (event.sessionId !== payload.sessionId) return;
         seen.completed = true;
         // The completion can land before the answer is drawn; give it a beat.
@@ -54,7 +54,7 @@ async function runTurn(page, payload, expect) {
       }),
     ];
     setTimeout(() => { stops.forEach((stop) => stop()); resolve({ ...seen, timedOut: true }); }, 120_000);
-    window.braveli.startTerminal({ ...payload, cols: 120, rows: 40 }).then((result) => {
+    window.pitwall.startTerminal({ ...payload, cols: 120, rows: 40 }).then((result) => {
       if (!result?.ok) { stops.forEach((stop) => stop()); resolve({ ...seen, startError: result?.error }); }
     });
   }), { payload, expect });
@@ -67,7 +67,7 @@ try {
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(1500);
-  await page.evaluate(() => localStorage.setItem("braveli-onboarded", "yes"));
+  await page.evaluate(() => localStorage.setItem("pitwall-onboarded", "yes"));
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForTimeout(1500);
   const first = await runTurn(page, { ...base, sessionId: "hermes-1", initialPrompt: "Remember the codeword ORCHID-42. Reply with exactly: STORED" });
@@ -83,7 +83,7 @@ try {
   console.log(`PASS the Hermes session id is recorded (${nativeId})`);
   assert.match(await readFile(configPath, "utf8"), /^\s*bell_on_complete:\s*true/m, "the turn signal is switched on");
   console.log("PASS Pitwall switched on Hermes's turn signal");
-  await page.evaluate((id) => window.braveli.detachTerminal(id), "hermes-1");
+  await page.evaluate((id) => window.pitwall.detachTerminal(id), "hermes-1");
 } finally {
   await app.close();
 }
@@ -93,14 +93,14 @@ try {
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(1500);
-  await page.evaluate(() => localStorage.setItem("braveli-onboarded", "yes"));
+  await page.evaluate(() => localStorage.setItem("pitwall-onboarded", "yes"));
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForTimeout(1500);
   const second = await runTurn(page, { ...base, sessionId: "hermes-2", resumeSession: true, nativeSessionId: nativeId, initialPrompt: "What codeword did I ask you to remember? Reply with just the codeword." });
   assert.ok(second.completed, "the resumed turn finishes");
   assert.match(second.output, /ORCHID-42/, "the resumed session remembers the earlier turn");
   console.log("PASS a restarted app resumes the Hermes conversation");
-  await page.evaluate((id) => window.braveli.detachTerminal(id), "hermes-2");
+  await page.evaluate((id) => window.pitwall.detachTerminal(id), "hermes-2");
 } finally {
   await app.close();
 }

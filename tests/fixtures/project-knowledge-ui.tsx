@@ -77,7 +77,7 @@ const fixture = {
   refresh: () => {},
 };
 window.__knowledgeUi = fixture;
-window.braveli = {
+window.pitwall = {
   inspectProjectKnowledge: async (location) => {
     fixture.inspected.push(location.projectPath);
     if (fixture.inspectFailure) return { ...snapshot, ok: false, error: "Fixture store unavailable" };

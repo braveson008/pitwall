@@ -7,12 +7,12 @@ import { _electron as electron } from "playwright";
 import { goTo } from "./helpers/goTo.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-release-failures-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-release-failures-"));
 const projectPath = path.join(temp, "project");
 await mkdir(projectPath);
 const app = await electron.launch({
   args: [root], cwd: root,
-  env: { ...process.env, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
   timeout: 30_000,
 });
 
@@ -51,12 +51,12 @@ try {
       const project = { id: "fixture", name: "Fixture", path: projectPath, branch: "main", status: "active",
         accent: "#5368dc", health: 100, openSessions: sessions.length, queuedTasks: 0, lastCommit: "now", ci: "pending", sessions, queue: [], timeline: [] };
       localStorage.clear();
-      localStorage.setItem("braveli-projects", JSON.stringify([project]));
-      localStorage.setItem("braveli-active-project", JSON.stringify(project.id));
-      localStorage.setItem("braveli-selected-session", sessions[0]?.id ?? "");
-      localStorage.setItem("braveli-onboarded", "yes");
-      localStorage.setItem("braveli-workspace-section", JSON.stringify("work"));
-      localStorage.setItem("braveli-workspace-state", JSON.stringify({ version: 1, projects: [project],
+      localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+      localStorage.setItem("pitwall-active-project", JSON.stringify(project.id));
+      localStorage.setItem("pitwall-selected-session", sessions[0]?.id ?? "");
+      localStorage.setItem("pitwall-onboarded", "yes");
+      localStorage.setItem("pitwall-workspace-section", JSON.stringify("work"));
+      localStorage.setItem("pitwall-workspace-state", JSON.stringify({ version: 1, projects: [project],
         tasks: [{ id: "task-one", projectId: "fixture", identifier: "audit-1", title: "Fixture task", description: "Fixture only",
           status: "ready", priority: "low", relatedFiles: [], worktree: "audit-1", createdAt: now, updatedAt: now }],
         contextEntries: [], contextSnapshots: [], sessions: [], activity: [], taskRuns: [], councilRuns: [], compareRuns: [] }));
@@ -75,8 +75,8 @@ try {
     const calls = await app.evaluate(() => global.releaseFailureCalls);
     assert.equal(calls.filter(({ name }) => ["session:launch", "terminal:start", "project:write-file"].includes(name)).length, 0, JSON.stringify(calls));
     const counts = await page.evaluate(() => ({
-      sessions: JSON.parse(localStorage.getItem("braveli-projects"))[0].sessions.length,
-      runs: JSON.parse(localStorage.getItem("braveli-workspace-state")).sessions.length,
+      sessions: JSON.parse(localStorage.getItem("pitwall-projects"))[0].sessions.length,
+      runs: JSON.parse(localStorage.getItem("pitwall-workspace-state")).sessions.length,
     }));
     assert.deepEqual(counts, { sessions: 0, runs: 0 });
   }
@@ -133,7 +133,7 @@ try {
   // Output must stay continuous for longer than the checkpoint period. A
   // debounce only saves once this producer goes quiet, which this test forbids.
   await page.waitForTimeout(4500);
-  const checkpoint = await page.evaluate(() => localStorage.getItem("braveli-terminal-history"));
+  const checkpoint = await page.evaluate(() => localStorage.getItem("pitwall-terminal-history"));
   assert.match(checkpoint, /checkpoint-live-/);
   assert.ok(await app.evaluate(() => global.releaseOutputCount > 0 && Boolean(global.releaseOutputTimer)));
   console.log("PASS continuous terminal output checkpoints before the producer stops");

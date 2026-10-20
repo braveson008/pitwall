@@ -1,4 +1,4 @@
-import type { BraveliContextEntry } from "./types";
+import type { PitwallContextEntry } from "./types";
 
 export type KnowledgeKind = "overview" | "area" | "command" | "convention" | "decision" | "pitfall";
 export type KnowledgeFreshness = "current" | "stale" | "unknown";
@@ -105,7 +105,7 @@ export interface PrepareKnowledgeInput extends ProjectKnowledgeLocation {
   task: { title: string; description?: string; relatedFiles?: string[] };
   role: string;
   provider: string;
-  manualEntries?: BraveliContextEntry[];
+  manualEntries?: PitwallContextEntry[];
   basePrompt: string;
 }
 

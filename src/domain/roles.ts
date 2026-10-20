@@ -1,4 +1,4 @@
-import type { BraveliSessionType, ContextCategory } from "./types";
+import type { PitwallSessionType, ContextCategory } from "./types";
 
 /**
  * A role is a behavioral preset for an agent session. It maps 1:1 to a session
@@ -13,7 +13,7 @@ export interface RoleDefinition {
   contextCategories: ContextCategory[];
 }
 
-export const roles: Record<BraveliSessionType, RoleDefinition> = {
+export const roles: Record<PitwallSessionType, RoleDefinition> = {
   architecture: {
     label: "Architect",
     summary: "Designs the approach — tradeoffs, risks, structure. Avoids writing implementation code.",
@@ -67,7 +67,7 @@ export const roles: Record<BraveliSessionType, RoleDefinition> = {
  * jobs: "qa" hunts for what is broken, "reviewer" judges whether the change
  * belongs in this repository. A council with both addresses them separately.
  */
-export const roleKeys: Record<BraveliSessionType, string> = {
+export const roleKeys: Record<PitwallSessionType, string> = {
   architecture: "architect",
   implementation: "implementer",
   debugging: "debugger",
@@ -81,7 +81,7 @@ export const roleKeys: Record<BraveliSessionType, string> = {
  * self-reported handoffs, so this is what lets it tell "I implemented it" with
  * an empty diff from a design note that was never supposed to touch the repo.
  */
-export const roleWritesCode: Record<BraveliSessionType, boolean> = {
+export const roleWritesCode: Record<PitwallSessionType, boolean> = {
   architecture: false,
   implementation: true,
   debugging: true,
@@ -90,7 +90,7 @@ export const roleWritesCode: Record<BraveliSessionType, boolean> = {
   research: false,
 };
 
-export const roleOrder: BraveliSessionType[] = [
+export const roleOrder: PitwallSessionType[] = [
   "architecture",
   "implementation",
   "review",
@@ -99,6 +99,6 @@ export const roleOrder: BraveliSessionType[] = [
   "research",
 ];
 
-export function getRole(sessionType: BraveliSessionType): RoleDefinition {
+export function getRole(sessionType: PitwallSessionType): RoleDefinition {
   return roles[sessionType];
 }

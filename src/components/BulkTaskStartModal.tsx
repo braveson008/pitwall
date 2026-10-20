@@ -1,7 +1,7 @@
 import { LoaderCircle, X } from "lucide-react";
 import type { AgentProvider } from "../data";
 import type { AgentOption, ModelOption } from "../domain/agents";
-import type { BraveliSessionType, BraveliTask } from "../domain/types";
+import type { PitwallSessionType, PitwallTask } from "../domain/types";
 import { getRole, roleOrder, roles } from "../domain/roles";
 import { Dropdown } from "./Dropdown";
 import { useModalFocus } from "../hooks/useModalFocus";
@@ -22,12 +22,12 @@ export function BulkTaskStartModal({
   onClose,
   onStart,
 }: {
-  tasks: BraveliTask[];
+  tasks: PitwallTask[];
   agentOptions: AgentOption[];
   agent: AgentProvider;
   models: ModelOption[];
   model: string;
-  sessionType: BraveliSessionType;
+  sessionType: PitwallSessionType;
   starting: number;
   /** True for the whole run, including the tracker read before session one. */
   running: boolean;
@@ -35,7 +35,7 @@ export function BulkTaskStartModal({
   cancelling: boolean;
   onAgentChange: (agent: AgentProvider) => void;
   onModelChange: (model: string) => void;
-  onRoleChange: (type: BraveliSessionType) => void;
+  onRoleChange: (type: PitwallSessionType) => void;
   onClose: () => void;
   onStart: () => void;
 }) {
@@ -72,7 +72,7 @@ export function BulkTaskStartModal({
           <div className="dk-bulk-options">
             <div className="dk-field"><span className="dk-label">Agent</span><Dropdown value={String(agent)} onChange={(value) => onAgentChange(value as AgentProvider)} ariaLabel="Agent for selected tasks" options={agentOptions.map((option) => ({ value: String(option.agent), label: String(option.agent) }))} /></div>
             <div className="dk-field"><span className="dk-label">Model</span><Dropdown value={model} onChange={onModelChange} ariaLabel="Model for selected tasks" options={models.map((option) => ({ value: option.label, label: option.label }))} /></div>
-            <div className="dk-field"><span className="dk-label">Role</span><Dropdown value={sessionType} onChange={(value) => onRoleChange(value as BraveliSessionType)} ariaLabel="Role for selected tasks" options={roleOrder.map((type) => ({ value: type, label: roles[type].label }))} /></div>
+            <div className="dk-field"><span className="dk-label">Role</span><Dropdown value={sessionType} onChange={(value) => onRoleChange(value as PitwallSessionType)} ariaLabel="Role for selected tasks" options={roleOrder.map((type) => ({ value: type, label: roles[type].label }))} /></div>
           </div>
           <p className="dk-hint">{getRole(sessionType).summary}</p>
         </div>

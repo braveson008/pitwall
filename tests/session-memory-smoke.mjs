@@ -32,16 +32,16 @@ const project = (id, dir, sessions) => ({ id, name: id, path: dir, branch: "main
 const projects = [project("web", await repo("web"), [session("w1", "Web first"), session("w2", "Web second")]), project("api", await repo("api"), [session("a1", "Api first"), session("a2", "Api second")])];
 const workspace = { version: 1, projects: projects.map((item) => ({ id: item.id, name: item.name, path: item.path, defaultBranch: "main", providerIds: [], createdAt: now, updatedAt: now })), tasks: [], contextEntries: [], contextSnapshots: [], sessions: [], activity: [], taskRuns: [], councilRuns: [], compareRuns: [] };
 
-const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") } });
+const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") } });
 try {
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(1000);
   await page.evaluate(({ projects, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify(projects));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify(projects));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { projects, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   const header = page.locator(".dk-header-titles");

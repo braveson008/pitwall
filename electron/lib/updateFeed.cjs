@@ -1,6 +1,6 @@
 // Where a packaged build looks for updates: a generic feed (a bucket behind a URL) or GitHub releases.
 function feedFromConfig(config, env = process.env) {
-  if (env.BRAVELI_UPDATE_URL) return { provider: "generic", url: env.BRAVELI_UPDATE_URL };
+  if (env.PITWALL_UPDATE_URL) return { provider: "generic", url: env.PITWALL_UPDATE_URL };
   if (!config || !config.enabled) return null;
   if (config.provider === "github") {
     return config.owner && config.repo ? { provider: "github", owner: String(config.owner), repo: String(config.repo) } : null;

@@ -11,7 +11,7 @@ import {
   normalizeTurnLimit,
   type CouncilActivity,
 } from "../lib/councilRelay";
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import { AgentTerminalView } from "./AgentTerminalView";
 import { CouncilThread, RoleMark, markTint } from "./CouncilThread";
 import type { CouncilRelayMember, CouncilThreadMessage } from "../lib/councilRelay";
@@ -74,7 +74,7 @@ const LIVE_MODEL_OPTIONS = [
 
 // Not the old "thread-open" flag: it was written "false" on every mount, so it
 // cannot tell a choice from the old default.
-const FLOOR_VIEW_KEY = "braveli-council-view";
+const FLOOR_VIEW_KEY = "pitwall-council-view";
 const TERMINAL_ESCAPE_HINT_ID = "council-terminal-escape";
 
 const LIVE_TURN_OPTIONS = [
@@ -199,7 +199,7 @@ export function CouncilGrid({
   onExtendTurns: (extraTurns: number | null) => void;
   onExtendBudget: (extraHours: number | null) => void;
   /** Tasks this council could be pointed at once it has finished one. */
-  nextTasks?: BraveliTask[];
+  nextTasks?: PitwallTask[];
   /** Hands the finished council a new task, keeping the agents it has. */
   onStartAnotherTask?: (taskId: string) => void;
   onUpdateConfig: (patch: Partial<CouncilLiveConfig>) => void;

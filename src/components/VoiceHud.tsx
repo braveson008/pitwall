@@ -22,7 +22,7 @@ function VoiceSettings({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(true);
 
   const load = useCallback(async () => {
-    const result = await window.braveli?.listVoices();
+    const result = await window.pitwall?.listVoices();
     if (result) setCatalog(result);
     setBusy(false);
   }, []);
@@ -33,10 +33,10 @@ function VoiceSettings({ onClose }: { onClose: () => void }) {
 
   const update = async (patch: { voiceIdentifier?: string; preset?: string; silenceTimeout?: number }) => {
     setCatalog((current) => (current ? { ...current, ...patch, selected: patch.voiceIdentifier ?? current.selected } : current));
-    await window.braveli?.setVoice(patch);
+    await window.pitwall?.setVoice(patch);
     // Audition every change immediately — picking a voice you cannot hear is
     // guesswork, and the whole point of this panel is how it sounds.
-    await window.braveli?.previewVoice({
+    await window.pitwall?.previewVoice({
       voiceIdentifier: patch.voiceIdentifier ?? catalog?.selected,
       preset: patch.preset ?? catalog?.preset,
     });
@@ -111,7 +111,7 @@ function VoiceSettings({ onClose }: { onClose: () => void }) {
               setCatalog((current) => (current ? { ...current, silenceTimeout } : current));
             }}
             onPointerUp={(pointerEvent) =>
-              void window.braveli?.setVoice({ silenceTimeout: Number(pointerEvent.currentTarget.value) })
+              void window.pitwall?.setVoice({ silenceTimeout: Number(pointerEvent.currentTarget.value) })
             }
           />
         </label>
@@ -120,7 +120,7 @@ function VoiceSettings({ onClose }: { onClose: () => void }) {
       <button
         type="button"
         className="dk-btn dk-btn--sm dk-voice-preview"
-        onClick={() => void window.braveli?.previewVoice({})}
+        onClick={() => void window.pitwall?.previewVoice({})}
       >
         <Play size={12} /> Hear it
       </button>
@@ -194,7 +194,7 @@ export function VoiceHud({
   // put away should stay away.
   const [minimized, setMinimized] = useState(() => {
     try {
-      return localStorage.getItem("braveli-voice-minimized") === "true";
+      return localStorage.getItem("pitwall-voice-minimized") === "true";
     } catch {
       return false;
     }
@@ -203,7 +203,7 @@ export function VoiceHud({
 
   useEffect(() => {
     try {
-      writeStored("braveli-voice-minimized", String(minimized));
+      writeStored("pitwall-voice-minimized", String(minimized));
     } catch {
       // A private-mode profile is not a reason to break the panel.
     }

@@ -26,9 +26,9 @@ const RESTART_BACKOFF_MS = [500, 1000, 2000, 5000, 10000];
 function resolveSidecarPath(options = {}) {
   const candidates = [
     options.explicitPath,
-    process.env.BRAVELI_VOICE_SIDECAR,
-    options.resourcesPath ? path.join(options.resourcesPath, "voice", "braveli-voice") : null,
-    path.join(__dirname, "..", "voice", "bin", "braveli-voice"),
+    process.env.PITWALL_VOICE_SIDECAR,
+    options.resourcesPath ? path.join(options.resourcesPath, "voice", "pitwall-voice") : null,
+    path.join(__dirname, "..", "voice", "bin", "pitwall-voice"),
   ].filter(Boolean);
 
   for (const candidate of candidates) {

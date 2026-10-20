@@ -1,4 +1,4 @@
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import type { ValidationResult } from "../domain/contracts";
 import { trackerHtmlToMarkdown } from "./markdown";
 
@@ -16,7 +16,7 @@ import { trackerHtmlToMarkdown } from "./markdown";
  */
 
 export interface RequestDraftInput {
-  task: Pick<BraveliTask, "identifier" | "title" | "description" | "source" | "completionSummary">;
+  task: Pick<PitwallTask, "identifier" | "title" | "description" | "source" | "completionSummary">;
   /** Commit subjects on the branch, oldest first. */
   commits: string[];
   /** Changed paths, as the branch differs from its base. */

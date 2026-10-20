@@ -1,4 +1,4 @@
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 
 /**
  * Sending work back, with a reason.
@@ -32,7 +32,7 @@ export type ChangeRequest = {
   from?: "reviewer";
 };
 
-export type TaskWithRequests = BraveliTask & { changeRequests?: ChangeRequest[] };
+export type TaskWithRequests = PitwallTask & { changeRequests?: ChangeRequest[] };
 
 /** Empty or whitespace is not a request; it is an accidental button press. */
 export function isUsableRequest(body: string): boolean {
@@ -113,6 +113,6 @@ export function formatChangeRequestPrompt(
  * `ready` when nothing is — so it lands in the queue with its request attached
  * rather than sitting in review looking finished.
  */
-export function statusAfterRequest(delivered: boolean): BraveliTask["status"] {
+export function statusAfterRequest(delivered: boolean): PitwallTask["status"] {
   return delivered ? "running" : "ready";
 }

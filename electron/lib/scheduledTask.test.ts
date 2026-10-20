@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { renderTaskXml, syncScheduledTask, taskXmlPath, TASK_NAME, FIRE_FLAG } from "./scheduledTask.cjs";
 
 let directory: string;
-beforeEach(() => { directory = mkdtempSync(join(tmpdir(), "braveli-task-")); });
+beforeEach(() => { directory = mkdtempSync(join(tmpdir(), "pitwall-task-")); });
 afterEach(() => { rmSync(directory, { recursive: true, force: true }); });
 
 const EXE = "C:\\Program Files\\Pitwall\\Pitwall.exe";

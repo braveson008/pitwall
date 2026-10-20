@@ -219,12 +219,12 @@ describe("isWorkingSet", () => {
 
 describe("formatWorkingSetForPrompt", () => {
   it("inlines the map so a member does not have to open a file to get it", () => {
-    const text = formatWorkingSetForPrompt(parseWorkingSet(handoff, 1, "architect"), ".braveli/working-set.md");
+    const text = formatWorkingSetForPrompt(parseWorkingSet(handoff, 1, "architect"), ".pitwall/working-set.md");
     expect(text).toContain("already read these files");
     expect(text).toContain("src/lib/councilRelay.ts");
     expect(text).toContain("npm test");
     expect(text).toContain("Do not re-derive");
-    expect(text).toContain(".braveli/working-set.md");
+    expect(text).toContain(".pitwall/working-set.md");
   });
 
   it("caps the inlined list and points at the file for the rest", () => {

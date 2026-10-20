@@ -1,5 +1,5 @@
 import { Trash2, X } from "lucide-react";
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import { useModalFocus } from "../hooks/useModalFocus";
 
 export function DeleteTaskModal({
@@ -11,7 +11,7 @@ export function DeleteTaskModal({
   onCancel,
   onConfirm,
 }: {
-  task: BraveliTask | null;
+  task: PitwallTask | null;
   sessionCount: number;
   councilCount: number;
   /** Further selected tasks that each get their own confirmation after this one. */
@@ -62,6 +62,6 @@ export function DeleteTaskModal({
   );
 }
 
-function taskBranchName(task: BraveliTask) {
+function taskBranchName(task: PitwallTask) {
   return task.worktree || "No branch assigned";
 }

@@ -6,7 +6,7 @@ import { MAX_RELAY_TURNS, RELAY_TURN_CEILING, RELAY_TURN_LIMITS, normalizeTurnLi
 import { roleOrder, roles } from "../domain/roles";
 import { splitByAutoApprove } from "../domain/autoApprove";
 import type { AgentProvider } from "../data";
-import type { BraveliSessionType, BraveliTask } from "../domain/types";
+import type { PitwallSessionType, PitwallTask } from "../domain/types";
 import { Dropdown } from "./Dropdown";
 import { useModalFocus } from "../hooks/useModalFocus";
 
@@ -20,7 +20,7 @@ export interface CouncilMember {
    * anything it could not find in the provider registry.
    */
   agent: AgentProvider;
-  role: BraveliSessionType;
+  role: PitwallSessionType;
   /** Which model that agent runs. "Auto" leaves it to the CLI. */
   model: string;
 }
@@ -92,7 +92,7 @@ export function CouncilSetupModal({
   agentOptions: AgentOption[];
   agentChecks: Partial<Record<string, { status: string }>>;
   /** The project's tasks, so the council can be pointed at one deliberately. */
-  tasks: BraveliTask[];
+  tasks: PitwallTask[];
   /** Whichever task is selected in the workspace, used as the default. */
   activeTaskId: string;
   onClose: () => void;
@@ -330,7 +330,7 @@ export function CouncilSetupModal({
                       <Dropdown
                         className="dk-council-member-role"
                         value={row.role}
-                        onChange={(value) => patchMember(row.uid, { role: value as BraveliSessionType })}
+                        onChange={(value) => patchMember(row.uid, { role: value as PitwallSessionType })}
                         ariaLabel="Role"
                         options={roleOrder.map((type) => ({ value: type, label: roles[type].label }))}
                       />

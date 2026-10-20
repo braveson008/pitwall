@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Check, Loader2, Sparkles, X } from "lucide-react";
 import { providerRegistry } from "../domain/providers";
 import { getRole } from "../domain/roles";
-import type { BraveliProviderId } from "../domain/types";
+import type { PitwallProviderId } from "../domain/types";
 import {
   IMPLEMENTER_ROLE,
   SCOPING_ROLE,
@@ -15,8 +15,8 @@ import {
 export interface DescribedProjectDraft {
   name: string;
   description: string;
-  scopingProviderId: BraveliProviderId;
-  implementerProviderId: BraveliProviderId;
+  scopingProviderId: PitwallProviderId;
+  implementerProviderId: PitwallProviderId;
 }
 
 /**
@@ -43,8 +43,8 @@ export function CreateProjectFlowModal({
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [scopingProviderId, setScopingProviderId] = useState<BraveliProviderId>("");
-  const [implementerProviderId, setImplementerProviderId] = useState<BraveliProviderId>("");
+  const [scopingProviderId, setScopingProviderId] = useState<PitwallProviderId>("");
+  const [implementerProviderId, setImplementerProviderId] = useState<PitwallProviderId>("");
   const [touched, setTouched] = useState(false);
 
   const installed = providerRegistry.filter((provider) => agentChecks[provider.agent]?.status !== "missing");
@@ -82,8 +82,8 @@ export function CreateProjectFlowModal({
   const agentList = (
     heading: string,
     hint: string,
-    selected: BraveliProviderId,
-    onSelect: (id: BraveliProviderId) => void,
+    selected: PitwallProviderId,
+    onSelect: (id: PitwallProviderId) => void,
   ) => (
     <section className="dk-flow-stage" aria-label={heading}>
       <div className="dk-flow-stage-head">

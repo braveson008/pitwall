@@ -3,7 +3,7 @@
  *
  * Pitwall's UI normally needs a packaged Electron app and real repositories to
  * show anything, which makes iterating on a panel like the review changeset
- * slow enough that it does not happen. This stands in for `window.braveli` with
+ * slow enough that it does not happen. This stands in for `window.pitwall` with
  * fixed data, reached at `?mock`.
  *
  * Development only, and imported dynamically so it is never part of a release
@@ -14,7 +14,7 @@ const BASE = "9f2c41ab6d3e";
 
 const mockScheduleJobs: ScheduleJob[] = [];
 
-const FILES: BraveliChangedFile[] = [
+const FILES: PitwallChangedFile[] = [
   { path: "src/pricing/currencyTotals.ts", from: null, status: "modified", binary: false, additions: 64, deletions: 18 },
   { path: "src/pricing/roundingRules.ts", from: null, status: "added", binary: false, additions: 41, deletions: 0 },
   { path: "src/pricing/legacyRounding.ts", from: null, status: "deleted", binary: false, additions: 0, deletions: 27 },
@@ -103,15 +103,15 @@ const PATCHES: Record<string, string> = {
 };
 
 /** Untracked: in the worktree, not in any commit, so not in the pull request. */
-const UNTRACKED: BraveliChangedFile[] = [
-  { path: ".braveli/council/council-1787490087426-j298re/thread.md", from: null, status: "added", binary: false, additions: 357, deletions: 0, untracked: true },
-  { path: ".braveli/council/council-1787490087426-j298re/stage-1.md", from: null, status: "added", binary: false, additions: 99, deletions: 0, untracked: true },
-  { path: ".braveli/council/council-1787490087426-j298re/task.md", from: null, status: "added", binary: false, additions: 32, deletions: 0, untracked: true },
+const UNTRACKED: PitwallChangedFile[] = [
+  { path: ".pitwall/council/council-1787490087426-j298re/thread.md", from: null, status: "added", binary: false, additions: 357, deletions: 0, untracked: true },
+  { path: ".pitwall/council/council-1787490087426-j298re/stage-1.md", from: null, status: "added", binary: false, additions: 99, deletions: 0, untracked: true },
+  { path: ".pitwall/council/council-1787490087426-j298re/task.md", from: null, status: "added", binary: false, additions: 32, deletions: 0, untracked: true },
   { path: "graphify-out/.graphify_root", from: null, status: "added", binary: false, additions: 1, deletions: 0, untracked: true },
   { path: "graphify-out/.graphify_detect.json", from: null, status: "added", binary: false, additions: 1, deletions: 0, untracked: true },
 ];
 
-const CHANGESET: BraveliChangeset = {
+const CHANGESET: PitwallChangeset = {
   ok: true,
   base: BASE,
   worktreePath: "/tmp/checkout-service/worktrees/pay-118",
@@ -121,17 +121,17 @@ const CHANGESET: BraveliChangeset = {
   deletions: FILES.reduce((total, file) => total + file.deletions, 0),
 };
 
-const EMPTY_CHANGESET: BraveliChangeset = { ok: true, base: BASE, files: [], untrackedFiles: [], additions: 0, deletions: 0 };
+const EMPTY_CHANGESET: PitwallChangeset = { ok: true, base: BASE, files: [], untrackedFiles: [], additions: 0, deletions: 0 };
 
 /** Seeds the stores the app reads at first render, then fakes the bridge. */
 export function installMockBridge() {
   const now = new Date().toISOString();
   const projectId = "mock-checkout";
 
-  localStorage.setItem("braveli-onboarded", "yes");
-  localStorage.setItem("braveli-active-project", projectId);
+  localStorage.setItem("pitwall-onboarded", "yes");
+  localStorage.setItem("pitwall-active-project", projectId);
   localStorage.setItem(
-    "braveli-projects",
+    "pitwall-projects",
     JSON.stringify([
       {
         id: projectId, name: "checkout-service", path: "/tmp/checkout-service", branch: "main",
@@ -141,7 +141,7 @@ export function installMockBridge() {
     ]),
   );
   localStorage.setItem(
-    "braveli-workspace-state",
+    "pitwall-workspace-state",
     JSON.stringify({
       version: 1,
       projects: [{ id: projectId, name: "checkout-service", path: "/tmp/checkout-service", defaultBranch: "main", providerIds: ["claude"], createdAt: now, updatedAt: now }],
@@ -266,8 +266,8 @@ function mockExtensions(provider: string): AgentExtensions {
 }
 
   const noop = async () => ({ ok: true });
-  window.braveli = {
-    ...(window.braveli ?? {}),
+  window.pitwall = {
+    ...(window.pitwall ?? {}),
     getAppVersion: async () => ({ version: "0.1.5-mock", packaged: false, installation: { ok: true } }),
     getUpdateState: async () => ({ status: "current", currentVersion: "0.1.5-mock", availableVersion: null, progress: 0, message: "Pitwall is up to date" }),
     onUpdateStatus: () => () => {},
@@ -386,5 +386,5 @@ function mockExtensions(provider: string): AgentExtensions {
     onScheduleFire: () => () => {},
     installMcpServer: async () => ({ ok: true, message: "Nothing was really installed — this is the mock bridge." }),
     changeAgentExtension: async () => ({ ok: true, message: "Nothing was really installed — this is the mock bridge." }),
-  } as unknown as typeof window.braveli;
+  } as unknown as typeof window.pitwall;
 }

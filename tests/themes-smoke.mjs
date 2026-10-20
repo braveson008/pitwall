@@ -30,7 +30,7 @@ const session = { id: "sess-theme", name: "ACME-2875 DRM stream URL", agent: "Cl
 const project = { id: "shop", name: "shop", path: repo, branch: "main", status: "active", accent: "#5368dc", health: 100, openSessions: 1, queuedTasks: 0, lastCommit: "now", ci: "pending", sessions: [session], queue: [], timeline: [] };
 const workspace = { version: 1, projects: [{ id: "shop", name: "shop", path: repo, defaultBranch: "main", providerIds: ["claude"], createdAt: now, updatedAt: now }], tasks: [], contextEntries: [], contextSnapshots: [], sessions: [], activity: [], taskRuns: [], councilRuns: [], compareRuns: [] };
 
-const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: home, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") } });
+const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: home, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") } });
 const errors = [];
 try {
   const page = await app.firstWindow();
@@ -39,13 +39,13 @@ try {
   await page.waitForTimeout(1500);
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
 
   for (const theme of ["vt220", "acme", "night-city", "green-screen", "daylight", "synthwave", "midnight"]) {
-    await page.evaluate((value) => localStorage.setItem("braveli-color-theme", value), theme);
+    await page.evaluate((value) => localStorage.setItem("pitwall-color-theme", value), theme);
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.locator(".dk-workbench-bar").waitFor({ timeout: 20000 });
     assert.equal(await page.evaluate(() => document.documentElement.dataset.colorTheme), theme);
@@ -75,7 +75,7 @@ try {
     await page.screenshot({ path: path.join(shots, "picker.png") });
     await picker.getByRole("button", { name: "Pitwall" }).click();
     await page.waitForTimeout(400);
-    assert.equal(await page.evaluate(() => document.documentElement.dataset.colorTheme), "braveli");
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.colorTheme), "pitwall");
     console.log("PASS the theme switcher changes the theme and back");
   } else {
     console.log("NOTE the settings sheet did not open from ⌘, in this run; switcher checked by screenshot only");

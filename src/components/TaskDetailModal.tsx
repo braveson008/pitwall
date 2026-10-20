@@ -1,5 +1,5 @@
 import { ExternalLink, Play, TerminalSquare, X } from "lucide-react";
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import { getTaskStatusLabel } from "../lib/format";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { TaskDescription } from "./TaskDescription";
@@ -12,7 +12,7 @@ export function TaskDetailModal({
   onOpenWork,
   onStart,
 }: {
-  task: BraveliTask | null;
+  task: PitwallTask | null;
   runCount: number;
   providerLabel: string;
   onClose: () => void;
@@ -45,7 +45,7 @@ export function TaskDetailModal({
           {fromTracker?.name ? <span>· {fromTracker.name}</span> : null}
           <span className="dk-spacer" />
           {fromTracker?.url ? (
-            <button className="dk-btn dk-btn--ghost dk-btn--sm" type="button" onClick={() => void window.braveli?.openExternalUrl(fromTracker.url!)}>
+            <button className="dk-btn dk-btn--ghost dk-btn--sm" type="button" onClick={() => void window.pitwall?.openExternalUrl(fromTracker.url!)}>
               Open in {fromTracker.name || "tracker"}
               <ExternalLink size={13} aria-hidden="true" />
             </button>

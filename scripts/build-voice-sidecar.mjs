@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Compiles the Swift voice daemon into `electron/voice/bin/braveli-voice`.
+ * Compiles the Swift voice daemon into `electron/voice/bin/pitwall-voice`.
  *
  * Kept out of `npm run build` so a contributor without Xcode's command line
  * tools can still work on the rest of the app — voice degrades to "engine not
@@ -24,8 +24,8 @@ const outputDirectory = path.join(root, "electron", "voice", "bin");
  * observer can be granted Accessibility without the daemon needing it.
  */
 const binaries = [
-  { source: path.join(root, "electron", "voice", "BraveliVoice.swift"), name: "braveli-voice", frameworks: ["AVFoundation", "Speech"] },
-  { source: path.join(root, "electron", "voice", "BraveliObserve.swift"), name: "braveli-observe", frameworks: ["ApplicationServices", "AppKit"] },
+  { source: path.join(root, "electron", "voice", "PitwallVoice.swift"), name: "pitwall-voice", frameworks: ["AVFoundation", "Speech"] },
+  { source: path.join(root, "electron", "voice", "PitwallObserve.swift"), name: "pitwall-observe", frameworks: ["ApplicationServices", "AppKit"] },
 ];
 
 const optional = process.argv.includes("--optional");

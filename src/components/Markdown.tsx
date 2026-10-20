@@ -29,7 +29,7 @@ function Inlines({ inlines }: { inlines: Inline[] }) {
                 // Agent output is untrusted text, so this goes through the same
                 // bridge as every other link, which refuses anything but HTTP(S).
                 event.preventDefault();
-                void window.braveli?.openExternalUrl?.(inline.href);
+                void window.pitwall?.openExternalUrl?.(inline.href);
               }}
             >
               {label}

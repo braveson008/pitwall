@@ -68,10 +68,11 @@ const { atomicWriteFile, ensureClaudeTrust, ensureCodexTrust, ensureClaudeBypass
 const { createGitHubCredentialStore, requestRepositoryAccess, requestTokenIdentity } = require("./lib/githubCredentials.cjs");
 const { findSignInUrl } = require("./lib/mcpAuthUrl.cjs");
 const { buildPairReviewPrompt, formatReviewerFeedback, pairOutcome, reviewerLaunch } = require("./lib/pairReview.cjs");
-const { listWorktreeFiles, readWorktreeFile, resolveInside, worktreeChanges, writeWorktreeFile } = require("./lib/worktreeFiles.cjs");
+const { OWN_DIR_EXCLUDES, isOwnArtefactPath, listWorktreeFiles, readWorktreeFile, resolveInside, worktreeChanges, writeWorktreeFile } = require("./lib/worktreeFiles.cjs");
 const { classifyProbe, describeProbe, stripAnsi } = require("./lib/cliProbe.cjs");
 const { readHermesScreen, describeHermesScreen, lastHermesReply } = require("./lib/hermesScreen.cjs");
 const { hermesProfileName, withHermesProfile } = require("./lib/hermesProfiles.cjs");
+const { LEGACY_APP_NAME, LEGACY_PROFILE_DIR } = require("./lib/legacyNames.cjs");
 const { buildObservationPrompt, oneshotReply } = require("./lib/hermesOverseer.cjs");
 const { conventionalBranchName, isBranchRuleRejection, parseRemoteHeads } = require("./lib/branchNaming.cjs");
 const {
@@ -100,7 +101,6 @@ const {
   verifyWithMerchant,
   applyVerification,
 } = require("./lib/licenceStore.cjs");
-const creditsAccount = require("./lib/creditsAccount.cjs");
 const { startHermesSignIn } = require("./lib/hermesSignIn.cjs");
 const {
   parseGhAccounts,
@@ -201,19 +201,12 @@ const {
   parseReview,
   requestHeadRef,
 } = require("./lib/watch.cjs");
-const { FIRE_FLAG, syncLaunchAgent } = require("./lib/launchAgent.cjs");
+const { isSchedulerFire, syncLaunchAgent } = require("./lib/launchAgent.cjs");
 const { syncScheduledTask } = require("./lib/scheduledTask.cjs");
 const { buildChangeset, bySize, nearestForkPoint, forkCandidates, livingTrunk } = require("./lib/gitChangeset.cjs");
 // `installPlan` is already taken by the MCP registry, which plans a very
 // different kind of install.
 const { installPlan: agentInstallPlan, installOutcome } = require("./lib/agentInstall.cjs");
-const { registerCloud } = require("./lib/cloud/index.cjs");
-const { runsHere } = require("./lib/cloud/fileStores.cjs");
-const { parseCodexPlugins: installedCodexPlugins } = require("./lib/cloud/plugins.cjs");
-/** A synced job or watch belongs to the computer it was made on; another computer only shows it. */
-const runsOnThisComputer = (item) => runsHere(item, cloud?.deviceId?.() ?? null);
-/** Pitwall Cloud, once the app is ready. */
-let cloud = null;
 const {
   kvBytesPerToken,
   kvEstimateIsExact,
@@ -233,7 +226,6 @@ const {
   servedContextLength,
   usableContextLength,
 } = require("./lib/ollama.cjs");
-const { adoptForeignWorktreePath } = require("./lib/cloud/pathMap.cjs");
 const { npmPackage, activity, formatDownloads, repositoryMatches, fetchPackage } = require("./lib/catalogueLive.cjs");
 const { planChecks, summarise: summariseChecks, trimOutput } = require("./lib/validationGate.cjs");
 const { createValidationQueue, worktreeFingerprint } = require("./lib/validationQueue.cjs");
@@ -249,13 +241,20 @@ const {
 } = require("./lib/ollamaBridge.cjs");
 let pty = null;
 
-if (process.env.BRAVELI_USER_DATA_DIR) {
-  app.setPath("userData", path.resolve(process.env.BRAVELI_USER_DATA_DIR));
+if (process.env.PITWALL_USER_DATA_DIR) {
+  app.setPath("userData", path.resolve(process.env.PITWALL_USER_DATA_DIR));
 } else if (app.isPackaged) {
-  // Named here, not by the bundle: the packaged package.json still says
-  // "braveli", which would put Pitwall in Braveli's profile and Keychain entry.
+  // Named here, not by the bundle, so the profile and Keychain entry never
+  // follow the package name.
   app.setName("Pitwall");
   app.setPath("userData", path.join(app.getPath("appData"), "Pitwall"));
+}
+if (!app.isPackaged) {
+  // Development keeps the name, profile and Keychain entry it always had. After
+  // the package it would be appData/pitwall, which on a case-insensitive disk
+  // is the installed app's own profile.
+  app.setName(LEGACY_PROFILE_DIR);
+  if (!process.env.PITWALL_USER_DATA_DIR) app.setPath("userData", path.join(app.getPath("appData"), LEGACY_PROFILE_DIR));
 }
 
 // Windows files toasts, the taskbar entry and pinned shortcuts under this id,
@@ -278,30 +277,29 @@ if (process.platform === "win32") app.setAppUserModelId("app.pitwall.desktop");
  * profile at all. The E2E suite points each run at its own directory, so
  * separate profiles are still free to run side by side.
  */
-if (!process.env.BRAVELI_USER_DATA_DIR && !app.requestSingleInstanceLock()) {
+if (!process.env.PITWALL_USER_DATA_DIR && !app.requestSingleInstanceLock()) {
   // Not app.quit(): this module keeps executing after it, and the point is to
   // be gone before anything here opens the profile we do not own.
   app.exit(0);
 }
 
-// Pitwall is a new app with its own profile; its first launch brings Braveli's along.
-if (app.isPackaged && !process.env.BRAVELI_USER_DATA_DIR) {
-  const { declineImport, importFromBraveli } = require("./lib/importBraveli.cjs");
-  // Electron named Braveli's profile after its package, lowercase.
-  const braveliProfile = path.join(app.getPath("appData"), "braveli");
+// Pitwall has its own profile; its first launch brings the one made under its old name along.
+if (app.isPackaged && !process.env.PITWALL_USER_DATA_DIR) {
+  const { declineImport, importLegacyProfile } = require("./lib/importLegacyProfile.cjs");
+  const legacyProfile = path.join(app.getPath("appData"), LEGACY_PROFILE_DIR);
   let outcome = "none";
   try {
-    outcome = importFromBraveli({ from: braveliProfile, to: app.getPath("userData") });
+    outcome = importLegacyProfile({ from: legacyProfile, to: app.getPath("userData") });
   } catch (error) {
-    console.error("Importing Braveli's data failed:", error?.message);
+    console.error(`Importing ${LEGACY_APP_NAME}'s data failed:`, error?.message);
   }
   if (outcome === "busy") {
     // Registered before any other ready handler, so the window waits on the answer.
     app.whenReady().then(() => {
       const choice = dialog.showMessageBoxSync({
         type: "info",
-        message: "Quit Braveli to bring your projects over",
-        detail: "Pitwall copies your projects, tasks and memory from Braveli the first time it opens, and Braveli is open right now. Quit Braveli, then open Pitwall again.",
+        message: `Quit ${LEGACY_APP_NAME} to bring your projects over`,
+        detail: `Pitwall copies your projects, tasks and memory from ${LEGACY_APP_NAME} the first time it opens, and ${LEGACY_APP_NAME} is open right now. Quit ${LEGACY_APP_NAME}, then open Pitwall again.`,
         buttons: ["Quit Pitwall", "Start without importing"],
         defaultId: 0,
         cancelId: 0,
@@ -327,7 +325,7 @@ app.on("second-instance", (_event, argv) => {
   // A scheduled fire is not a person asking for the window. Showing it here
   // would pull Pitwall in front of whatever they are doing, at the same
   // minute, every day.
-  if (Array.isArray(argv) && argv.includes(FIRE_FLAG)) {
+  if (isSchedulerFire(argv)) {
     void fireDueJobs();
     return;
   }
@@ -348,7 +346,7 @@ const intentionalTerminalStops = new Set();
 const recentAgentCompletions = new Map();
 const providerModelDiscoveryCache = new Map();
 // A test run must never delete the real machine's simulators.
-const taskSimulators = process.env.BRAVELI_E2E === "1" ? null : createTaskSimulatorCleaner({
+const taskSimulators = process.env.PITWALL_E2E === "1" ? null : createTaskSimulatorCleaner({
   log: (message, error) => console.error(`[simulators] ${message}:`, error?.message),
 });
 const taskRuntimeAllocator = createTaskRuntimeAllocator({
@@ -800,7 +798,7 @@ async function runConductor(prompt, options = {}) {
   // whatever the user's plan actually permits, so it keeps working across model
   // releases without an update here. Overridable for anyone who wants to trade
   // quality for latency on the routing hop.
-  const model = options.model || process.env.BRAVELI_VOICE_MODEL || "opus";
+  const model = options.model || process.env.PITWALL_VOICE_MODEL || "opus";
   const mcpLaunch = options.mcpServer
     ? projectMcpLaunchOptions(
         { projectId: options.projectId, projectPath: expandHome(options.projectPath || options.cwd) },
@@ -911,7 +909,7 @@ async function runHermesAutomation(prompt, options = {}) {
   // Never the shared default profile: what Hermes learns belongs to one project.
   if (!options.projectId) return { ok: false, error: "Hermes reviews need the project they belong to" };
   try {
-    const profile = hermesProfileName(options.projectId);
+    const profile = projectHermesProfile(options.projectId);
     await ensureHermesReady();
     await ensureHermesProfile(profile, expandHome(options.projectPath || options.cwd));
     const guard = await ensureHermesReviewerGuard(profile);
@@ -920,7 +918,7 @@ async function runHermesAutomation(prompt, options = {}) {
     return await inOverseerChain(profile, async () => {
       const result = await runShell(
         hermesCommand(profile, `chat -Q --oneshot -t file,todo,clarify,memory,skills --source tool --query-file -${model}`),
-        { cwd: expandHome(options.cwd) || os.homedir(), input: prompt, timeoutMs: Number(options.timeoutMs) || 600_000, env: { BRAVELI_HERMES_REVIEWER: "1" } },
+        { cwd: expandHome(options.cwd) || os.homedir(), input: prompt, timeoutMs: Number(options.timeoutMs) || 600_000, env: { PITWALL_HERMES_REVIEWER: "1" } },
       );
       const problem = readHermesScreen(`${result.stdout || ""}\n${result.stderr || ""}`);
       if (problem && problem.kind !== "optional-feature") {
@@ -1177,7 +1175,7 @@ async function activateGitHubAccountForProject(payload) {
   // The token goes in on stdin, never in the command line, so it cannot be read
   // out of the process list.
   const environment = githubCredentialStore.getEnvironment(payload);
-  const token = environment.BRAVELI_GIT_TOKEN;
+  const token = environment.PITWALL_GIT_TOKEN;
   if (!token) return { ok: false, action: "login", host, error: "No stored token for this project" };
   const login = await runShellWithInput(
     `gh auth login --hostname ${shellEscape(host)} --with-token`,
@@ -1294,7 +1292,7 @@ function publishUpdateState(patch) {
 }
 
 function readUpdateFeed() {
-  if (process.env.BRAVELI_UPDATE_URL) return feedFromConfig(null);
+  if (process.env.PITWALL_UPDATE_URL) return feedFromConfig(null);
   if (!app.isPackaged) return null;
   try {
     return feedFromConfig(JSON.parse(fs.readFileSync(path.join(process.resourcesPath, "update-config.json"), "utf8")));
@@ -1312,7 +1310,7 @@ function readUpdateFeed() {
  * machine and always come back empty.
  */
 function readAnalyticsConfig() {
-  const fromEnv = { key: process.env.BRAVELI_POSTHOG_KEY || "", host: process.env.BRAVELI_POSTHOG_HOST || "" };
+  const fromEnv = { key: process.env.PITWALL_POSTHOG_KEY || "", host: process.env.PITWALL_POSTHOG_HOST || "" };
   if (fromEnv.key) return { key: fromEnv.key, host: fromEnv.host || "https://eu.i.posthog.com" };
   if (!app.isPackaged) return { key: "", host: "" };
   try {
@@ -1343,8 +1341,8 @@ const PRICING_PAGE = "https://braveli.app/#pricing";
  */
 function readLicenceConfig() {
   const fromEnv = {
-    endpoint: process.env.BRAVELI_LICENCE_ENDPOINT || "",
-    checkoutUrl: process.env.BRAVELI_CHECKOUT_URL || "",
+    endpoint: process.env.PITWALL_LICENCE_ENDPOINT || "",
+    checkoutUrl: process.env.PITWALL_CHECKOUT_URL || "",
   };
   if (fromEnv.endpoint) return { ...fromEnv, checkoutUrl: fromEnv.checkoutUrl || PRICING_PAGE };
   if (!app.isPackaged) return { endpoint: "", checkoutUrl: fromEnv.checkoutUrl || PRICING_PAGE };
@@ -1403,7 +1401,7 @@ function readInstallation() {
 
 function configureAutoUpdater() {
   const updateFeed = readUpdateFeed();
-  if (!app.isPackaged || !updateFeed || process.env.BRAVELI_E2E === "1") return;
+  if (!app.isPackaged || !updateFeed || process.env.PITWALL_E2E === "1") return;
 
   const installation = readInstallation();
   if (!installation.ok) {
@@ -2137,7 +2135,7 @@ async function listMcpServers(provider, projectPath, projectId = "") {
     // no per-project list to read.
     // Each project's Hermes profile has its own servers, starting from a copy
     // of the main profile's.
-    const profile = hermesProfileName(projectId);
+    const profile = projectHermesProfile(projectId);
     await ensureHermesProfile(profile, cwd);
     const result = await runHermes(hermesCommand(profile, "config get mcp_servers --json"), { cwd, timeoutMs: 20000 });
     return { ok: true, provider, installed: true, supported: true, servers: parseHermesMcpServers(result.stdout) };
@@ -2202,7 +2200,7 @@ function buildMcpAddCommand(provider, payload) {
   }
 
   if (provider === "hermes") {
-    const parts = [hermesCommand(hermesProfileName(payload?.projectId), "mcp add"), shellEscape(name)];
+    const parts = [hermesCommand(projectHermesProfile(payload?.projectId), "mcp add"), shellEscape(name)];
     if (transport === "http" || transport === "sse") {
       parts.push("--url", shellEscape(target));
       if (payload?.auth === "oauth") parts.push("--auth", "oauth");
@@ -2252,7 +2250,7 @@ function buildMcpAddCommand(provider, payload) {
 
 function buildMcpRemoveCommand(provider, payload) {
   const command = mcpProviderCommand[provider];
-  const parts = provider === "hermes" ? [hermesCommand(hermesProfileName(payload?.projectId), "mcp remove")] : [command, "mcp", "remove"];
+  const parts = provider === "hermes" ? [hermesCommand(projectHermesProfile(payload?.projectId), "mcp remove")] : [command, "mcp", "remove"];
   if (!["codex", "hermes"].includes(provider) && payload?.scope) parts.push("--scope", shellEscape(payload.scope));
   parts.push(shellEscape(payload?.name));
   return parts.join(" ");
@@ -2379,6 +2377,11 @@ function hermesProfileHome(profile) {
   return profile ? path.join(hermesHome(), "profiles", profile) : hermesHome();
 }
 
+/** A project's Hermes profile; one an older version made keeps its name. */
+function projectHermesProfile(projectId) {
+  return hermesProfileName(projectId, path.join(hermesHome(), "profiles"));
+}
+
 /** A `hermes` command line in a profile, or in the main one when there is none. */
 function hermesCommand(profile, rest) {
   return ["hermes", ...(profile ? ["-p", profile] : []), rest].join(" ");
@@ -2494,12 +2497,12 @@ async function hermesClosingReply(sessionId, profile = "") {
   return "";
 }
 
-const HERMES_REVIEWER_PLUGIN = "braveli-reviewer";
+const HERMES_REVIEWER_PLUGIN = "pitwall-reviewer";
 
 /**
  * Puts Pitwall's reviewer plugin into Hermes and makes sure Hermes will load
  * it. The plugin is inert unless a reviewer is started with
- * BRAVELI_HERMES_REVIEWER=1, but Hermes loads only plugins named in
+ * PITWALL_HERMES_REVIEWER=1, but Hermes loads only plugins named in
  * `plugins.enabled`, so it is enabled through Hermes's own command. If it
  * cannot be confirmed loaded, no Hermes reviewer is started: one without the
  * guard could change the code it was asked to read.
@@ -2525,7 +2528,7 @@ async function ensureHermesReviewerGuard(profile = "") {
       }
     };
     if ((await listed("plugins.disabled")).includes(HERMES_REVIEWER_PLUGIN)) {
-      return fail(`Hermes has Pitwall's read-only review guard disabled, so Hermes cannot review. Run \`${hermesCommand(profile, "plugins enable braveli-reviewer")}\` to allow it.`);
+      return fail(`Hermes has Pitwall's read-only review guard disabled, so Hermes cannot review. Run \`${hermesCommand(profile, "plugins enable pitwall-reviewer")}\` to allow it.`);
     }
     if (!(await listed("plugins.enabled")).includes(HERMES_REVIEWER_PLUGIN)) {
       await queueHermes(hermesCommand(profile, `plugins enable ${HERMES_REVIEWER_PLUGIN}`), { timeoutMs: 30000 });
@@ -2563,7 +2566,7 @@ function resolveLaunch(payload, cwd = expandHome(payload?.projectPath)) {
     // Hermes's models are its provider's, so it reviews with the one it was given.
     // The model picked for this reviewer; otherwise Hermes's project model, and Opus for Claude.
     const picked = payload.model && payload.model !== "auto" ? String(payload.model) : "";
-    const reviewer = reviewerLaunch(which, { model: picked || (which === "claude" ? process.env.BRAVELI_REVIEW_MODEL || "opus" : "") });
+    const reviewer = reviewerLaunch(which, { model: picked || (which === "claude" ? process.env.PITWALL_REVIEW_MODEL || "opus" : "") });
     const launch = applyInitialPromptLaunch({ command: reviewer.command, args: reviewer.args, env: reviewer.env, display: reviewer.display, nativeSessionId: null, nativeSessionMode: "none" }, { ...payload, agent: reviewer.agent }, { canPassArgument: promptFitsCommandLine });
     return which === "hermes" ? withHermesProfile(launch, sessionHermesProfile(payload)) : launch;
   }
@@ -2601,20 +2604,13 @@ function resolveLaunch(payload, cwd = expandHome(payload?.projectPath)) {
       display: [launch.display, ...missing].join(" "),
     };
   }
-  if (payload?.billing === "credits" && profile?.id === "codex") {
-    const account = creditsAccount.readAccount(licenceContext());
-    const gateway = creditsAccount.gatewayUrl();
-    // Refused rather than quietly falling back to the person's own login.
-    if (!account?.key || !gateway) return null;
-    launch = creditsAccount.withCreditsProvider(launch, { gateway, key: account.key });
-  }
   const resolved = applyInitialPromptLaunch(applyNativeSessionLaunch(launch, payload, cwd), payload, { canPassArgument: promptFitsCommandLine });
   return profile?.id === "hermes" ? withHermesProfile(resolved, sessionHermesProfile(payload)) : resolved;
 }
 
 /** The project's Hermes profile, unless the caller runs Hermes outside any project. */
 function sessionHermesProfile(payload) {
-  return payload?.hermesProfile === false ? "" : hermesProfileName(payload?.projectId);
+  return payload?.hermesProfile === false ? "" : projectHermesProfile(payload?.projectId);
 }
 
 /**
@@ -2736,7 +2732,7 @@ function mirrorDirectoryWithHook(sourceDir, targetDir, hookContents) {
       }
     }
   }
-  writePrivateFile(path.join(targetHooks, "braveli-turn-complete.json"), hookContents);
+  writePrivateFile(path.join(targetHooks, "pitwall-turn-complete.json"), hookContents);
 }
 
 function prepareAgentNotificationLaunch(payload, launch, compatibility, launchEnvironment = {}) {
@@ -2909,7 +2905,7 @@ async function startAgentNotificationServer() {
       response.writeHead(400).end();
       return;
     }
-    const suppliedToken = request.headers["x-braveli-token"] || requestUrl.searchParams.get("token");
+    const suppliedToken = request.headers["x-pitwall-token"] || requestUrl.searchParams.get("token");
     if (request.method !== "POST" || requestUrl.pathname !== "/agent-complete" || suppliedToken !== agentNotificationToken) {
       response.writeHead(404).end();
       return;
@@ -2988,37 +2984,18 @@ function startAgentTerminal(payload) {
 }
 
 function missingWorkspaceMessage(payload, cwd) {
-  const projectRoot = String(payload?.projectRoot || "");
-  const arriving = String(payload?.projectPath || "").startsWith("@{") || projectRoot.startsWith("@{") || (projectRoot && !fs.existsSync(expandHome(projectRoot)));
-  if (arriving) return "This project isn't on this computer yet. Pitwall downloads it once it can sign in to the project's GitHub or GitLab; check the project's account in Settings, then start the session again.";
   const reason = String(payload?.workspaceProblem || "").trim();
   return reason
     ? `Pitwall couldn't make this session's folder on this computer: ${reason}`
     : `This session's folder doesn't exist on this computer (${cwd}). Start the session again from its task so Pitwall can make it here.`;
 }
 
-/** A worktree path saved before sync translated paths, pointing into the other platform's app folder. */
-function hereWorktreePath(value) {
-  return adoptForeignWorktreePath(value, { worktreesRoot: path.join(app.getPath("userData"), "worktrees") });
-}
-
 async function startAgentTerminalOnce(payload, attempt) {
-  const cwd = hereWorktreePath(expandHome(payload?.projectPath));
-  if (cwd && payload && cwd !== expandHome(payload.projectPath)) payload.projectPath = cwd;
+  const cwd = expandHome(payload?.projectPath);
   if (!terminalProcesses.has(payload.sessionId)) {
-    // Not while another computer drives this task, and with any work it left unfinished.
-    const gate = await cloud?.beforeAgentStart({ sessionId: payload.sessionId, taskId: payload.taskId, cwd, resumeSession: payload.resumeSession }).catch(() => ({ ok: true }));
-    if (gate && !gate.ok) return { ok: false, error: gate.error, at: new Date().toISOString() };
     // Windows refuses with a bare "error code: 267" when the folder is missing; say what is wrong instead.
     if (!cwd || !fs.existsSync(cwd)) {
       return { ok: false, at: new Date().toISOString(), error: missingWorkspaceMessage(payload, cwd) };
-    }
-    if (gate?.overrides) {
-      Object.assign(payload, gate.overrides);
-      // A fresh conversation in place of one that couldn't be moved: the window records its id.
-      if (gate.overrides.nativeSessionId !== undefined) {
-        mainWindow?.webContents.send("session:native-id", { sessionId: payload.sessionId, nativeSessionId: gate.overrides.nativeSessionId, nativeSessionStarted: false });
-      }
     }
     // Where "what the agent changed" is measured from; bounded so a large repository never holds up the start.
     if (!payload.pairReviewer) {
@@ -3027,8 +3004,7 @@ async function startAgentTerminalOnce(payload, attempt) {
   }
   const launch = resolveLaunch(payload, cwd);
   if (!launch) {
-    const error = payload?.billing === "credits" ? "Sign in to your Pitwall account to run on credits." : "Unsupported agent";
-    return { ok: false, error, at: new Date().toISOString() };
+    return { ok: false, error: "Unsupported agent", at: new Date().toISOString() };
   }
 
   if (!pty) {
@@ -3138,9 +3114,9 @@ async function startAgentTerminalOnce(payload, attempt) {
         // Last, so nothing above can loosen what the reviewer launch set.
         ...(launch.env || {}),
         PATH: resolveShellPath(),
-        BRAVELI_PROJECT_ID: payload?.projectId || "",
-        BRAVELI_SESSION_ID: payload?.sessionId || "",
-        BRAVELI_SESSION_NAME: payload?.sessionName || "",
+        PITWALL_PROJECT_ID: payload?.projectId || "",
+        PITWALL_SESSION_ID: payload?.sessionId || "",
+        PITWALL_SESSION_NAME: payload?.sessionName || "",
       },
     });
   } catch (error) {
@@ -3176,23 +3152,10 @@ async function startAgentTerminalOnce(payload, attempt) {
   const hermesWatch = payload.agent === "Hermes"
     ? { id: runtimePayload.nativeSessionId || null, tail: "", read: 0, answered: new Set(), modelNoticed: false }
     : null;
-  const creditsWatch = payload.billing === "credits" ? { tail: "", told: new Set() } : null;
-  // A conversation moved from another computer that the CLI then refuses is restarted with a summary.
-  const resumeWatch = payload.cloudTransplanted ? { tail: "", started: Date.now() } : null;
   processRef.onData((data) => {
     if (terminalProcesses.get(payload.sessionId) !== processRef) return;
     const metadata = terminalMetadata.get(payload.sessionId);
     if (hermesWatch && metadata) watchHermesScreen(hermesWatch, data, payload, metadata, processRef);
-    if (resumeWatch && Date.now() - resumeWatch.started < 30_000) resumeWatch.tail = (resumeWatch.tail + stripAnsi(data)).slice(-3000);
-    if (creditsWatch) {
-      const recent = (creditsWatch.tail + stripAnsi(data)).slice(-4000);
-      creditsWatch.tail = recent.slice(-400);
-      const refusal = creditsAccount.readCreditsScreen(recent);
-      if (refusal && !creditsWatch.told.has(refusal)) {
-        creditsWatch.told.add(refusal);
-        mainWindow?.webContents.send("credits:refused", { sessionId: payload.sessionId, reason: refusal });
-      }
-    }
     // Read the signal before anything is sent: emitAgentCompletion clears
     // promptActive, so asking afterwards asks a different question.
     const completed = Boolean(metadata?.promptActive && terminalCompletionSignal(data, metadata.provider));
@@ -3233,18 +3196,6 @@ async function startAgentTerminalOnce(payload, attempt) {
       sessionId: payload.sessionId,
       data: `\r\n[process exited ${exitCode}]\r\n`,
     });
-    if (resumeWatch && !isQuitting && Date.now() - resumeWatch.started < 30_000 && cloud?.resumeFailed(payload.sessionId, resumeWatch.tail)) {
-      setTimeout(() => {
-        void startAgentTerminal({ ...payload, cloudTransplanted: false, resumeSession: true }).then((result) => {
-          if (!result?.ok) console.error(`[cloud] restarting with a summary failed: ${result?.error}`);
-        });
-      }, 500);
-    } else if (!isQuitting) {
-      void cloud?.afterAgentExit({
-        sessionId: payload.sessionId, taskId: payload.taskId, projectId: payload.projectId, agent: payload.agent, cwd,
-        nativeSessionId: metadata?.payload?.nativeSessionId || payload.nativeSessionId,
-      });
-    }
     const intentionallyStopped = intentionalTerminalStops.delete(payload.sessionId);
     // A process exit is the end of the session, whatever else was reported
     // before it, so the only thing that suppresses it is Pitwall having done
@@ -3309,7 +3260,7 @@ const knownProjectPaths = new Set();
 
 function carryProjectMoves(projectPaths) {
   // A test run must never rewrite the real machine's Claude config.
-  if (process.env.BRAVELI_E2E === "1") return Promise.resolve([]);
+  if (process.env.PITWALL_E2E === "1") return Promise.resolve([]);
   return carryMovedProjects({
     projectPaths,
     home: os.homedir(),
@@ -3331,7 +3282,7 @@ function maintainManagedWorktrees() {
     runGit,
     isLive: worktreeIsLive,
     // A test run must never delete the real machine's Xcode build output.
-    derivedDataPath: process.platform === "darwin" && process.env.BRAVELI_E2E !== "1"
+    derivedDataPath: process.platform === "darwin" && process.env.PITWALL_E2E !== "1"
       ? path.join(os.homedir(), "Library", "Developer", "Xcode", "DerivedData")
       : undefined,
     log: (message) => console.log(message),
@@ -3364,7 +3315,7 @@ function liveChangeFile(payload) {
 
 ipcMain.handle("live-changes:subscribe", (event, payload) => {
   const sessionId = String(payload?.sessionId || "");
-  const cwd = hereWorktreePath(expandHome(payload?.projectPath));
+  const cwd = expandHome(payload?.projectPath);
   if (!sessionId || !cwd) return { ok: false, error: "Missing session" };
   const key = `${event.sender.id}:${sessionId}`;
   liveChangeSubscriptions.get(key)?.();
@@ -3423,7 +3374,7 @@ ipcMain.handle("live-changes:keep", async (_event, payload) => {
 /** The app's own document, per the tested rules in lib/navigationGuard.cjs. */
 function isAppDocumentUrl(rawUrl) {
   return isAppDocumentUrlPure(rawUrl, {
-    devServer: process.env.BRAVELI_DEV_SERVER,
+    devServer: process.env.PITWALL_DEV_SERVER,
     distRoot: path.resolve(__dirname, "../dist"),
   });
 }
@@ -3437,7 +3388,7 @@ function createWindow() {
   // Launched by launchd to run a job: the window is built so the renderer
   // exists to run it, and never shown. Coming back to a row in Review is the
   // feature; coming back to an application that let itself in is not.
-  const startedByScheduler = process.argv.includes(FIRE_FLAG);
+  const startedByScheduler = isSchedulerFire(process.argv);
 
   mainWindow = new BrowserWindow({
     show: !startedByScheduler,
@@ -3479,8 +3430,8 @@ function createWindow() {
     return { action: "deny" };
   });
 
-  if (process.env.BRAVELI_DEV_SERVER) {
-    mainWindow.loadURL(process.env.BRAVELI_DEV_SERVER);
+  if (process.env.PITWALL_DEV_SERVER) {
+    mainWindow.loadURL(process.env.PITWALL_DEV_SERVER);
     return;
   }
 
@@ -3505,7 +3456,7 @@ app.whenReady().then(async () => {
   syncScheduleAgent();
   // A cold start from launchd: the renderer announces itself, and the fire is
   // held until then by fireDueJobs.
-  if (process.argv.includes(FIRE_FLAG)) void fireDueJobs();
+  if (isSchedulerFire(process.argv)) void fireDueJobs();
   githubCredentialStore = createGitHubCredentialStore(
     path.join(app.getPath("userData"), "github-credentials.json"),
     safeStorage,
@@ -3534,7 +3485,7 @@ app.whenReady().then(async () => {
   await startAgentNotificationServer();
   // After the window and its own checks have settled, then hourly: CLIs
   // update themselves while Pitwall stays open.
-  setTimeout(() => void checkCliUpdates(), Number(process.env.BRAVELI_CLI_CHECK_DELAY_MS) || 30_000).unref?.();
+  setTimeout(() => void checkCliUpdates(), Number(process.env.PITWALL_CLI_CHECK_DELAY_MS) || 30_000).unref?.();
   setInterval(() => void checkCliUpdates(), CLI_CHECK_EVERY_MS).unref?.();
   createWindow();
   configureAutoUpdater();
@@ -3561,62 +3512,6 @@ app.whenReady().then(async () => {
     console.error("[voice] Failed to initialise:", error);
   }
 
-  cloud = registerCloud({
-    ipcMain,
-    appVersion: app.getVersion(),
-    safeStorage,
-    userDataPath: app.getPath("userData"),
-    attachmentsRoot: terminalAttachmentRoot(),
-    worktreesRoot: path.join(app.getPath("userData"), "worktrees"),
-    readAccount: () => creditsAccount.readAccount(licenceContext()),
-    stores: () => ({
-      schedule: scheduleStore,
-      watches: watchStore,
-      automation: automationSettings,
-      memory: voiceRuntime?.memory,
-      mcp: mcpAuthProfileStore,
-      knowledge: (projectKnowledgeStore ??= createProjectKnowledgeStore({ directory: path.join(app.getPath("userData"), "project-knowledge") })),
-      voiceSettingsFile: path.join(app.getPath("userData"), "voice-settings.json"),
-      credentials: githubCredentialStore,
-    }),
-    onStoresChanged: (kinds) => {
-      if (kinds.has("schedule")) syncScheduleAgent();
-    },
-    getMainWindow: () => mainWindow,
-    log: (message) => console.log(message),
-    runningSessionIds: () => [...terminalProcesses.keys()],
-    stopSession: (sessionId) => stopAgentTerminal(sessionId),
-    readCodexPlugins: async () => {
-      const listed = await runShell("codex plugin list --json", { timeoutMs: 60000 });
-      try {
-        return installedCodexPlugins(JSON.parse(listed.stdout));
-      } catch {
-        return [];
-      }
-    },
-    // A plugin another computer installed, installed here the same way: through the agent's own CLI.
-    installPlugin: async (provider, plugin) => {
-      const command = extensionProviderCommand[provider];
-      if (!command || !(await runShell(detectCommand(command))).ok) return { ok: false, error: `${command || provider} isn't installed here` };
-      if (!/^[\w.@/-]+$/.test(String(plugin?.id || ""))) return { ok: false, error: "not a plugin id" };
-      const marketplace = plugin.marketplace;
-      if (provider === "claude" && marketplace?.source) {
-        const source = marketplace.source.repo || marketplace.source.url || "";
-        if (source && /^[\w.:/@-]+$/.test(source)) await runShell(`claude plugin marketplace add ${shellEscape(source)}`, { timeoutMs: 120000 });
-      }
-      return changeAgentExtension(provider, plugin.id, "install");
-    },
-    // The agent CLI's own version on this computer, as `--version` reports it.
-    cliVersion: async (cli) => {
-      const command = cli === "codex" ? (agentProfiles.Codex?.command || "codex") : (agentProfiles.Claude?.command || "claude");
-      const probed = await runShell(`${shellEscape(command)} --version`, { timeoutMs: 8000 });
-      return probed.ok ? String(probed.stdout || "").trim() : "";
-    },
-    exportHermes: async ({ nativeId, projectId }) => {
-      const exported = await queueHermes(hermesCommand(hermesProfileName(projectId), `sessions export --format jsonl --session-id ${shellEscape(nativeId)} -`), { timeoutMs: 20000 });
-      return exported.ok ? exported.stdout : null;
-    },
-  });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -3732,7 +3627,7 @@ function installMenu() {
 }
 
 app.on("window-all-closed", () => {
-  if (process.env.BRAVELI_E2E === "1" || process.platform !== "darwin") {
+  if (process.env.PITWALL_E2E === "1" || process.platform !== "darwin") {
     app.quit();
   }
 });
@@ -3753,8 +3648,6 @@ app.on("before-quit", (event) => {
       dialog.showErrorBox("Pitwall could not stop every process", "Some agent processes are still running. Stop them and try quitting again.");
       return;
     }
-    // Unfinished work goes up before the app does, so another computer can continue it.
-    await cloud?.beforeQuit()?.catch?.(() => {});
     runtimeJournal?.markCleanShutdown();
     stopAgentNotificationServer();
     quitCleanupFinished = true;
@@ -3848,7 +3741,7 @@ ipcMain.handle("project:create-directory", async (_event, payload) => {
   // fall back to a clearly-labelled one for this repo rather than failing.
   const identity = await runGit(["config", "user.email"], target);
   const hasIdentity = identity.ok && identity.stdout.trim().length > 0;
-  const authorArgs = hasIdentity ? [] : ["-c", "user.name=Pitwall", "-c", "user.email=braveli@localhost"];
+  const authorArgs = hasIdentity ? [] : ["-c", "user.name=Pitwall", "-c", "user.email=pitwall@localhost"];
   await runGit(["add", "-A"], target);
   const commit = await runGit([...authorArgs, "commit", "-m", "Initial commit: project brief"], target);
 
@@ -3860,7 +3753,7 @@ ipcMain.handle("project:create-directory", async (_event, payload) => {
       ? "The folder was created, but the first git commit failed — agents will work directly in the project root."
       : hasIdentity
         ? ""
-        : "No git identity is configured, so the first commit was authored as Pitwall <braveli@localhost>.",
+        : "No git identity is configured, so the first commit was authored as Pitwall <pitwall@localhost>.",
   };
 });
 
@@ -4101,7 +3994,7 @@ ipcMain.handle("git:pull-request", async (_event, payload) => {
 ipcMain.handle("shell:open-external", async (_event, rawUrl) => {
   try {
     const url = normalizePreviewUrl(rawUrl);
-    if (process.env.BRAVELI_E2E !== "1") await shell.openExternal(url);
+    if (process.env.PITWALL_E2E !== "1") await shell.openExternal(url);
     return { ok: true, url };
   } catch (error) {
     return { ok: false, error: error.message || "That URL could not be opened" };
@@ -4205,25 +4098,6 @@ ipcMain.handle("licence:clear", async () => {
 });
 
 /**
- * The Pitwall account for credits. The key never crosses to the renderer:
- * it asks for state and actions, and gets plain answers back.
- */
-function creditsState(account = creditsAccount.readAccount(licenceContext())) {
-  const gateway = creditsAccount.gatewayUrl();
-  return {
-    available: Boolean(gateway),
-    dev: creditsAccount.isLocalGateway(gateway),
-    signedIn: Boolean(account?.key),
-    email: account?.email || "",
-  };
-}
-
-function creditsCall(route, options = {}) {
-  const account = creditsAccount.readAccount(licenceContext());
-  return creditsAccount.gatewayRequest(creditsAccount.gatewayUrl(), route, { ...options, key: options.signedOut ? undefined : account?.key });
-}
-
-/**
  * One Hermes sign-in at a time, for the main Hermes home: project profiles
  * have no login of their own and borrow it, so this reconnects all of them.
  */
@@ -4241,43 +4115,6 @@ ipcMain.handle("hermes:sign-in", async () => {
     },
   });
   return { ok: true };
-});
-
-ipcMain.handle("credits:state", async () => creditsState());
-
-ipcMain.handle("credits:sign-in-start", async (_event, payload) =>
-  creditsCall("/v1/auth/start", { method: "POST", body: { email: String(payload?.email || "") }, signedOut: true }));
-
-ipcMain.handle("credits:sign-in-verify", async (_event, payload) => {
-  const reply = await creditsCall("/v1/auth/verify", {
-    method: "POST",
-    body: { email: String(payload?.email || ""), code: String(payload?.code || ""), label: os.hostname().replace(/\.local$/, "") },
-    signedOut: true,
-  });
-  if (!reply.ok || !reply.data?.key) return reply;
-  const stored = { email: reply.data.email, gateway: creditsAccount.gatewayUrl(), key: reply.data.key };
-  const { persisted } = creditsAccount.writeAccount(licenceContext(), stored);
-  void cloud?.refresh().catch(() => {});
-  return { ok: true, persisted, state: creditsState(stored) };
-});
-
-ipcMain.handle("credits:sign-out", async () => {
-  await creditsCall("/v1/auth/sign-out", { method: "POST" });
-  creditsAccount.clearAccount(licenceContext());
-  void cloud?.refresh().catch(() => {});
-  return { ok: true, state: creditsState(null) };
-});
-
-ipcMain.handle("credits:account", async () => creditsCall("/v1/account"));
-ipcMain.handle("credits:plans", async () => creditsCall("/v1/plans", { signedOut: true }));
-ipcMain.handle("credits:models", async () => creditsCall("/v1/models"));
-ipcMain.handle("credits:set-cap", async (_event, payload) =>
-  creditsCall("/v1/account/overage-cap", { method: "POST", body: { usd: Number(payload?.usd) } }));
-
-/** Local gateways only: a plan without a payment, for building and testing the app. */
-ipcMain.handle("credits:dev-activate", async (_event, payload) => {
-  if (!creditsAccount.isLocalGateway(creditsAccount.gatewayUrl())) return { ok: false, code: "not_available", message: "Only on a local gateway." };
-  return creditsCall("/dev/activate", { method: "POST", body: { plan: payload?.plan === "pro" ? "pro" : "starter" } });
 });
 
 ipcMain.handle("analytics:capture", async (_event, payload) => {
@@ -4768,8 +4605,8 @@ const dispatched = new Set();
  */
 function syncScheduleAgent() {
   // A test run must never book the real machine's launchd or Task Scheduler.
-  if (process.env.BRAVELI_E2E === "1") return;
-  const times = wakeTimes((scheduleStore?.list() ?? []).filter(runsOnThisComputer));
+  if (process.env.PITWALL_E2E === "1") return;
+  const times = wakeTimes(scheduleStore?.list() ?? []);
   try {
     // The same booked times, handed to whichever scheduler the machine has.
     // `wakeTimes` is the part that decides when, and it is the same on both.
@@ -4826,7 +4663,7 @@ async function fireDueJobs() {
     return;
   }
   const now = Date.now();
-  const jobs = (scheduleStore?.list() ?? []).filter(runsOnThisComputer);
+  const jobs = scheduleStore?.list() ?? [];
   const today = localDateKey(now);
   for (const key of dispatched) {
     if (!key.includes(`:${today}:`)) dispatched.delete(key);
@@ -4876,9 +4713,9 @@ ipcMain.handle("schedule:ready", async () => {
 /**
  * `git status --porcelain` as paths, without Pitwall's own files.
  *
- * `.braveli/` holds council stages, contracts and transcripts that live in the
- * checkout but are not the work; committing them would put Pitwall's
- * bookkeeping into someone's merge request.
+ * `.pitwall/` (and the folder older versions wrote) holds council stages,
+ * contracts and transcripts that live in the checkout but are not the work;
+ * committing them would put Pitwall's bookkeeping into someone's merge request.
  */
 function parsePorcelain(stdout) {
   const files = [];
@@ -4888,7 +4725,7 @@ function parsePorcelain(stdout) {
     let file = raw.slice(3);
     if (file.includes(" -> ")) file = file.split(" -> ").pop();
     file = file.replace(/^"(.*)"$/, "$1");
-    if (!file || /^\.braveli(?:\/|$)/.test(file)) continue;
+    if (!file || isOwnArtefactPath(file)) continue;
     const state = code === "??" ? "added" : code.includes("D") ? "deleted" : code.includes("R") ? "renamed" : code.includes("A") ? "added" : "modified";
     files.push({ path: file, state });
   }
@@ -4899,7 +4736,7 @@ function parsePorcelain(stdout) {
 async function requestChangeText(worktree, base, files) {
   const LIMIT = 60_000;
   const parts = [];
-  const diff = await runGit(["diff", "--no-color", "--no-ext-diff", base || "HEAD", "--", ".", ":(exclude).braveli"], worktree, { timeoutMs: 20000 });
+  const diff = await runGit(["diff", "--no-color", "--no-ext-diff", base || "HEAD", "--", ".", ...OWN_DIR_EXCLUDES], worktree, { timeoutMs: 20000 });
   if (diff.ok && diff.stdout.trim()) parts.push(diff.stdout);
   for (const file of files.filter((item) => item.state === "added")) {
     const text = await fs.promises.readFile(path.join(worktree, file.path), "utf8").catch(() => "");
@@ -4982,7 +4819,7 @@ ipcMain.handle("git:write-request", async (_event, payload) => {
     const reply = await runAutomation(prompt, {
       cwd: worktree,
       timeoutMs: 180_000,
-      model: automationModel("writer", null, "BRAVELI_WRITER_MODEL"),
+      model: automationModel("writer", null, "PITWALL_WRITER_MODEL"),
       offline: true,
     });
     if (!reply.ok) return { ok: false, error: reply.error };
@@ -5025,7 +4862,7 @@ function findingPaths(projectRoot, finding) {
   return {
     worktree: managedWorktreePath(app.getPath("userData"), projectRoot, label),
     diffFile: path.join(app.getPath("userData"), "watch-diffs", `${finding.id}.diff`),
-    ref: `refs/braveli/${label}`,
+    ref: `refs/pitwall/${label}`,
   };
 }
 
@@ -5188,7 +5025,7 @@ async function detectWatch(watch) {
       provider: config.provider || "claude",
       source: config.source,
       target: config.target || "",
-      model: automationModel("tracker", watch, "BRAVELI_TRACKER_MODEL"),
+      model: automationModel("tracker", watch, "PITWALL_TRACKER_MODEL"),
     };
     // Keys and titles only: what is new is all a check needs to know.
     const listed = await listTrackerCandidates({ ...source, brief: true });
@@ -5217,7 +5054,7 @@ async function detectWatch(watch) {
 let automationSettings = null;
 /**
  * The model for a piece of automation work: the watch's own choice, then a
- * BRAVELI_*_MODEL override for development, then the person's default.
+ * PITWALL_*_MODEL override for development, then the person's default.
  */
 function automationModel(kind, watch, envName) {
   const settings = automationSettings?.get() ?? { models: {} };
@@ -5233,7 +5070,7 @@ ipcMain.handle("automation-settings:get", async () => ({ ok: true, settings: aut
 ipcMain.handle("automation-settings:set", async (_event, patch) => ({ ok: true, settings: automationSettings?.set(patch ?? {}) ?? null }));
 
 const watchRunner = createWatchRunner({
-  list: () => (watchStore?.list().watches ?? []).filter(runsOnThisComputer),
+  list: () => watchStore?.list().watches ?? [],
   intervalMs: watchIntervalMs,
   detect: async (watch) => {
     const result = await detectWatch(watch).catch((error) => ({ ok: false, error: error.message }));
@@ -5250,9 +5087,7 @@ async function checkWatches({ projectId, force = false } = {}) {
 function pumpReviews() {
   if (!watchStore) return;
   let running = watchStore.reviewing();
-  const watches = watchStore.list().watches;
-  // A finding is worked on by the computer that runs its watch.
-  for (const finding of watchStore.queued().filter((item) => runsOnThisComputer(watches.find((watch) => watch.id === item.watchId)))) {
+  for (const finding of watchStore.queued()) {
     if (running >= MAX_CONCURRENT_REVIEWS) break;
     running += 1;
     watchStore.update(finding.id, { state: "reviewing", error: "" });
@@ -5371,7 +5206,7 @@ async function reviewFinding(finding) {
       cwd: worktree,
       offline: true,
       timeoutMs: 120_000,
-      model: automationModel("writer", watch, "BRAVELI_WRITER_MODEL"),
+      model: automationModel("writer", watch, "PITWALL_WRITER_MODEL"),
     });
     const verdict = reply.ok ? parseMatch(reply.raw) : { match: false, reason: reply.error || "" };
     if (!verdict.match) {
@@ -5392,7 +5227,7 @@ async function reviewFinding(finding) {
     allowRead: true,
     offline: true,
     timeoutMs: 15 * 60_000,
-    model: automationModel("review", watch, "BRAVELI_REVIEW_MODEL"),
+    model: automationModel("review", watch, "PITWALL_REVIEW_MODEL"),
   });
   if (!reply.ok) throw new Error(reply.error || "The review could not be written");
   const review = parseReview(reply.raw);
@@ -5421,15 +5256,15 @@ async function fixFinding(finding) {
     allowEdit: true,
     offline: true,
     timeoutMs: 20 * 60_000,
-    model: automationModel("fix", watch, "BRAVELI_FIX_MODEL"),
+    model: automationModel("fix", watch, "PITWALL_FIX_MODEL"),
   });
   if (!reply.ok) throw new Error(reply.error || "The fix could not be written");
   const fix = parseFix(reply.raw);
   if (!fix) throw new Error("The fix came back unreadable");
 
   // New files count too; Pitwall's own notes never do.
-  await runGit(["add", "--intent-to-add", "--all", "--", ".", ":(exclude).braveli"], worktree, { timeoutMs: 30000 });
-  const changed = await runGit(["diff", "--no-color", "--no-ext-diff", "--", ".", ":(exclude).braveli"], worktree, { timeoutMs: 30000 });
+  await runGit(["add", "--intent-to-add", "--all", "--", ".", ...OWN_DIR_EXCLUDES], worktree, { timeoutMs: 30000 });
+  const changed = await runGit(["diff", "--no-color", "--no-ext-diff", "--", ".", ...OWN_DIR_EXCLUDES], worktree, { timeoutMs: 30000 });
   const patch = changed.ok ? changed.stdout : "";
   const subject = fix.commitSubject || (finding.kind === "ci-failed" ? "Fix the failing build" : "Address review comments");
   watchStore.update(finding.id, {
@@ -5468,7 +5303,7 @@ async function planFinding(finding) {
     allowRead: true,
     offline: true,
     timeoutMs: 10 * 60_000,
-    model: automationModel("writer", watch, "BRAVELI_WRITER_MODEL"),
+    model: automationModel("writer", watch, "PITWALL_WRITER_MODEL"),
   });
   if (!reply.ok) throw new Error(reply.error || "The plan could not be written");
   const plan = String(reply.raw || "").split(/\r?\n/).filter((line) => !/generated (?:with|by)|co-authored-by:|🤖/i.test(line)).join("\n").trim();
@@ -5582,7 +5417,7 @@ async function applyFix(finding, edited) {
     if (remoteSha !== finding.reviewedSha && remoteSha !== finding.headSha) {
       return { ok: false, error: `${finding.headRef} has moved on the host since the fix was drafted. Set it aside; a new one will be drafted if it still fails.` };
     }
-    const added = await runGit(["add", "--all", "--", ".", ":(exclude).braveli"], worktree, { timeoutMs: 30000 });
+    const added = await runGit(["add", "--all", "--", ".", ...OWN_DIR_EXCLUDES], worktree, { timeoutMs: 30000 });
     if (!added.ok) return { ok: false, error: `Could not stage the fix: ${firstLine(added.stderr)}` };
     const [subject, ...rest] = message.split(/\r?\n/);
     const body = rest.join("\n").trim();
@@ -5732,7 +5567,7 @@ async function reviseFinding(finding, instruction, current) {
     offline: true,
     ...(isFix ? { allowEdit: true } : { allowRead: true }),
     timeoutMs: (isFix ? 20 : 10) * 60_000,
-    model: isFix ? automationModel("fix", watch, "BRAVELI_FIX_MODEL") : isPlan ? automationModel("writer", watch, "BRAVELI_WRITER_MODEL") : automationModel("review", watch, "BRAVELI_REVIEW_MODEL"),
+    model: isFix ? automationModel("fix", watch, "PITWALL_FIX_MODEL") : isPlan ? automationModel("writer", watch, "PITWALL_WRITER_MODEL") : automationModel("review", watch, "PITWALL_REVIEW_MODEL"),
   };
   let reply = finding.agentSession
     ? await runAutomation(buildRevisePrompt({ kind, instruction, current }), { ...options, resume: finding.agentSession })
@@ -5753,8 +5588,8 @@ async function reviseFinding(finding, instruction, current) {
   } else if (isFix) {
     const fix = parseFix(reply.raw);
     if (!fix) throw new Error("The change came back unreadable");
-    await runGit(["add", "--intent-to-add", "--all", "--", ".", ":(exclude).braveli"], worktree, { timeoutMs: 30000 });
-    const changed = await runGit(["diff", "--no-color", "--no-ext-diff", "--", ".", ":(exclude).braveli"], worktree, { timeoutMs: 30000 });
+    await runGit(["add", "--intent-to-add", "--all", "--", ".", ...OWN_DIR_EXCLUDES], worktree, { timeoutMs: 30000 });
+    const changed = await runGit(["diff", "--no-color", "--no-ext-diff", "--", ".", ...OWN_DIR_EXCLUDES], worktree, { timeoutMs: 30000 });
     const previous = finding.proposal || {};
     const subject = fix.commitSubject || String(current?.commitMessage || previous.commitMessage || "").split("\n")[0];
     patch.proposal = {
@@ -5895,7 +5730,7 @@ ipcMain.handle("pair:verdict", async (_event, payload) => {
  * Hermes learning from a checkpoint, out of sight: a finished task or the
  * lead's decision on one. It runs headless in the project's Hermes profile,
  * under the same read-only guard as a review, and one at a time per project —
- * a profile's memory has one writer. The reply carries any BRAVELI_MEMORY
+ * a profile's memory has one writer. The reply carries any PITWALL_MEMORY
  * facts; the renderer files them as tentative project knowledge.
  */
 const overseerChains = new Map();
@@ -5907,7 +5742,7 @@ function inOverseerChain(profile, job) {
 
 ipcMain.handle("overseer:observe", async (_event, payload) => {
   try {
-    const profile = hermesProfileName(payload?.projectId);
+    const profile = projectHermesProfile(payload?.projectId);
     const projectPath = expandHome(payload?.projectPath);
     if (!profile || !projectPath) return { ok: false, error: "A project is required" };
     const kind = payload?.kind === "decision" ? "decision" : "task-finished";
@@ -5942,7 +5777,7 @@ ipcMain.handle("overseer:observe", async (_event, payload) => {
     return await inOverseerChain(profile, async () => {
       const result = await runShell(
         hermesCommand(profile, `chat -Q --oneshot -t file,todo,clarify,memory,skills --source tool --query-file -${model}`),
-        { cwd, input: prompt, timeoutMs: 600_000, env: { BRAVELI_HERMES_REVIEWER: "1" } },
+        { cwd, input: prompt, timeoutMs: 600_000, env: { PITWALL_HERMES_REVIEWER: "1" } },
       );
       const problem = readHermesScreen(`${result.stdout || ""}\n${result.stderr || ""}`);
       if (problem && problem.kind !== "optional-feature") {
@@ -6276,7 +6111,7 @@ ipcMain.handle("git:open-pull-request", async (_event, payload) => {
     // anything that helped.
     const commit = payload?.commit;
     if (commit && worktree && Array.isArray(commit.paths) && commit.paths.length && String(commit.message || "").trim()) {
-      const paths = commit.paths.map(String).filter((file) => file && !/^\.braveli(?:\/|$)/.test(file));
+      const paths = commit.paths.map(String).filter((file) => file && !isOwnArtefactPath(file));
       const added = await runGit(["add", "--all", "--", ...paths], worktree, { timeoutMs: 30000 });
       if (!added.ok) return { ok: false, error: `Could not stage the changes: ${firstLine(added.stderr) || "git add failed"}` };
       const [subject, ...rest] = String(commit.message).trim().split(/\r?\n/);
@@ -7610,7 +7445,7 @@ ipcMain.handle("git:worktree-ensure", async (_event, payload) => {
     if (!branch) return { ok: false, error: "Missing worktree branch" };
     // A session resuming in a worktree that still exists keeps it as it is;
     // only one removed after its work finished is recreated below.
-    const known = payload?.worktreePath ? path.resolve(hereWorktreePath(expandHome(payload.worktreePath))) : "";
+    const known = payload?.worktreePath ? path.resolve(expandHome(payload.worktreePath)) : "";
     if (known && await pathExists(known)) return { ok: true, path: known, branch, requestedBranch: branch, reused: true };
 
     const branchCheck = await runGit(["check-ref-format", "--branch", branch], cwd);
@@ -8024,7 +7859,7 @@ async function listTrackerCandidates(payload) {
     }
 
     const reply = await runConductor(buildListTasksPrompt({ source, query, scope: profile?.scope, limit, brief }), {
-      model: String(payload?.model || "") || automationModel("tracker", null, "BRAVELI_TRACKER_MODEL"),
+      model: String(payload?.model || "") || automationModel("tracker", null, "PITWALL_TRACKER_MODEL"),
       cwd: projectPath,
       projectId,
       projectPath,
@@ -8168,7 +8003,7 @@ ipcMain.handle("mcp:add", async (_event, payload) => {
     const cwd = expandHome(payload?.projectPath);
     // Hermes connects to the server and asks whether to enable its tools; the
     // answer is yes, which is what adding a server means.
-    if (payload.provider === "hermes") await ensureHermesProfile(hermesProfileName(payload?.projectId), cwd);
+    if (payload.provider === "hermes") await ensureHermesProfile(projectHermesProfile(payload?.projectId), cwd);
     const result = payload.provider === "hermes"
       ? await runHermes(buildMcpAddCommand(payload.provider, payload), { cwd, timeoutMs: 90000, input: "y\ny\ny\n" })
       : await runShell(buildMcpAddCommand(payload.provider, payload), { cwd, timeoutMs: 30000 });
@@ -8193,7 +8028,7 @@ ipcMain.handle("mcp:remove", async (_event, payload) => {
 
   try {
     const cwd = expandHome(payload?.projectPath);
-    if (payload.provider === "hermes") await ensureHermesProfile(hermesProfileName(payload?.projectId), cwd);
+    if (payload.provider === "hermes") await ensureHermesProfile(projectHermesProfile(payload?.projectId), cwd);
     const result = payload.provider === "hermes"
       ? await runHermes(buildMcpRemoveCommand(payload.provider, payload), { cwd, timeoutMs: 30000, input: "y\n" })
       : await runShell(buildMcpRemoveCommand(payload.provider, payload), { cwd, timeoutMs: 15000 });
@@ -8429,8 +8264,7 @@ ipcMain.handle("session:launch", async (_event, payload) => {
   const cwd = expandHome(payload?.projectPath);
   const launch = resolveLaunch(payload, cwd);
   if (!launch) {
-    const error = payload?.billing === "credits" ? "Sign in to your Pitwall account to run on credits." : "Unsupported agent";
-    return { ok: false, error, at: new Date().toISOString() };
+    return { ok: false, error: "Unsupported agent", at: new Date().toISOString() };
   }
 
   return {

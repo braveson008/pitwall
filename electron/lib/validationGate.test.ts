@@ -6,7 +6,7 @@ import { planChecks, readScripts, summarise, trimOutput } from "./validationGate
 
 let dir = "";
 beforeAll(() => {
-  dir = mkdtempSync(join(tmpdir(), "braveli-gate-"));
+  dir = mkdtempSync(join(tmpdir(), "pitwall-gate-"));
   writeFileSync(join(dir, "package.json"), JSON.stringify({
     scripts: { "type-check": "tsc --noEmit", test: "vitest run", build: "vite build" },
   }));
@@ -52,7 +52,7 @@ describe("planChecks", () => {
   });
 
   it("ignores a script that exists but is empty", () => {
-    const empty = mkdtempSync(join(tmpdir(), "braveli-gate-empty-"));
+    const empty = mkdtempSync(join(tmpdir(), "pitwall-gate-empty-"));
     writeFileSync(join(empty, "package.json"), JSON.stringify({ scripts: { test: "   " } }));
     expect(planChecks(empty).find((check) => check.name === "tests").skipped).toBe(true);
     rmSync(empty, { recursive: true, force: true });

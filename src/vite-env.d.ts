@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 /** The licence record as it crosses IPC. Mirrors `LicenceRecord` in lib/licence. */
-type BraveliLicenceRecord = {
+type PitwallLicenceRecord = {
   installedAt: string;
   key?: string;
   verifiedAt?: string;
@@ -10,7 +10,7 @@ type BraveliLicenceRecord = {
 };
 
 /** One file the agent touched while working on a task. */
-interface BraveliChangedFile {
+interface PitwallChangedFile {
   path: string;
   /** Where a rename came from, otherwise null. */
   from: string | null;
@@ -23,19 +23,19 @@ interface BraveliChangedFile {
 }
 
 /** What a session's agent changed since it started, pushed as it happens. */
-interface BraveliLiveChanges {
+interface PitwallLiveChanges {
   sessionId: string;
   ok: boolean;
   error?: string;
   /** When the starting point was taken: the session's start, or the last "Keep all". */
   since?: number;
-  files: BraveliChangedFile[];
+  files: PitwallChangedFile[];
   truncated?: boolean;
   additions: number;
   deletions: number;
 }
 
-interface BraveliChangeset {
+interface PitwallChangeset {
   ok: boolean;
   error?: string;
   /** The commit the branch left the base at; the patches are taken from here. */
@@ -43,63 +43,19 @@ interface BraveliChangeset {
   /** The branch that commit was found on — discovered, not the one configured. */
   baseBranch?: string;
   worktreePath?: string;
-  files: BraveliChangedFile[];
+  files: PitwallChangedFile[];
   /**
    * Files git is not tracking: Pitwall's own transcripts, a tool's output
    * directory, anything else nobody committed. Reported separately and left
    * out of the totals, because nothing uncommitted can reach a pull request —
    * and a review that disagrees with the PR it is about is worse than useless.
    */
-  untrackedFiles?: BraveliChangedFile[];
+  untrackedFiles?: PitwallChangedFile[];
   additions: number;
   deletions: number;
 }
 
-type PitwallCloudVault = "signed-out" | "off" | "needs-setup" | "needs-join" | "ready" | "unreachable";
-
-interface PitwallCloudSyncStatus {
-  state: "off" | "idle" | "syncing" | "offline" | "error" | "quota";
-  lastSyncedAt?: string | null;
-  pending?: number;
-  error?: string | null;
-  heldDeletions?: number;
-  unreadable?: number;
-}
-
-interface PitwallCloudStatus {
-  vault: PitwallCloudVault;
-  sync: PitwallCloudSyncStatus;
-  deviceName: string;
-  email: string | null;
-  usage?: { bytes: number; quota: number };
-}
-
-interface PitwallCloudLease {
-  mine: boolean;
-  holder: string;
-  expiresAt: string;
-  handoffRequested: boolean;
-  handoffToMe: boolean;
-}
-
-interface PitwallCloudJoinRequest {
-  link_id: string;
-  name: string | null;
-  platform: string | null;
-  state: string;
-  created_at: string;
-}
-
-interface PitwallCloudDevice {
-  id: string;
-  name: string | null;
-  platform: string | null;
-  approved_at: string | null;
-  last_seen: string | null;
-  current: boolean;
-}
-
-interface BraveliApi {
+interface PitwallApi {
   platform?: string;
   setWindowChrome?: (payload: { dark: boolean }) => Promise<{ ok: boolean; error?: string }>;
   inspectProjectKnowledge?: (payload: import("./domain/projectKnowledge").ProjectKnowledgeLocation) => Promise<import("./domain/projectKnowledge").ProjectKnowledgeSnapshot>;
@@ -275,7 +231,7 @@ interface BraveliApi {
   setAutomationSettings?: (patch: Partial<{ models: Partial<AutomationSettings["models"]>; boardSyncMinutes: number }>) => Promise<{ ok: boolean; settings: AutomationSettings | null }>;
   showNotification?: (payload: { title: string; body: string; target: import("./lib/notifications").NotificationTarget }) => Promise<{ ok: boolean }>;
   onHermesSignInState?: (callback: (state: { state: "approve"; code: string; url: string } | { state: "done" } | { state: "failed"; message: string }) => void) => () => void;
-  onSessionNativeId?: (callback: (payload: { sessionId: string; nativeSessionId: string; nativeSessionStarted?: boolean }) => void) => () => void;
+  onSessionNativeId?: (callback: (payload: { sessionId: string; nativeSessionId: string }) => void) => () => void;
   fileChanges?: (payload: { root: string }) => Promise<{ ok: boolean; changes: { path: string; kind: string }[] }>;
   readFile?: (payload: { root: string; path: string }) => Promise<{ ok: boolean; content?: string; hash?: string; size?: number; binary?: boolean; tooLarge?: boolean; error?: string }>;
   writeFile?: (payload: { root: string; path: string; content: string; hash: string }) => Promise<{ ok: boolean; hash?: string; conflict?: boolean; error?: string }>;
@@ -355,7 +311,7 @@ interface BraveliApi {
     trunk?: string;
     /** The ref this branch actually forked from, which is often not the trunk. */
     forkedFrom?: string;
-    files: BraveliChangedFile[];
+    files: PitwallChangedFile[];
     additions: number;
     deletions: number;
   }>;
@@ -419,15 +375,15 @@ interface BraveliApi {
   onAgentInstallOutput?: (handler: (data: { providerId: string; chunk: string }) => void) => () => void;
   subscribeLiveChanges?: (payload: { sessionId: string; projectPath: string }) => Promise<{ ok: boolean; error?: string }>;
   unsubscribeLiveChanges?: (payload: { sessionId: string }) => Promise<{ ok: boolean }>;
-  onLiveChanges?: (handler: (summary: BraveliLiveChanges) => void) => () => void;
-  getLiveFileDiff?: (payload: { sessionId: string; file: BraveliChangedFile }) => Promise<{ ok: boolean; diff: string; hunks: string[]; error?: string }>;
-  revertLiveChange?: (payload: { sessionId: string; file: BraveliChangedFile; hunk?: string }) => Promise<{ ok: boolean; error?: string }>;
-  keepLiveChange?: (payload: { sessionId: string; file?: BraveliChangedFile }) => Promise<{ ok: boolean; error?: string }>;
+  onLiveChanges?: (handler: (summary: PitwallLiveChanges) => void) => () => void;
+  getLiveFileDiff?: (payload: { sessionId: string; file: PitwallChangedFile }) => Promise<{ ok: boolean; diff: string; hunks: string[]; error?: string }>;
+  revertLiveChange?: (payload: { sessionId: string; file: PitwallChangedFile; hunk?: string }) => Promise<{ ok: boolean; error?: string }>;
+  keepLiveChange?: (payload: { sessionId: string; file?: PitwallChangedFile }) => Promise<{ ok: boolean; error?: string }>;
   getTaskChangeset: (payload: {
     projectPath: string;
     branch: string;
     baseBranch: string;
-  }) => Promise<BraveliChangeset>;
+  }) => Promise<PitwallChangeset>;
   getTaskFileDiff: (payload: {
     projectPath: string;
     branch: string;
@@ -490,7 +446,7 @@ interface BraveliApi {
     installation: { ok: boolean; reason?: string; message?: string };
   }>;
   getLicence: () => Promise<{
-    record: BraveliLicenceRecord | null;
+    record: PitwallLicenceRecord | null;
     checkoutUrl: string;
     enforced?: boolean;
   }>;
@@ -498,48 +454,10 @@ interface BraveliApi {
     ok: boolean;
     active?: boolean;
     reason?: string;
-    record: BraveliLicenceRecord | null;
+    record: PitwallLicenceRecord | null;
   }>;
-  verifyLicence: () => Promise<{ record: BraveliLicenceRecord | null; reason?: string }>;
-  clearLicence: () => Promise<{ record: BraveliLicenceRecord | null }>;
-  creditsState: () => Promise<PitwallCreditsState>;
-  creditsSignInStart: (payload: { email: string }) => Promise<PitwallGatewayReply<{ ok: true; email: string }>>;
-  creditsSignInVerify: (payload: { email: string; code: string }) => Promise<PitwallGatewayReply<unknown> & { persisted?: boolean; state?: PitwallCreditsState }>;
-  creditsSignOut: () => Promise<{ ok: true; state: PitwallCreditsState }>;
-  cloudStatus?: () => Promise<PitwallCloudStatus>;
-  cloudSetUp?: () => Promise<{ ok: boolean; recoveryKey?: string; message?: string }>;
-  cloudJoinWithRecovery?: (payload: { recoveryKey: string }) => Promise<{ ok: boolean; code?: string; message?: string }>;
-  cloudReset?: () => Promise<{ ok: boolean; recoveryKey?: string; message?: string }>;
-  cloudTurnOff?: () => Promise<{ ok: boolean }>;
-  cloudSyncNow?: () => Promise<{ ok: boolean }>;
-  cloudHeldDeletions?: (payload: { action: "confirm" | "restore" }) => Promise<{ ok: boolean }>;
-  cloudDevices?: () => Promise<{ ok: boolean; data?: { devices: PitwallCloudDevice[] } }>;
-  cloudRemoveDevice?: (payload: { id: string }) => Promise<{ ok: boolean }>;
-  cloudPushSnapshot?: (snapshot: import("./lib/cloudSnapshot").CloudRendererSnapshot) => void;
-  onCloudApply?: (callback: (batch: { generation: number; changes: import("./lib/cloudApply").CloudChange[] }) => void) => () => void;
-  onCloudStatus?: (callback: (status: PitwallCloudSyncStatus) => void) => () => void;
-  cloudRequestJoin?: () => Promise<{ ok: boolean; message?: string }>;
-  cloudRetryCheckout?: (payload: { projectId: string }) => Promise<{ ok: boolean }>;
-  cloudContinueHere?: (payload: { taskId: string }) => Promise<{ ok: boolean; answered?: boolean; savedAt?: string | null; message?: string }>;
-  cloudRefreshLeases?: () => Promise<{ ok: boolean }>;
-  onCloudRenameProject?: (callback: (rename: { from: string; to: string }) => void) => () => void;
-  onCloudLeases?: (callback: (leases: Record<string, PitwallCloudLease>) => void) => () => void;
-  onCloudNotice?: (callback: (notice: { tone: "info" | "warn" | "error"; title: string; message: string }) => void) => () => void;
-  onCloudProjectReady?: (callback: (event: { projectId: string; name?: string; state: "cloning" | "ready" | "failed"; path?: string; action?: "clone" | "adopt"; code?: string; message?: string }) => void) => () => void;
-  cloudCancelJoin?: () => Promise<{ ok: boolean }>;
-  cloudConfirmJoinHere?: () => Promise<{ state: string; message?: string }>;
-  cloudCheckJoinRequests?: () => Promise<{ ok: boolean }>;
-  cloudApproveJoin?: (payload: { linkId: string }) => Promise<{ ok: boolean; code?: string; message?: string }>;
-  cloudConfirmJoin?: (payload: { linkId: string }) => Promise<{ ok: boolean; message?: string }>;
-  cloudDenyJoin?: (payload: { linkId: string }) => Promise<{ ok: boolean }>;
-  onCloudJoinState?: (callback: (state: { state: string; code?: string; message?: string }) => void) => () => void;
-  onCloudJoinRequests?: (callback: (requests: PitwallCloudJoinRequest[]) => void) => () => void;
-  creditsAccount: () => Promise<PitwallGatewayReply<PitwallAccount>>;
-  creditsPlans: () => Promise<PitwallGatewayReply<{ plans: PitwallPlan[]; checkout_available: boolean; markup_percent: number }>>;
-  creditsModels: () => Promise<PitwallGatewayReply<{ data: Array<{ id: string; owned_by: string; endpoints: string[] }> }>>;
-  creditsSetCap: (payload: { usd: number }) => Promise<PitwallGatewayReply<{ ok: true; overage_cap_usd: number }>>;
-  creditsDevActivate: (payload: { plan: string }) => Promise<PitwallGatewayReply<{ ok: true; plan: string }>>;
-  onCreditsRefused: (callback: (payload: { sessionId: string; reason: "exhausted" | "no-plan" | "signed-out" }) => void) => () => void;
+  verifyLicence: () => Promise<{ record: PitwallLicenceRecord | null; reason?: string }>;
+  clearLicence: () => Promise<{ record: PitwallLicenceRecord | null }>;
   captureEvent: (event: string, properties?: Record<string, string | number | boolean>) => Promise<{ ok: boolean }>;
   analyticsState: (payload?: { enabled?: boolean }) => Promise<{ ok: boolean; enabled: boolean }>;
   getGitHubAuth: (payload: ProjectIdentity) => Promise<GitHubAuthResult>;
@@ -816,8 +734,6 @@ interface BraveliApi {
     nativeSessionId?: string;
     resumeSession?: boolean;
     initialPrompt?: string;
-    /** Run on Pitwall credits; main refuses rather than falls back to the person's login. */
-    billing?: "credits";
     taskId?: string;
     taskIdentifier?: string;
     taskTitle?: string;
@@ -1067,7 +983,7 @@ interface TerminalAttachmentResult {
 }
 
 interface Window {
-  braveli?: BraveliApi;
+  pitwall?: PitwallApi;
 }
 
 interface ProjectIdentity {
@@ -1598,37 +1514,4 @@ interface WatchFinding {
 interface WatchState {
   watches: WatchRecord[];
   findings: WatchFinding[];
-}
-
-interface PitwallCreditsState {
-  /** A gateway is configured in this build. */
-  available: boolean;
-  /** The gateway is on this Mac, so plans can be activated without paying. */
-  dev: boolean;
-  signedIn: boolean;
-  email: string;
-}
-
-type PitwallGatewayReply<T> =
-  | { ok: true; status: number; data: T }
-  | { ok: false; status: number; code: string; message: string; retryAfter?: number };
-
-interface PitwallPlan {
-  id: string;
-  name: string;
-  price_usd: number;
-  allowance_usd: number;
-}
-
-interface PitwallAccount {
-  email: string | null;
-  plan: string | null;
-  active: boolean;
-  overage_cap_usd: number;
-  period: { start: string; end: string } | null;
-  allowance_usd?: number;
-  used_usd?: number;
-  overage_usd?: number;
-  remaining_usd?: number;
-  by_model: Array<{ model: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: number }>;
 }

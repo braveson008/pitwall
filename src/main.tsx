@@ -1,3 +1,4 @@
+import "./migrateLegacyStorage";
 import React from "react";
 import ReactDOM from "react-dom/client";
 // The faces the interface font picker offers. Bundled, because a desktop app
@@ -45,11 +46,11 @@ if (import.meta.env.DEV && new URLSearchParams(location.search).has("mock")) {
 
 // Written to the same log as main-process stalls, so a freeze can be placed on
 // one side of the IPC boundary or the other.
-if (window.braveli?.reportLongTask && typeof PerformanceObserver !== "undefined") {
+if (window.pitwall?.reportLongTask && typeof PerformanceObserver !== "undefined") {
   try {
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (entry.duration >= 200) window.braveli?.reportLongTask?.(entry.duration);
+        if (entry.duration >= 200) window.pitwall?.reportLongTask?.(entry.duration);
       }
     }).observe({ type: "longtask", buffered: true });
   } catch {

@@ -224,17 +224,6 @@ function createGitHubCredentialStore(filePath, encryption) {
       }
       return this.getStatus(payload);
     },
-    /** The project's sign-in as it is, for Pitwall Cloud to carry (encrypted) to the person's other computers. */
-    exportCredential(payload = {}) {
-      const record = findRecord(payload);
-      if (!record || record.rejectedAt || !encryptionAvailable()) return null;
-      try {
-        const token = encryption.decryptString(Buffer.from(record.encryptedToken, "base64"));
-        return token ? { host: record.host, kind: record.kind || "github", login: record.login || "", source: record.source || "gh", token } : null;
-      } catch {
-        return null;
-      }
-    },
     getEnvironment(payload = {}) {
       const record = findRecord(payload);
       if (!record || !encryptionAvailable()) return {};

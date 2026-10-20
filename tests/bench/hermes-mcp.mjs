@@ -18,7 +18,7 @@ const { hermesProfileName } = createRequire(import.meta.url)("../../electron/lib
 
 const hermesHome = process.env.HERMES_BENCH_HOME;
 assert.ok(hermesHome, "set HERMES_BENCH_HOME to a disposable, already-initialised Hermes home");
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-hermes-mcp-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-hermes-mcp-"));
 const projectId = "bench-mcp";
 const profile = hermesProfileName(projectId);
 const hermesServers = (inProfile = profile) => JSON.parse(execFileSync("hermes", [...(inProfile ? ["-p", inProfile] : []), "config", "get", "mcp_servers", "--json"], { env: { ...process.env, HERMES_HOME: hermesHome } }).toString() || "null") || {};
@@ -26,13 +26,13 @@ const hermesServers = (inProfile = profile) => JSON.parse(execFileSync("hermes",
 const app = await electron.launch({
   args: [process.cwd()],
   cwd: process.cwd(),
-  env: { ...process.env, HERMES_HOME: hermesHome, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HERMES_HOME: hermesHome, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 try {
   const page = await app.firstWindow();
   await page.waitForTimeout(2500);
-  const name = "braveli-bench-fs";
-  const added = await page.evaluate((name) => window.braveli.addMcpServer({
+  const name = "pitwall-bench-fs";
+  const added = await page.evaluate((name) => window.pitwall.addMcpServer({
     provider: "hermes", projectId: "bench-mcp", projectPath: "/tmp", name, transport: "stdio",
     target: "npx", args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"], env: [], headers: [],
   }), name).catch((error) => ({ ok: false, error: String(error) }));
@@ -41,11 +41,11 @@ try {
   assert.equal(hermesServers("")[name], undefined, "the main Hermes profile does not get it");
   console.log("PASS a server added in Pitwall is in the project's Hermes profile only, with its arguments intact");
 
-  const listed = await page.evaluate(() => window.braveli.listMcpServers({ provider: "hermes", projectId: "bench-mcp", projectPath: "/tmp" }));
+  const listed = await page.evaluate(() => window.pitwall.listMcpServers({ provider: "hermes", projectId: "bench-mcp", projectPath: "/tmp" }));
   assert.ok(listed.servers.some((server) => server.name === name && server.target.endsWith("/tmp")), "Pitwall lists it in full");
   console.log("PASS Pitwall lists Hermes's servers in full");
 
-  const removed = await page.evaluate((name) => window.braveli.removeMcpServer({ provider: "hermes", projectId: "bench-mcp", projectPath: "/tmp", name }), name);
+  const removed = await page.evaluate((name) => window.pitwall.removeMcpServer({ provider: "hermes", projectId: "bench-mcp", projectPath: "/tmp", name }), name);
   assert.ok(removed.ok, `removed: ${removed.error || removed.message}`);
   assert.equal(hermesServers()[name], undefined, "gone from Hermes's config");
   console.log("PASS removing it in Pitwall removes it from Hermes");

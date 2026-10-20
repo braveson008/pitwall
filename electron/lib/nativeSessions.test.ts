@@ -13,7 +13,7 @@ import {
 } from "./nativeSessions.cjs";
 
 const SESSION_ID = "6ccddba3-9def-4693-9f47-f9925cad8c74";
-const home = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-sessions-"));
+const home = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-sessions-"));
 const cwd = "/tmp/a-project";
 
 function writeSession(lines: unknown[], sessionId = SESSION_ID) {

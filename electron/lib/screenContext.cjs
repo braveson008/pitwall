@@ -6,7 +6,7 @@
  *   1. **Pitwall's own state.** When the frontmost app is Pitwall, nothing
  *      needs observing — the terminal buffer, the open file, the branch and
  *      the last test run are already in hand, exactly, as text.
- *   2. **The accessibility tree.** For any other app, `braveli-observe` reads
+ *   2. **The accessibility tree.** For any other app, `pitwall-observe` reads
  *      the focused window as structured text. Free, exact, and it captures
  *      what is scrolled off screen.
  *   3. **A screenshot.** Only when the first two produce nothing usable —
@@ -97,7 +97,7 @@ function captureScreenshot(timeoutMs = 10_000) {
     return Promise.resolve({ ok: false, error: "Reading the screen is available on macOS only." });
   }
   return new Promise((resolve) => {
-    const target = path.join(os.tmpdir(), `braveli-screen-${Date.now()}.png`);
+    const target = path.join(os.tmpdir(), `pitwall-screen-${Date.now()}.png`);
     // -x silences the shutter, -o omits window shadow. This uses the Screen
     // Recording permission; without it macOS produces a desktop-only image
     // rather than failing, which is why the caller checks the file size.
@@ -116,7 +116,7 @@ function captureScreenshot(timeoutMs = 10_000) {
   });
 }
 
-function describeBraveliState(context) {
+function describePitwallState(context) {
   return [
     context.projectName ? `Project: ${context.projectName}` : null,
     context.branch ? `Branch: ${context.branch}${context.dirty ? " (uncommitted changes)" : ""}` : null,
@@ -133,7 +133,7 @@ function createScreenContext(deps) {
   const { runConductor, observerPath, observe = runObserver, capture = captureScreenshot } = deps;
 
   async function gather(params = {}, context = {}) {
-    const evidence = { tier: null, braveli: describeBraveliState(context) };
+    const evidence = { tier: null, pitwall: describePitwallState(context) };
 
     const observation = await observe(typeof observerPath === "function" ? observerPath() : observerPath);
     if (observation.ok) {
@@ -147,9 +147,9 @@ function createScreenContext(deps) {
       evidence.accessibilityTrusted = false;
     }
 
-    const looksLikeBraveli = /pitwall|braveli|electron/i.test(evidence.app || "");
-    if (looksLikeBraveli && evidence.braveli) {
-      evidence.tier = "braveli-state";
+    const looksLikePitwall = /pitwall|electron/i.test(evidence.app || "");
+    if (looksLikePitwall && evidence.pitwall) {
+      evidence.tier = "pitwall-state";
       return evidence;
     }
 
@@ -169,7 +169,7 @@ function createScreenContext(deps) {
       }
     }
 
-    if (!evidence.tier) evidence.tier = evidence.braveli ? "braveli-state" : "none";
+    if (!evidence.tier) evidence.tier = evidence.pitwall ? "pitwall-state" : "none";
     return evidence;
   }
 
@@ -183,7 +183,7 @@ function createScreenContext(deps) {
       evidence.app ? `Frontmost application: ${evidence.app}` : null,
       evidence.window ? `Window title: ${evidence.window}` : null,
       evidence.selection ? `The user has this text selected:\n${evidence.selection}` : null,
-      evidence.braveli ? `Pitwall's own state:\n${evidence.braveli}` : null,
+      evidence.pitwall ? `Pitwall's own state:\n${evidence.pitwall}` : null,
       evidence.windowText ? `Text read from the window:\n${evidence.windowText.slice(0, 8000)}` : null,
       evidence.screenshotPath
         ? `No structured text was available, so a screenshot was taken. Read the image at ${evidence.screenshotPath} and describe it.`
@@ -243,7 +243,7 @@ function createScreenContext(deps) {
       {
         ...evidence,
         windowText: "",
-        braveli: `${evidence.braveli}\n\nThe failure:\n${evidence.errorText}`,
+        pitwall: `${evidence.pitwall}\n\nThe failure:\n${evidence.errorText}`,
       },
       "You are Pitwall, a voice assistant for a software engineer. The user asked why something is failing. Explain what the error means and the most likely fix. Be specific about the file or command involved when the evidence names one.",
       "I found an error but couldn't explain it.",

@@ -22,7 +22,7 @@ import { _electron as electron } from "playwright";
  */
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), "braveli-voice-"));
+const tempRoot = await mkdtemp(path.join(os.tmpdir(), "pitwall-voice-"));
 const userDataPath = path.join(tempRoot, "user-data");
 const fakeBin = path.join(tempRoot, "bin");
 const fakeHome = path.join(tempRoot, "home");
@@ -53,8 +53,8 @@ const app = await electron.launch({
     ...process.env,
     HOME: fakeHome,
     PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
-    BRAVELI_E2E: "1",
-    BRAVELI_USER_DATA_DIR: userDataPath,
+    PITWALL_E2E: "1",
+    PITWALL_USER_DATA_DIR: userDataPath,
     ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
   },
   timeout: 30_000,
@@ -73,10 +73,10 @@ const check = (name, condition, detail = "") => {
 try {
   const page = await app.firstWindow({ timeout: 20_000 });
   page.on("pageerror", (error) => process.stdout.write(`  RENDERER ERROR  ${error.message}\n`));
-  await page.waitForFunction(() => Boolean(window.braveli?.getVoiceStatus), null, { timeout: 20_000 });
+  await page.waitForFunction(() => Boolean(window.pitwall?.getVoiceStatus), null, { timeout: 20_000 });
 
   // --- the registry is real and reachable over IPC ------------------------
-  const capabilities = await page.evaluate(() => window.braveli.listCapabilities());
+  const capabilities = await page.evaluate(() => window.pitwall.listCapabilities());
   check("capability registry is exposed", capabilities.ok && capabilities.capabilities.length >= 20,
     `got ${capabilities.capabilities?.length}`);
 
@@ -86,13 +86,13 @@ try {
     capabilities.capabilities.every((capability) => ["safe", "guarded", "destructive"].includes(capability.risk)));
 
   // --- voice status reports honestly --------------------------------------
-  const status = await page.evaluate(() => window.braveli.getVoiceStatus());
+  const status = await page.evaluate(() => window.pitwall.getVoiceStatus());
   check("voice reports its state without the engine running", status.ok && status.state === "off");
   check("voice knows whether the engine binary was built", typeof status.engineBuilt === "boolean");
 
   // --- a destructive capability refuses to run unconfirmed ----------------
   const discard = await page.evaluate(() =>
-    window.braveli.runCapability({ capabilityId: "git.discard_changes", params: {} }),
+    window.pitwall.runCapability({ capabilityId: "git.discard_changes", params: {} }),
   );
   check("destructive capability demands confirmation",
     discard.ok === false && discard.code === "confirmation_required",
@@ -103,7 +103,7 @@ try {
 
   // A wrong confirmation id must not approve it.
   const forged = await page.evaluate(() =>
-    window.braveli.runCapability({
+    window.pitwall.runCapability({
       capabilityId: "git.discard_changes",
       params: {},
       confirmationId: "not-the-real-id",
@@ -113,26 +113,26 @@ try {
 
   // --- invalid arguments are refused before any handler runs --------------
   const badArgs = await page.evaluate(() =>
-    window.braveli.runCapability({ capabilityId: "git.commit", params: {} }),
+    window.pitwall.runCapability({ capabilityId: "git.commit", params: {} }),
   );
   check("missing required arguments are refused", badArgs.ok === false && badArgs.code === "invalid_params",
     JSON.stringify(badArgs));
 
   const unknown = await page.evaluate(() =>
-    window.braveli.runCapability({ capabilityId: "os.run_shell", params: { command: "echo pwned" } }),
+    window.pitwall.runCapability({ capabilityId: "os.run_shell", params: { command: "echo pwned" } }),
   );
   check("an unregistered capability cannot be invoked", unknown.ok === false && unknown.code === "unknown_capability");
 
   // --- a renderer-surface capability round-trips --------------------------
-  const projectList = await page.evaluate(() => window.braveli.runCapability({ capabilityId: "project.list" }));
+  const projectList = await page.evaluate(() => window.pitwall.runCapability({ capabilityId: "project.list" }));
   check("renderer-surface capability round-trips through React",
     projectList.ok === true && Array.isArray(projectList.projects),
     JSON.stringify(projectList).slice(0, 200));
 
   // --- memory persists ----------------------------------------------------
-  await page.evaluate(() => window.braveli.rememberNote({ note: "The ledger uses Postgres", kind: "decision" }));
+  await page.evaluate(() => window.pitwall.rememberNote({ note: "The ledger uses Postgres", kind: "decision" }));
   const recalled = await page.evaluate(() =>
-    window.braveli.runCapability({ capabilityId: "memory.recall", params: { query: "postgres" } }),
+    window.pitwall.runCapability({ capabilityId: "memory.recall", params: { query: "postgres" } }),
   );
   check("a remembered note can be recalled", recalled.ok === true && /Postgres/.test(recalled.speak || ""),
     JSON.stringify(recalled).slice(0, 200));

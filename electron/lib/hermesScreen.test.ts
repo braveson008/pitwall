@@ -21,8 +21,8 @@ describe("Hermes screen", () => {
   });
 
   it("reads a Hermes that has lost its login, and offers to sign it in", () => {
-    const text = "No access token found for Nous Portal login. Run `hermes -p braveli-1b32c28cb38c model` to re-authenticate.";
-    expect(readHermesScreen(text)).toEqual({ kind: "signed-out", command: "hermes -p braveli-1b32c28cb38c model" });
+    const text = "No access token found for Nous Portal login. Run `hermes -p pitwall-1b32c28cb38c model` to re-authenticate.";
+    expect(readHermesScreen(text)).toEqual({ kind: "signed-out", command: "hermes -p pitwall-1b32c28cb38c model" });
     // One sign-in reconnects every project, so the notice offers it rather than a command.
     expect(describeHermesScreen(readHermesScreen(text))).toMatchObject({ tone: "error", action: "hermes-sign-in" });
     expect(readHermesScreen("Nous refresh token is terminally invalid")).toEqual({ kind: "signed-out", command: "hermes model" });

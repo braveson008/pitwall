@@ -1,4 +1,4 @@
-import { findLatestDevPreview, type DevPreview } from "./devPreview";
+import { DEV_PREVIEW_PATTERN, MOBILE_PREVIEW_PATTERN, findLatestDevPreview, type DevPreview } from "./devPreview";
 
 /**
  * Watches arriving output for a dev-server URL.
@@ -45,7 +45,7 @@ export function watchPreview(state: PreviewWatch, chunks: readonly string[]): Pr
 
   const text = state.carry + chunks.join("");
   const found = findLatestDevPreview([text]);
-  const marked = text.includes("BRAVELI_DEV_PREVIEW") || text.includes("BRAVELI_MOBILE_PREVIEW");
+  const marked = DEV_PREVIEW_PATTERN.test(text) || MOBILE_PREVIEW_PATTERN.test(text);
   const carry = text.slice(-CARRY_CHARACTERS);
 
   // Nothing to adopt: keep the preview already held.

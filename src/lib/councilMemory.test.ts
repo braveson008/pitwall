@@ -5,6 +5,7 @@ import {
   extractLessons,
   formatLessonsPrompt,
   getCouncilLessonsPath,
+  getCouncilLessonsPaths,
   mergeLessons,
   parseLessonsFile,
   renderLessonsFile,
@@ -110,17 +111,22 @@ describe("the lessons file round-trips", () => {
     expect(getCouncilLessonsPath()).not.toMatch(/runId|<|\$\{/);
     expect(getCouncilLessonsPath()).toMatch(/lessons\.md$/);
   });
+
+  it("writes lessons under .pitwall and still reads the file older versions wrote under .braveli", () => {
+    expect(getCouncilLessonsPath()).toBe(".pitwall/council/lessons.md");
+    expect(getCouncilLessonsPaths()).toEqual([".pitwall/council/lessons.md", ".braveli/council/lessons.md"]);
+  });
 });
 
 describe("formatLessonsPrompt", () => {
   it("asks a first council to start recording without handing it an empty file", () => {
-    const prompt = formatLessonsPrompt([], ".braveli/council/lessons.md");
+    const prompt = formatLessonsPrompt([], ".pitwall/council/lessons.md");
     expect(prompt).toMatch(new RegExp(`${LESSON_MARKER}:`));
     expect(prompt).not.toMatch(/Previous councils/);
   });
 
   it("gives a later council what was learned, and permission to overturn it", () => {
-    const prompt = formatLessonsPrompt(["tests need Postgres"], ".braveli/council/lessons.md");
+    const prompt = formatLessonsPrompt(["tests need Postgres"], ".pitwall/council/lessons.md");
     expect(prompt).toMatch(/Previous councils/);
     expect(prompt).toMatch(/tests need Postgres/);
     expect(prompt).toMatch(/turns out to be wrong/);

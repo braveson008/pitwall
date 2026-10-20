@@ -320,7 +320,7 @@ export function installFor(entry: CatalogueEntry, platform: string): { installCo
 export type LocalCatalogueEntry = CatalogueEntry & { elsewhere?: { label: string; installCommand: string } };
 
 const thisPlatform = typeof window !== "undefined"
-  ? ((window as { braveli?: { platform?: string } }).braveli?.platform ?? (/Win/.test(navigator.platform || "") ? "win32" : "darwin"))
+  ? ((window as { pitwall?: { platform?: string } }).pitwall?.platform ?? (/Win/.test(navigator.platform || "") ? "win32" : "darwin"))
   : "darwin";
 
 /** The catalogue as this computer should offer it: its own install command first, the other platform's beside it. */

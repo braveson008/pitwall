@@ -178,16 +178,7 @@ function createMemoryStore(filePath, options = {}) {
     return before !== state.notes.length;
   }
 
-  function exportAll() {
-    return JSON.parse(JSON.stringify(state));
-  }
-
-  function replaceAll(next) {
-    state = { version: 1, notes: Array.isArray(next?.notes) ? next.notes : [], snapshots: Array.isArray(next?.snapshots) ? next.snapshots : [] };
-    write();
-  }
-
-  return { remember, recall, recordSnapshot, latestSnapshot, snapshotFor, history, forget, exportAll, replaceAll };
+  return { remember, recall, recordSnapshot, latestSnapshot, snapshotFor, history, forget };
 }
 
 module.exports = { createMemoryStore, tokenize };

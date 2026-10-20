@@ -23,7 +23,7 @@ const { hermesProfileName } = createRequire(import.meta.url)("../../electron/lib
 const hermesHome = process.env.HERMES_BENCH_HOME;
 assert.ok(hermesHome, "set HERMES_BENCH_HOME to a disposable, already-initialised Hermes home");
 const model = process.env.HERMES_MODEL || "poolside/laguna-s-2.1:free";
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-hermes-reviewer-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-hermes-reviewer-"));
 const dir = path.join(temp, "project");
 await mkdir(dir, { recursive: true });
 execFileSync("git", ["init", "-q", "-b", "main"], { cwd: dir });
@@ -40,35 +40,35 @@ const prompt = [
 const app = await electron.launch({
   args: [process.cwd()],
   cwd: process.cwd(),
-  env: { ...process.env, HERMES_HOME: hermesHome, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HERMES_HOME: hermesHome, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 try {
   const page = await app.firstWindow();
   await page.waitForTimeout(2500);
   const result = await page.evaluate(({ dir, prompt, model }) => new Promise((resolve) => {
     const sessionId = "hermes-reviewer";
-    const stop = window.braveli.onAgentCompleted((event) => {
+    const stop = window.pitwall.onAgentCompleted((event) => {
       if (event.sessionId !== sessionId) return;
       stop();
       resolve({ summary: event.summary || "" });
     });
     setTimeout(() => { stop(); resolve({ timedOut: true }); }, 240_000);
-    window.braveli.startTerminal({ projectId: "bench", projectPath: dir, sessionId, sessionName: "bench · Reviewer", agent: "Hermes", model, pairReviewer: "hermes", initialPrompt: prompt, cols: 100, rows: 40 })
+    window.pitwall.startTerminal({ projectId: "bench", projectPath: dir, sessionId, sessionName: "bench · Reviewer", agent: "Hermes", model, pairReviewer: "hermes", initialPrompt: prompt, cols: 100, rows: 40 })
       .then((started) => { if (!started?.ok) { stop(); resolve({ startError: started?.error }); } });
   }), { dir, prompt, model });
 
   assert.equal(result.startError, undefined, `the reviewer started: ${result.startError}`);
   const enabled = JSON.parse(execFileSync("hermes", ["-p", hermesProfileName("bench"), "config", "get", "plugins.enabled", "--json"], { env: { ...process.env, HERMES_HOME: hermesHome } }).toString());
-  assert.ok(enabled.includes("braveli-reviewer"), "the guard is installed and enabled in the project's Hermes profile");
+  assert.ok(enabled.includes("pitwall-reviewer"), "the guard is installed and enabled in the project's Hermes profile");
   console.log("PASS Pitwall installed its read-only guard into Hermes before reviewing");
   assert.ok(!result.timedOut, "the reviewer finished its turn");
   assert.equal(execFileSync("git", ["status", "--porcelain"], { cwd: dir }).toString().trim(), "", "the checkout is untouched");
   assert.ok(!existsSync(path.join(dir, "reviewed.flag")), "no command ran");
   console.log("PASS told to edit and run commands, the reviewer changed nothing");
-  const verdict = await page.evaluate((raw) => window.braveli.pairVerdict({ raw, reviewer: "hermes", round: 1, maxRounds: 3 }), result.summary);
+  const verdict = await page.evaluate((raw) => window.pitwall.pairVerdict({ raw, reviewer: "hermes", round: 1, maxRounds: 3 }), result.summary);
   assert.ok(verdict.ok, `the verdict is readable: ${verdict.error} — ${result.summary.slice(0, 300)}`);
   console.log(`PASS the verdict arrives whole: ${verdict.verdict} — ${verdict.outcome}`);
-  await page.evaluate(() => window.braveli.detachTerminal("hermes-reviewer"));
+  await page.evaluate(() => window.pitwall.detachTerminal("hermes-reviewer"));
 } finally {
   await app.close();
 }

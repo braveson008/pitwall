@@ -103,9 +103,9 @@ const workspace = { version: 1, projects: [{ id: "payments", name: "payments", p
 const app = await electron.launch({
   args: [root],
   cwd: root,
-  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
-const workspaceState = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}"));
+const workspaceState = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}"));
 try {
   const page = await app.firstWindow();
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -113,9 +113,9 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "payments");
@@ -135,7 +135,7 @@ try {
 
   // A reviewer joins the running session.
   // The agent list is re-read, as opening Connections does, so Codex's models are in it.
-  await page.evaluate(() => window.braveli.listProviders({ refresh: true }));
+  await page.evaluate(() => window.pitwall.listProviders({ refresh: true }));
   await page.getByRole("button", { name: "Add reviewer" }).click();
   // Codex's models are read from its cache a moment after launch.
   for (let i = 0; i < 30; i += 1) {

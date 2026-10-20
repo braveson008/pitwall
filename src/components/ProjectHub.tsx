@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode, CSSProperties } from "react";
 import type { AgentSession, Project } from "../data";
-import type { BraveliActivityEvent, BraveliContextEntry, BraveliProjectOverseer, BraveliTask } from "../domain/types";
+import type { PitwallActivityEvent, PitwallContextEntry, PitwallProjectOverseer, PitwallTask } from "../domain/types";
 import { DEFAULT_OVERSEER } from "../domain/types";
 import { formatActivityTime, getTaskStatusLabel } from "../lib/format";
 import { buildBoard, columnFor, localStateLabel, normaliseStatus, showsLocalState } from "../lib/taskBoard";
@@ -34,13 +34,13 @@ import { shortcutLabel } from "../lib/shortcutLabel";
 interface ProjectHubProps {
   section: Exclude<WorkspaceSection, "work" | "connections">;
   project: Project;
-  tasks: BraveliTask[];
-  activeTask?: BraveliTask;
+  tasks: PitwallTask[];
+  activeTask?: PitwallTask;
   sessions: AgentSession[];
-  contextEntries: BraveliContextEntry[];
+  contextEntries: PitwallContextEntry[];
   selectedContextIds: string[];
   knowledgeRefresh?: number;
-  activity: BraveliActivityEvent[];
+  activity: PitwallActivityEvent[];
   runCountByTask: Record<string, number>;
   /** Branches with a live agent session, so the tree can say which are worked. */
   sessionBranches?: string[];
@@ -74,38 +74,38 @@ interface ProjectHubProps {
   checksByTask?: Record<string, ValidationResult | undefined>;
   checkingTaskIds?: string[];
   attentionTaskIds?: string[];
-  onRunValidation: (task: BraveliTask) => void;
+  onRunValidation: (task: PitwallTask) => void;
   onSelectSession: (session: AgentSession) => void;
   /** What each task's sessions reported spending, by task. */
   usageByTask?: Record<string, { tokens: number | null; costUsd: number | null; unreported: number; reported: number }>;
   /** Opens a branch as its own tab, to read what it changed. */
   onOpenBranch?: (branch: { name: string; worktreePath?: string }) => void;
   /** Abandons a task git will never call done. Completing by hand is gone. */
-  onCancelTask?: (task: BraveliTask) => void;
+  onCancelTask?: (task: PitwallTask) => void;
   /** Branches already open as tabs on this screen. */
   /** Which one is showing; empty means the review queue. */
-  providerLabel: (provider: BraveliTask["assignedAgent"]) => string;
+  providerLabel: (provider: PitwallTask["assignedAgent"]) => string;
   onNewTask: () => void;
   onImportTasks: () => void;
   onSyncTasks: () => void;
   syncingTasks: boolean;
   /** Minutes until the trackers are re-read on their own. Null before the first read. */
   trackerSyncMinutes?: number | null;
-  onSelectTask: (task: BraveliTask) => void;
-  onOpenTask: (task: BraveliTask) => void;
+  onSelectTask: (task: PitwallTask) => void;
+  onOpenTask: (task: PitwallTask) => void;
   /** The task's agent session, when one is still there to talk to. */
-  hasSession?: (task: BraveliTask) => boolean;
-  onOpenSession?: (task: BraveliTask) => void;
-  onStartTask: (task: BraveliTask) => void;
-  onStartTasks: (tasks: BraveliTask[]) => void;
-  onDeleteTasks: (tasks: BraveliTask[]) => void;
+  hasSession?: (task: PitwallTask) => boolean;
+  onOpenSession?: (task: PitwallTask) => void;
+  onStartTask: (task: PitwallTask) => void;
+  onStartTasks: (tasks: PitwallTask[]) => void;
+  onDeleteTasks: (tasks: PitwallTask[]) => void;
   /** Moves a card to another column. Pitwall only — the ticket is untouched. */
-  onMoveTask: (task: BraveliTask, column: string) => void;
+  onMoveTask: (task: PitwallTask, column: string) => void;
   /** Removes every task in a column from Pitwall. The tickets are untouched. */
-  onClearColumn: (column: string, tasks: BraveliTask[]) => void;
-  onCompleteTask: (task: BraveliTask) => void;
+  onClearColumn: (column: string, tasks: PitwallTask[]) => void;
+  onCompleteTask: (task: PitwallTask) => void;
   /** Sends the work back with a reason. Resolves once an agent has it, or not. */
-  onRequestChanges: (task: BraveliTask, body: string, filePath?: string) => Promise<boolean>;
+  onRequestChanges: (task: PitwallTask, body: string, filePath?: string) => Promise<boolean>;
   onOpenWork: () => void;
   onNewContext: () => void;
   onToggleContext: (id: string, checked: boolean) => void;
@@ -115,10 +115,10 @@ interface ProjectHubProps {
   /** A review the sidebar asked to open. */
   focusReviewTaskId?: string;
   /** Hermes as this project's reviewer: its settings, whether it is installed, and its models. */
-  overseer?: BraveliProjectOverseer;
+  overseer?: PitwallProjectOverseer;
   hermesReady?: boolean;
   hermesModels?: Array<{ value: string; label: string }>;
-  onChangeOverseer?: (next: BraveliProjectOverseer) => void;
+  onChangeOverseer?: (next: PitwallProjectOverseer) => void;
   githubLogin: string | null;
   /** The project's code host; null when Pitwall holds no account there. */
   repositoryHost?: RepositoryHostWords | null;
@@ -127,16 +127,16 @@ interface ProjectHubProps {
   onOpenProject: () => void;
   editorLabel: string;
   previewByTask: Record<string, { url: string; label: string }>;
-  onOpenTaskEditor: (task: BraveliTask) => Promise<void>;
-  onOpenTaskPullRequest: (task: BraveliTask) => Promise<void>;
+  onOpenTaskEditor: (task: PitwallTask) => Promise<void>;
+  onOpenTaskPullRequest: (task: PitwallTask) => Promise<void>;
   /** Drafts a pull or merge request for the task's branch, to read and send. */
-  onCreateTaskRequest?: (task: BraveliTask) => Promise<void>;
-  onOpenTaskPreview: (task: BraveliTask) => Promise<void>;
+  onCreateTaskRequest?: (task: PitwallTask) => Promise<void>;
+  onOpenTaskPreview: (task: PitwallTask) => Promise<void>;
 }
 
 const taskGroups: Array<{
   label: string;
-  statuses: BraveliTask["status"][];
+  statuses: PitwallTask["status"][];
 }> = [
   { label: "Ready", statuses: ["backlog", "ready"] },
   { label: "In progress", statuses: ["running"] },
@@ -150,16 +150,16 @@ function sentence(value: string): string {
 }
 
 /** Who a task belongs to, as the interface names it. Empty when nobody. */
-function ownerOf(task: BraveliTask, providerLabel: (provider: BraveliTask["assignedAgent"]) => string): string {
+function ownerOf(task: PitwallTask, providerLabel: (provider: PitwallTask["assignedAgent"]) => string): string {
   if (!task.assignedAgent) return "";
   return task.assignedAgent === "council" ? "Council" : sentence(providerLabel(task.assignedAgent));
 }
 
 /** The right-hand column of a task row: what is happening to it, in a phrase. */
 function taskRowState(
-  task: BraveliTask,
+  task: PitwallTask,
   runs: number,
-  providerLabel: (provider: BraveliTask["assignedAgent"]) => string,
+  providerLabel: (provider: PitwallTask["assignedAgent"]) => string,
 ): string {
   const who = ownerOf(task, providerLabel);
   if (task.status === "review") return [who, "review requested"].filter(Boolean).join(" · ");
@@ -168,7 +168,7 @@ function taskRowState(
 }
 
 /** A task's status as a dot: green while worked, amber while it waits on you. */
-function taskDot(task: BraveliTask): string {
+function taskDot(task: PitwallTask): string {
   if (task.status === "running") return "is-working";
   if (task.status === "review") return "is-needs";
   if (task.status === "completed") return "is-quiet";
@@ -183,8 +183,8 @@ function sessionDot(status: AgentSession["status"]): string {
 }
 
 /** A session's agent, in the shape `providerLabel` expects. */
-function providerOf(session: AgentSession): BraveliTask["assignedAgent"] {
-  return String(session.agent).toLowerCase() as BraveliTask["assignedAgent"];
+function providerOf(session: AgentSession): PitwallTask["assignedAgent"] {
+  return String(session.agent).toLowerCase() as PitwallTask["assignedAgent"];
 }
 
 export function ProjectHub({
@@ -265,10 +265,10 @@ export function ProjectHub({
   const [statusFilter, setStatusFilter] = useState("");
   const [attentionOnly, setAttentionOnly] = useState(false);
   const [density, setDensity] = useState<"comfortable" | "compact">(() => {
-    try { return localStorage.getItem("braveli-task-density") === "compact" ? "compact" : "comfortable"; } catch { return "comfortable"; }
+    try { return localStorage.getItem("pitwall-task-density") === "compact" ? "compact" : "comfortable"; } catch { return "comfortable"; }
   });
   useEffect(() => {
-    try { localStorage.setItem("braveli-task-density", density); } catch { /* Keep the preference for this window when storage is unavailable. */ }
+    try { localStorage.setItem("pitwall-task-density", density); } catch { /* Keep the preference for this window when storage is unavailable. */ }
   }, [density]);
   useEffect(() => { setSelectedTaskIds([]); }, [query, agentFilter, statusFilter, attentionOnly]);
   const search = query.trim().toLocaleLowerCase();
@@ -374,11 +374,11 @@ export function ProjectHub({
     setSelectedTaskIds((current) => current.filter((id) => tasks.some((task) => task.id === id)));
   }, [project.id, tasks]);
 
-  function toggleTask(task: BraveliTask) {
+  function toggleTask(task: PitwallTask) {
     setSelectedTaskIds((current) => current.includes(task.id) ? current.filter((id) => id !== task.id) : [...current, task.id]);
   }
 
-  async function runReviewAction(task: BraveliTask, action: "editor" | "pr" | "preview" | "create") {
+  async function runReviewAction(task: PitwallTask, action: "editor" | "pr" | "preview" | "create") {
     const key = `${task.id}:${action}`;
     setBusyReviewAction(key);
     try {
@@ -541,7 +541,7 @@ export function ProjectHub({
               </dd>
             </div>
             {onChangeOverseer && (() => {
-              const current: BraveliProjectOverseer = overseer ?? DEFAULT_OVERSEER;
+              const current: PitwallProjectOverseer = overseer ?? DEFAULT_OVERSEER;
               const reviewed = tasks.filter((task) => task.pair?.reviewer === "hermes" && (task.pair.rounds?.length ?? 0) > 0);
               const sentBack = reviewed.filter((task) => task.pair?.rounds?.some((round) => round.verdict === "request_changes")).length;
               return (
@@ -1161,7 +1161,7 @@ export function ProjectHub({
     const reviewLabel = (state: ReturnType<typeof reviewStateFor>) =>
       state === "proposed" ? `${mergeRequests ? "MR" : "PR"} open` : sentence(REVIEW_STATE_LABEL[state]);
 
-    const reviewItem = (task: BraveliTask) => {
+    const reviewItem = (task: PitwallTask) => {
       const facts = reviewFacts?.[task.worktree];
       const pr = facts?.pullRequest;
       const state = reviewFacts ? reviewStateFor(task.worktree, reviewFacts) : "working";
@@ -1200,7 +1200,7 @@ export function ProjectHub({
       );
     };
 
-    const detailFor = (task: BraveliTask) => {
+    const detailFor = (task: PitwallTask) => {
       const check = checksByTask[task.id];
       // A closed request is history; a new one can still be opened for the branch.
       const requestState = reviewFacts?.[task.worktree]?.pullRequest?.state || "";
@@ -1474,7 +1474,7 @@ export function ProjectHub({
 
   // Grouped by the day it happened, newest first, so "what changed since
   // yesterday" is a glance rather than a read.
-  const days: Array<{ label: string; events: BraveliActivityEvent[] }> = [];
+  const days: Array<{ label: string; events: PitwallActivityEvent[] }> = [];
   const today = new Date();
   const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
   for (const event of activity) {
@@ -1491,7 +1491,7 @@ export function ProjectHub({
     else days.push({ label, events: [event] });
   }
   const identifierOf = (taskId?: string) => (taskId ? tasks.find((task) => task.id === taskId)?.identifier ?? "" : "");
-  const activityDot = (type: BraveliActivityEvent["type"]) =>
+  const activityDot = (type: PitwallActivityEvent["type"]) =>
     type === "task-completed" || type === "handoff-created"
       ? "is-ready"
       : type === "task-started" || type === "session-started" || type === "council-started" || type === "compare-started"

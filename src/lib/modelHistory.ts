@@ -1,4 +1,4 @@
-import type { BraveliProviderId } from "../domain/types";
+import type { PitwallProviderId } from "../domain/types";
 import type { RiskLevel } from "../domain/contracts";
 
 /**
@@ -27,7 +27,7 @@ import type { RiskLevel } from "../domain/contracts";
 /** One judged attempt, recorded when a review returns a verdict. */
 export interface AttemptOutcome {
   projectId: string;
-  provider: BraveliProviderId | "";
+  provider: PitwallProviderId | "";
   model: string;
   riskLevel: RiskLevel;
   /** Whether the review passed it, first time or after fixes. */
@@ -38,7 +38,7 @@ export interface AttemptOutcome {
 }
 
 export interface ModelRecord {
-  provider: BraveliProviderId | "";
+  provider: PitwallProviderId | "";
   model: string;
   riskLevel: RiskLevel;
   attempts: number;

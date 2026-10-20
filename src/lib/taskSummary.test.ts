@@ -12,6 +12,15 @@ describe("parseTaskSummary", () => {
     });
   });
 
+  it("reads the marker a session started by an older version prints", () => {
+    expect(parseTaskSummary('BRAVELI_TASK_SUMMARY {"what":"Kept","how":"Unchanged","components":[]}')).toEqual({
+      what: "Kept",
+      how: "Unchanged",
+      components: [],
+      source: "agent",
+    });
+  });
+
   it("rejects malformed and incomplete summaries", () => {
     expect(parseTaskSummary(`${TASK_SUMMARY_MARKER} nope`)).toBeNull();
     expect(parseTaskSummary(`${TASK_SUMMARY_MARKER} {"what":"Only half"}`)).toBeNull();

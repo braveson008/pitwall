@@ -13,7 +13,7 @@ function withConfigLock(file, update) {
 }
 
 async function atomicWriteFile(file, contents) {
-  const tmp = `${file}.braveli-${randomUUID()}.tmp`;
+  const tmp = `${file}.pitwall-${randomUUID()}.tmp`;
   try {
     await fs.promises.writeFile(tmp, contents, { encoding: "utf8", mode: 0o600, flag: "wx" });
     await fs.promises.rename(tmp, file);
@@ -24,16 +24,16 @@ async function atomicWriteFile(file, contents) {
 
 async function backupOnce(file, contents) {
   try {
-    await fs.promises.writeFile(`${file}.braveli.bak`, contents, { encoding: "utf8", mode: 0o600, flag: "wx" });
+    await fs.promises.writeFile(`${file}.pitwall.bak`, contents, { encoding: "utf8", mode: 0o600, flag: "wx" });
   } catch (error) {
     if (error.code !== "EEXIST") throw error;
   }
-  await fs.promises.chmod(`${file}.braveli.bak`, 0o600);
+  await fs.promises.chmod(`${file}.pitwall.bak`, 0o600);
 }
 
 async function protectConfig(file) {
   await fs.promises.chmod(file, 0o600);
-  await fs.promises.chmod(`${file}.braveli.bak`, 0o600).catch((error) => {
+  await fs.promises.chmod(`${file}.pitwall.bak`, 0o600).catch((error) => {
     if (error.code !== "ENOENT") throw error;
   });
 }

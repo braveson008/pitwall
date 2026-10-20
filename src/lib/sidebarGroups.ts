@@ -1,11 +1,11 @@
 import type { AgentSession, Project } from "../data";
-import type { BraveliCouncilRun, BraveliTask } from "../domain/types";
+import type { PitwallCouncilRun, PitwallTask } from "../domain/types";
 import { pairReviewerLabel } from "../domain/pairReviewer";
 import { applySessionOrder } from "./sessionOrder";
 import { expandSessionName } from "./sessionNames";
 
 /**
- * The sidebar's two lists, as Braveli had them: every session, where it was
+ * The sidebar's two lists, as Pitwall had them: every session, where it was
  * put and with its state on a glyph, and the work waiting in Review. Grouping
  * sessions by what their agent was doing moved rows out from under the cursor
  * and filed the same work in different places as the agent flickered.
@@ -58,7 +58,7 @@ export function relativeTime(at: number, now: number): string {
   return `${Math.round(hours / 24)}d`;
 }
 
-function reviewStatus(task: BraveliTask): string {
+function reviewStatus(task: PitwallTask): string {
   const pair = task.pair;
   if (!pair) return "Ready for review";
   const reviewer = pairReviewerLabel(pair.reviewer);
@@ -77,8 +77,8 @@ export function buildSidebarGroups({
   sessionOrder = {},
   starting = [],
 }: {
-  tasks: BraveliTask[];
-  councilRuns?: BraveliCouncilRun[];
+  tasks: PitwallTask[];
+  councilRuns?: PitwallCouncilRun[];
   projects: Project[];
   /** Which session belongs to which task, from Pitwall's own session records. */
   links?: Array<{ id: string; taskId: string }>;

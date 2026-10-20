@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import { reviewerScorecard } from "./reviewerScorecard";
 
 const at = "2026-10-07T12:00:00Z";
-function task(id: string, pair: Partial<NonNullable<BraveliTask["pair"]>>, projectId = "p"): BraveliTask {
-  return { id, projectId, title: id, pair: { reviewer: "hermes", maxRounds: 3, round: 1, state: "approved", ...pair } } as BraveliTask;
+function task(id: string, pair: Partial<NonNullable<PitwallTask["pair"]>>, projectId = "p"): PitwallTask {
+  return { id, projectId, title: id, pair: { reviewer: "hermes", maxRounds: 3, round: 1, state: "approved", ...pair } } as PitwallTask;
 }
 const round = (verdict: "approve" | "request_changes", model = "free/small") => ({ round: 1, verdict, summary: "", comments: [], at, model });
 

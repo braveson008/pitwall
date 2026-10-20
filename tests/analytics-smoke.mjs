@@ -119,7 +119,7 @@ console.log("Pitwall analytics smoke test passed.");
 {
   const { mkdtempSync, writeFileSync, readFileSync: read } = await import("node:fs");
   const os = await import("node:os");
-  const dir = mkdtempSync(path.join(os.tmpdir(), "braveli-analytics-"));
+  const dir = mkdtempSync(path.join(os.tmpdir(), "pitwall-analytics-"));
   const never = path.join(dir, "never.json");
   writeFileSync(never, JSON.stringify({ installId: "a", enabled: false }));
   assert.equal(createAnalytics({ filePath: never, apiKey: "k" }).isEnabled(), true, "an install that never chose reports");

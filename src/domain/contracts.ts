@@ -1,4 +1,4 @@
-import type { BraveliProviderId, BraveliSessionType } from "./types";
+import type { PitwallProviderId, PitwallSessionType } from "./types";
 
 /**
  * The artifacts a task passes between the agents working it.
@@ -65,7 +65,7 @@ export interface ImplementationContract {
   riskLevel: RiskLevel;
   /** Who wrote it, so a bad contract can be traced to its author. */
   architectModel: string;
-  architectProvider: BraveliProviderId | "";
+  architectProvider: PitwallProviderId | "";
   createdAt: string;
 }
 
@@ -88,7 +88,7 @@ export interface QaReport {
    */
   requiresArchitectEscalation: boolean;
   qaModel: string;
-  qaProvider: BraveliProviderId | "";
+  qaProvider: PitwallProviderId | "";
   createdAt: string;
 }
 
@@ -111,9 +111,9 @@ export interface ImplementationAttempt {
   contractId: string;
   /** The fix contract this attempt answers, when it is not the first. */
   fixContractId?: string;
-  provider: BraveliProviderId | "";
+  provider: PitwallProviderId | "";
   model: string;
-  role: BraveliSessionType;
+  role: PitwallSessionType;
   sessionId: string;
   /** Set once the attempt has been judged. */
   outcome?: "passed" | "failed" | "abandoned";

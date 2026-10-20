@@ -1,4 +1,4 @@
-// The Files panel (behind braveli-files-panel while it is finished): a session's worktree as a tree, a file opened and saved in
+// The Files panel (behind pitwall-files-panel while it is finished): a session's worktree as a tree, a file opened and saved in
 // place, an agent's write taken in or flagged, and a selection handed to the
 // agent. Also: a scheduled run's task stays off the task board.
 //   npm run build && node tests/files-panel-smoke.mjs
@@ -12,7 +12,7 @@ import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
 const root = process.cwd();
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-files-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-files-"));
 const fakeHome = path.join(temp, "home");
 const fakeBin = path.join(temp, "bin");
 const typed = path.join(temp, "typed.txt");
@@ -57,7 +57,7 @@ const workspace = {
 const app = await electron.launch({
   args: [root],
   cwd: root,
-  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 try {
   const page = await app.firstWindow();
@@ -66,10 +66,10 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-files-panel", "on");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-files-panel", "on");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "admin");
@@ -160,7 +160,7 @@ try {
   console.log("PASS leaving a file with unsaved edits asks before dropping them");
 
   // Path escapes are refused at the boundary.
-  const escaped = await page.evaluate((root) => window.braveli.readFile({ root, path: "../home/.zprofile" }), dir);
+  const escaped = await page.evaluate((root) => window.pitwall.readFile({ root, path: "../home/.zprofile" }), dir);
   assert.equal(escaped.ok, false);
   console.log("PASS a path outside the worktree is refused");
 } finally {

@@ -1,6 +1,6 @@
 import { writeStoredJson } from "./storage";
 
-const TERMINAL_HISTORY_STORAGE_KEY = "braveli-terminal-history";
+const TERMINAL_HISTORY_STORAGE_KEY = "pitwall-terminal-history";
 
 /**
  * How much scrollback is worth keeping, and why it is far less than it looks.

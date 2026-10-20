@@ -1,5 +1,5 @@
-import { TASK_SUMMARY_MARKER, parseTaskSummary } from "./taskSummary";
-import { DEV_PREVIEW_MARKER, MOBILE_PREVIEW_MARKER } from "./devPreview";
+import { TASK_SUMMARY_PATTERN, parseTaskSummary } from "./taskSummary";
+import { DEV_PREVIEW_PATTERN, MOBILE_PREVIEW_PATTERN } from "./devPreview";
 
 /**
  * The protocol lines an agent prints for Pitwall, separated from its prose.
@@ -21,7 +21,7 @@ export type AgentMarker =
 export type MarkedText = { prose: string; markers: AgentMarker[] };
 
 const PREVIEW_LINE = new RegExp(
-  `(?:${DEV_PREVIEW_MARKER}|${MOBILE_PREVIEW_MARKER})\\s+(\\S+)`,
+  `(?:${DEV_PREVIEW_PATTERN.source}|${MOBILE_PREVIEW_PATTERN.source})\\s+(\\S+)`,
 );
 
 /**
@@ -32,7 +32,7 @@ const PREVIEW_LINE = new RegExp(
  */
 export function extractAgentMarkers(text: string): MarkedText {
   const source = String(text || "");
-  if (!source.includes(TASK_SUMMARY_MARKER) && !source.includes(DEV_PREVIEW_MARKER) && !source.includes(MOBILE_PREVIEW_MARKER)) {
+  if (!TASK_SUMMARY_PATTERN.test(source) && !DEV_PREVIEW_PATTERN.test(source) && !MOBILE_PREVIEW_PATTERN.test(source)) {
     return { prose: source, markers: [] };
   }
 
@@ -40,7 +40,7 @@ export function extractAgentMarkers(text: string): MarkedText {
   const kept: string[] = [];
 
   for (const line of source.split(/\r?\n/)) {
-    if (line.includes(TASK_SUMMARY_MARKER)) {
+    if (TASK_SUMMARY_PATTERN.test(line)) {
       const summary = parseTaskSummary(line);
       if (summary) {
         markers.push({ kind: "summary", what: summary.what, how: summary.how, components: summary.components });
@@ -54,7 +54,7 @@ export function extractAgentMarkers(text: string): MarkedText {
     if (preview) {
       markers.push({
         kind: "preview",
-        label: line.includes(MOBILE_PREVIEW_MARKER) ? "Mobile preview" : "Preview",
+        label: MOBILE_PREVIEW_PATTERN.test(line) ? "Mobile preview" : "Preview",
         url: preview[1],
       });
       continue;

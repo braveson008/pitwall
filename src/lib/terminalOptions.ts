@@ -1,6 +1,6 @@
 import { isMacPlatform } from "./shortcutLabel";
-export const TERMINAL_WEBGL_KEY = "braveli-terminal-webgl";
-export const TERMINAL_UNICODE11_KEY = "braveli-terminal-unicode11";
+export const TERMINAL_WEBGL_KEY = "pitwall-terminal-webgl";
+export const TERMINAL_UNICODE11_KEY = "pitwall-terminal-unicode11";
 
 /**
  * Removes two settings that no longer have a reader.

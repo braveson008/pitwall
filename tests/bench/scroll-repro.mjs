@@ -9,7 +9,7 @@ const root = process.cwd();
 const shots = process.env.SHOTS;
 import { realpathSync } from "node:fs";
 import { openProject } from "./helpers/openProject.mjs";
-const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "braveli-scroll-"));
+const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-scroll-"));
 const dir = path.join(temp, "repo");
 await mkdir(dir, { recursive: true });
 execFileSync("git", ["init", "-q", "-b", "main"], { cwd: dir });
@@ -22,7 +22,7 @@ const project = { id: "p", name: "repo", path: dir, branch: "main", status: "act
 const task = { id: "t1", projectId: "p", identifier: "T-1", title: "Paired task", description: "x", status: "ready", priority: "medium", assignedAgent: "", relatedFiles: [], worktree: "t-1", createdAt: now, updatedAt: now };
 const workspace = { version: 1, projects: [{ id: "p", name: "repo", path: dir, defaultBranch: "main", providerIds: ["claude"], createdAt: now, updatedAt: now }], tasks: [task], contextEntries: [], contextSnapshots: [], sessions: [], activity: [], taskRuns: [], councilRuns: [], compareRuns: [] };
 
-const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") } });
+const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") } });
 const page = await app.firstWindow();
 try {
   await page.setViewportSize({ width: 1600, height: 1000 });
@@ -30,9 +30,9 @@ try {
   await page.waitForTimeout(1500);
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "repo");

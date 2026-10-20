@@ -1,7 +1,7 @@
 # Installed by Pitwall. Inert unless Pitwall starts Hermes as a reviewer.
 """
 A reviewer reads the change; it does not make one. When Pitwall starts Hermes
-as a reviewer it sets BRAVELI_HERMES_REVIEWER=1, and every tool call is held to
+as a reviewer it sets PITWALL_HERMES_REVIEWER=1, and every tool call is held to
 reading files inside the folder under review, plus Hermes's own memory and
 skills — which live in its profile, not the repository, and are how it learns
 the project. Everything else is blocked: writes, the terminal, code
@@ -25,7 +25,7 @@ def _inside(root: str, candidate: str) -> bool:
 
 
 def _review_gate(tool_name: str = "", args: Any = None, **_: Any):
-    if os.environ.get("BRAVELI_HERMES_REVIEWER") != "1":
+    if os.environ.get("PITWALL_HERMES_REVIEWER") != "1":
         return None
     if tool_name in OWN_MEMORY_TOOLS:
         return None

@@ -25,7 +25,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const roots: string[] = [];
 
 function tempDir() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-cleanup-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-cleanup-"));
   roots.push(dir);
   return dir;
 }

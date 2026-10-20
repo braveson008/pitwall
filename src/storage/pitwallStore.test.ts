@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { normalizeSessionStatus, normalizeTask } from "./braveliStore";
-import type { BraveliTask } from "../domain/types";
+import { normalizeSessionStatus, normalizeTask } from "./pitwallStore";
+import type { PitwallTask } from "../domain/types";
 
 describe("normalizeSessionStatus", () => {
   it("migrates legacy session labels without losing their meaning", () => {
@@ -18,9 +18,9 @@ describe("normalizeSessionStatus", () => {
 
 describe("normalizeTask", () => {
   it("gives a task saved or synced without related files an empty list, so the review screen can count them", () => {
-    const bare = { id: "t", title: "Ship it", status: "review" } as unknown as BraveliTask;
+    const bare = { id: "t", title: "Ship it", status: "review" } as unknown as PitwallTask;
     expect(normalizeTask(bare).relatedFiles).toEqual([]);
-    const kept = { ...bare, relatedFiles: ["a.ts"] } as BraveliTask;
+    const kept = { ...bare, relatedFiles: ["a.ts"] } as PitwallTask;
     expect(normalizeTask(kept)).toBe(kept);
   });
 });

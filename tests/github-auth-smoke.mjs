@@ -5,11 +5,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron as electron } from "playwright";
 
-const projectPath = process.env.BRAVELI_GITHUB_PROJECT_PATH;
-if (!projectPath) throw new Error("BRAVELI_GITHUB_PROJECT_PATH is required");
+const projectPath = process.env.PITWALL_GITHUB_PROJECT_PATH;
+if (!projectPath) throw new Error("PITWALL_GITHUB_PROJECT_PATH is required");
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const userDataPath = await mkdtemp(path.join(os.tmpdir(), "braveli-github-smoke-"));
+const userDataPath = await mkdtemp(path.join(os.tmpdir(), "pitwall-github-smoke-"));
 const now = new Date().toISOString();
 const project = {
   id: "github-auth-smoke",
@@ -54,18 +54,18 @@ try {
     cwd: root,
     env: {
       ...process.env,
-      BRAVELI_E2E: "1",
-      BRAVELI_USER_DATA_DIR: userDataPath,
+      PITWALL_E2E: "1",
+      PITWALL_USER_DATA_DIR: userDataPath,
       ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
     },
   });
   const page = await app.firstWindow();
   await page.evaluate(({ projectValue, workspaceValue }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([projectValue]));
-    localStorage.setItem("braveli-active-project", projectValue.id);
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspaceValue));
-    localStorage.setItem("braveli-onboarded", "yes");
+    localStorage.setItem("pitwall-projects", JSON.stringify([projectValue]));
+    localStorage.setItem("pitwall-active-project", projectValue.id);
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspaceValue));
+    localStorage.setItem("pitwall-onboarded", "yes");
   }, { projectValue: project, workspaceValue: workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "GitHub auth" }).click();
@@ -74,17 +74,17 @@ try {
   assert.equal(await page.getByText("Repo match").count() > 0, true);
   await page.getByRole("button", { name: "Use selected account" }).click();
   await page.getByText(/is now selected for web-app/).waitFor({ timeout: 20_000 });
-  const stored = await page.evaluate(() => window.braveli.getGitHubAuth({
+  const stored = await page.evaluate(() => window.pitwall.getGitHubAuth({
     projectId: "github-auth-smoke",
-    projectPath: window.localStorage.getItem("braveli-projects")
-      ? JSON.parse(window.localStorage.getItem("braveli-projects"))[0].path
+    projectPath: window.localStorage.getItem("pitwall-projects")
+      ? JSON.parse(window.localStorage.getItem("pitwall-projects"))[0].path
       : "",
   }));
   assert.equal(stored.configured, true);
   assert.equal(stored.login, "teammate");
   assert.equal(stored.source, "remote");
   assert.equal("token" in stored, false);
-  await page.screenshot({ path: "/tmp/braveli-github-account-picker.png" });
+  await page.screenshot({ path: "/tmp/pitwall-github-account-picker.png" });
   process.stdout.write("  OK  repository credential is detected, validated, and encrypted without exposing its token\n");
   await page.getByRole("button", { name: "Done" }).click();
   const mcpAuthButton = page.getByRole("button", { name: /Project authentication for plugin:figma:figma/ });
@@ -92,7 +92,7 @@ try {
   await mcpAuthButton.click();
   await page.getByRole("heading", { name: "plugin:figma:figma" }).waitFor();
   await page.getByText("Project account not connected").waitFor();
-  await page.screenshot({ path: "/tmp/braveli-mcp-auth.png" });
+  await page.screenshot({ path: "/tmp/pitwall-mcp-auth.png" });
   process.stdout.write("  OK  remote MCP exposes project-scoped native OAuth controls\n");
 } finally {
   await app?.close().catch(() => {});

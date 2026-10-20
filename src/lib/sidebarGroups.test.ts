@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Project } from "../data";
-import type { BraveliCouncilRun, BraveliTask } from "../domain/types";
+import type { PitwallCouncilRun, PitwallTask } from "../domain/types";
 import { buildSidebarGroups, relativeTime } from "./sidebarGroups";
 
 const NOW = Date.parse("2026-10-07T12:00:00Z");
 const ago = (minutes: number) => new Date(NOW - minutes * 60_000).toISOString();
 
-function task(partial: Partial<BraveliTask>): BraveliTask {
-  return { id: "t", projectId: "p", title: "Task", description: "", status: "ready", priority: "medium", assignedAgent: "claude", relatedFiles: [], worktree: "", createdAt: ago(60), updatedAt: ago(5), ...partial } as BraveliTask;
+function task(partial: Partial<PitwallTask>): PitwallTask {
+  return { id: "t", projectId: "p", title: "Task", description: "", status: "ready", priority: "medium", assignedAgent: "claude", relatedFiles: [], worktree: "", createdAt: ago(60), updatedAt: ago(5), ...partial } as PitwallTask;
 }
 
 function session(partial: Record<string, unknown>) {
@@ -65,7 +65,7 @@ describe("sidebar groups", () => {
   });
 
   it("shows a Council as one row that speaks for its liveliest member", () => {
-    const run = { id: "r", projectId: "p", name: "Paging council", prompt: "", createdAt: ago(3), responses: [{ sessionId: "m1" }, { sessionId: "m2" }] } as unknown as BraveliCouncilRun;
+    const run = { id: "r", projectId: "p", name: "Paging council", prompt: "", createdAt: ago(3), responses: [{ sessionId: "m1" }, { sessionId: "m2" }] } as unknown as PitwallCouncilRun;
     const groups = buildSidebarGroups({
       tasks: [],
       projects: [project([session({ id: "m1", status: "idle" }), session({ id: "m2", status: "waiting" }), session({ id: "x", name: "Solo" })])],

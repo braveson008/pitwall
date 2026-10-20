@@ -119,7 +119,7 @@ export function LicenceModal({
                   value={key}
                   spellCheck={false}
                   autoComplete="off"
-                  placeholder="BRAVELI-XXXX-XXXX-XXXX"
+                  placeholder="XXXX-XXXX-XXXX-XXXX"
                   disabled={busy}
                   aria-invalid={Boolean(error)}
                   onChange={(event) => {

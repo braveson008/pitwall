@@ -1,4 +1,4 @@
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import { trackerHtmlToMarkdown } from "./markdown";
 
 export interface TaskRuntimePlan {
@@ -27,7 +27,7 @@ function describeForPrompt(description: string, url?: string | null) {
 }
 
 export function formatTaskLaunchPrompt(
-  task: Pick<BraveliTask, "identifier" | "title" | "description" | "source" | "images"> & { relatedFiles?: string[] },
+  task: Pick<PitwallTask, "identifier" | "title" | "description" | "source" | "images"> & { relatedFiles?: string[] },
   options: {
     startDevServer?: boolean;
     originRefreshed?: boolean;
@@ -92,8 +92,8 @@ export function formatTaskLaunchPrompt(
   const runtime = options.runtime;
   const previewInstruction = options.startDevServer
     ? runtime
-      ? `This task owns local preview port ${runtime.previewPort}. Do not use or stop another task's server, port, simulator, or emulator. For a web project, bind its development server to port ${runtime.previewPort}, keep it running, and finish with exactly BRAVELI_DEV_PREVIEW <local-url>. For a mobile project, use port ${runtime.previewPort} for Metro or the packager and create or reuse only the dedicated device named "${runtime.mobileDeviceName}" (runtime id ${runtime.mobileRuntimeId}); never use a device belonging to another task. Launch the app on that dedicated device, bring it to the foreground, keep the packager running, and finish with exactly BRAVELI_MOBILE_PREVIEW <local-or-exp-url>. The BRAVELI_PREVIEW_PORT, BRAVELI_MOBILE_RUNTIME_ID, and BRAVELI_MOBILE_DEVICE_NAME environment variables contain the same values. If the documented environment cannot be launched, report why and print neither marker.`
-      : "When implementation and checks are finished, start the documented development environment from this task worktree and keep it running. For a web project, start its development server. For a mobile project, launch its documented simulator or emulator and keep the packager running. After the environment is ready, print exactly one line in the form BRAVELI_DEV_PREVIEW <local-url>, using its localhost, private-network, or Expo URL. If this project has no development environment or it cannot be launched, say so clearly and do not print the marker."
+      ? `This task owns local preview port ${runtime.previewPort}. Do not use or stop another task's server, port, simulator, or emulator. For a web project, bind its development server to port ${runtime.previewPort}, keep it running, and finish with exactly PITWALL_DEV_PREVIEW <local-url>. For a mobile project, use port ${runtime.previewPort} for Metro or the packager and create or reuse only the dedicated device named "${runtime.mobileDeviceName}" (runtime id ${runtime.mobileRuntimeId}); never use a device belonging to another task. Launch the app on that dedicated device, bring it to the foreground, keep the packager running, and finish with exactly PITWALL_MOBILE_PREVIEW <local-or-exp-url>. The PITWALL_PREVIEW_PORT, PITWALL_MOBILE_RUNTIME_ID, and PITWALL_MOBILE_DEVICE_NAME environment variables contain the same values. If the documented environment cannot be launched, report why and print neither marker.`
+      : "When implementation and checks are finished, start the documented development environment from this task worktree and keep it running. For a web project, start its development server. For a mobile project, launch its documented simulator or emulator and keep the packager running. After the environment is ready, print exactly one line in the form PITWALL_DEV_PREVIEW <local-url>, using its localhost, private-network, or Expo URL. If this project has no development environment or it cannot be launched, say so clearly and do not print the marker."
     : "";
   return [
     `Work on task ${identity}.`,
@@ -108,7 +108,7 @@ export function formatTaskLaunchPrompt(
       ? "You are on a working branch Pitwall created before it knew what this work would be, and its name may not satisfy this repository's rules. Before pushing anything, create the branch this work should live on, following the convention the repository already uses — look at the existing branch names and any ruleset the remote enforces — and do your committing and pushing on that. If a push is refused, report exactly what the remote said rather than trying other names."
       : "",
     options.wantsSummary
-      ? 'Before finishing, print exactly one final line starting with BRAVELI_TASK_SUMMARY followed by compact JSON in this shape: {"what":"what changed and the resulting behavior","how":"the implementation approach and important verification","components":["affected/component/or/file"]}. Keep it factual and do not include secrets.'
+      ? 'Before finishing, print exactly one final line starting with PITWALL_TASK_SUMMARY followed by compact JSON in this shape: {"what":"what changed and the resulting behavior","how":"the implementation approach and important verification","components":["affected/component/or/file"]}. Keep it factual and do not include secrets.'
       : "",
   ].filter(Boolean).join("\n");
 }

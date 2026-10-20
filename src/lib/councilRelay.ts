@@ -1,5 +1,6 @@
 import { emptyWorkingSet, formatWorkingSetForPrompt, isWorkingSet, mergeWorkingSet, parseWorkingSet, workingSetContract, type WorkingSet } from "./councilBriefing";
 import type { VerificationVerdict } from "./councilVerify";
+import { LEGACY_COUNCIL_DIR } from "./legacyNames";
 export type CouncilRelayMember = {
   sessionId: string;
   /**
@@ -352,10 +353,13 @@ const CONDUCTOR_EXCERPT_CHARS = 1200;
 const CONDUCTOR_THREAD_DEPTH = 8;
 
 /** Everything the council writes about itself lives here, inside the worktree. */
-export const COUNCIL_ARTEFACT_DIR = ".braveli";
+export const COUNCIL_ARTEFACT_DIR = ".pitwall";
+
+/** The council's folder under its current name and the one older versions wrote. */
+export const COUNCIL_ARTEFACT_DIRS = [COUNCIL_ARTEFACT_DIR, LEGACY_COUNCIL_DIR];
 
 export function getCouncilTaskBriefPath(runId: string) {
-  return `.braveli/council/${runId}/task.md`;
+  return `.pitwall/council/${runId}/task.md`;
 }
 
 export function buildCouncilTaskBrief(task: { identifier?: string; title: string; description: string }) {
@@ -375,8 +379,8 @@ export function formatCouncilTaskFilePrompt(taskBriefPath: string) {
  */
 export function getCouncilStageFile(runId: string, turn: number, memberId?: string) {
   return memberId
-    ? `.braveli/council/${runId}/stage-${turn}-${memberId}.md`
-    : `.braveli/council/${runId}/stage-${turn}.md`;
+    ? `.pitwall/council/${runId}/stage-${turn}-${memberId}.md`
+    : `.pitwall/council/${runId}/stage-${turn}.md`;
 }
 
 /**
@@ -417,7 +421,7 @@ export function planCouncilPromptDelivery({
   stamp: number;
 }): { filePath: string; content: string; pointer: string } | null {
   if (prompt.length <= COUNCIL_PROMPT_INLINE_LIMIT) return null;
-  const filePath = `.braveli/council/${runId}/prompts/turn-${turn}-${memberId}-${stamp}.md`;
+  const filePath = `.pitwall/council/${runId}/prompts/turn-${turn}-${memberId}-${stamp}.md`;
   const handoff = prompt.includes(stageFile)
     ? ` When you are done, write your handoff to ${stageFile} — the council moves on only once that file exists.`
     : "";
@@ -436,7 +440,7 @@ export function planCouncilPromptDelivery({
  * member reads what everyone said, not just the agent immediately upstream.
  */
 export function getCouncilThreadFile(runId: string) {
-  return `.braveli/council/${runId}/thread.md`;
+  return `.pitwall/council/${runId}/thread.md`;
 }
 
 /**
@@ -447,12 +451,12 @@ export function getCouncilThreadFile(runId: string) {
  * rewritten each turn, so a member can read it without reading everything.
  */
 export function getCouncilWorkingSetFile(runId: string) {
-  return `.braveli/council/${runId}/working-set.md`;
+  return `.pitwall/council/${runId}/working-set.md`;
 }
 
 /** Append-only log of the conductor's routing decisions, for auditing a run. */
 export function getCouncilConductorLogFile(runId: string) {
-  return `.braveli/council/${runId}/conductor.md`;
+  return `.pitwall/council/${runId}/conductor.md`;
 }
 
 function slug(value: string) {
@@ -563,7 +567,7 @@ export function snapshotRepoChanges(changes: RepoChange[] | undefined | null): R
     // in the worktree, so they show up as changes. Counting them as evidence
     // would mean every member "produced work" simply by writing its handoff —
     // which is exactly the claim this evidence exists to check.
-    if (change.path === COUNCIL_ARTEFACT_DIR || change.path.startsWith(`${COUNCIL_ARTEFACT_DIR}/`)) continue;
+    if (COUNCIL_ARTEFACT_DIRS.some((dir) => change.path === dir || change.path.startsWith(`${dir}/`))) continue;
     snapshot[change.path] = `${change.status ?? ""}:${change.additions ?? ""}:${change.deletions ?? ""}`;
   }
   return snapshot;

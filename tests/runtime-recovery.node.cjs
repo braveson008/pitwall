@@ -6,7 +6,7 @@ const test = require("node:test");
 const { createRuntimeJournal } = require("../electron/lib/runtimeJournal.cjs");
 
 function journalFile(t) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-recovery-test-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-recovery-test-"));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   return path.join(dir, "runtime.json");
 }

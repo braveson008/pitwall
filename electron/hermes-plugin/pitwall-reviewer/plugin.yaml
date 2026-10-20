@@ -1,5 +1,5 @@
 # Installed by Pitwall. Inert unless Pitwall starts Hermes as a reviewer.
-name: braveli-reviewer
+name: pitwall-reviewer
 version: 1.0.0
 description: "Holds a Hermes started by Pitwall as a reviewer to reading the repository it reviews."
 author: "Pitwall"

@@ -56,14 +56,14 @@ export function InstallTerminal({
     // Every keystroke goes to the process, which is the whole point: this is
     // where you type `y`.
     const typed = term.onData((data) => {
-      void window.braveli?.sendAgentInstallInput?.({ providerId, data });
+      void window.pitwall?.sendAgentInstallInput?.({ providerId, data });
     });
 
     const stop = onData((chunk) => term.write(chunk));
 
     const resize = () => {
       fit.fit();
-      void window.braveli?.resizeAgentInstall?.({ providerId, cols: term.cols, rows: term.rows });
+      void window.pitwall?.resizeAgentInstall?.({ providerId, cols: term.cols, rows: term.rows });
     };
     const observer = new ResizeObserver(resize);
     observer.observe(host);

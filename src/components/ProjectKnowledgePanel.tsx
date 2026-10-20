@@ -135,9 +135,9 @@ export function ProjectKnowledgePanel({
       setBusy("loading");
       setError("");
       try {
-        if (!window.braveli?.inspectProjectKnowledge)
+        if (!window.pitwall?.inspectProjectKnowledge)
           throw new Error("Project knowledge is available in the desktop app after it has been restarted.");
-        const result = await window.braveli.inspectProjectKnowledge({ projectPath, workspacePath, taskId });
+        const result = await window.pitwall.inspectProjectKnowledge({ projectPath, workspacePath, taskId });
         if (request !== requestId.current || scopeAtStart !== scopeRef.current) return;
         if (!result.ok) throw new Error(result.error || "Could not load project knowledge.");
         setSnapshot(result);
@@ -171,9 +171,9 @@ export function ProjectKnowledgePanel({
     setError("");
     setNotice("");
     try {
-      if (!window.braveli?.learnProjectKnowledge)
+      if (!window.pitwall?.learnProjectKnowledge)
         throw new Error("Project learning is unavailable. Restart the desktop app and try again.");
-      const result = await window.braveli.learnProjectKnowledge({ projectPath, workspacePath, taskId });
+      const result = await window.pitwall.learnProjectKnowledge({ projectPath, workspacePath, taskId });
       if (request !== requestId.current || scopeAtStart !== scopeRef.current) return;
       if (!result.ok) throw new Error(result.error || "Project learning failed.");
       setSnapshot(result);
@@ -197,7 +197,7 @@ export function ProjectKnowledgePanel({
     setError("");
     setNotice("");
     try {
-      const bridge = window.braveli;
+      const bridge = window.pitwall;
       if (!bridge?.updateProjectKnowledge || !bridge.inspectProjectKnowledge)
         throw new Error("Updating project knowledge is unavailable. Restart the desktop app and try again.");
       const result = await bridge.updateProjectKnowledge({

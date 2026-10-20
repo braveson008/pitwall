@@ -65,7 +65,7 @@ export function VersionFooter({ updateState }: { updateState: UpdateState | null
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const info = await window.braveli?.getAppVersion?.();
+      const info = await window.pitwall?.getAppVersion?.();
       if (cancelled || !info) return;
       setVersion(info.version);
       setBlocked(info.installation?.ok === false ? info.installation.message ?? null : null);
@@ -85,10 +85,10 @@ export function VersionFooter({ updateState }: { updateState: UpdateState | null
       type="button"
       title={blocked ?? updateState?.message ?? label}
       onClick={() => {
-        if (blocked) void window.braveli?.openPath?.("/Applications");
-        else if (updateState?.status === "ready") void window.braveli?.installUpdate?.();
-        else if (updateState?.status === "available") void window.braveli?.downloadUpdate?.();
-        else void window.braveli?.checkForUpdates?.();
+        if (blocked) void window.pitwall?.openPath?.("/Applications");
+        else if (updateState?.status === "ready") void window.pitwall?.installUpdate?.();
+        else if (updateState?.status === "available") void window.pitwall?.downloadUpdate?.();
+        else void window.pitwall?.checkForUpdates?.();
       }}
     >
       <span className="dk-version-number dk-faint"><PitwallMark size={13} />Pitwall {version}</span>

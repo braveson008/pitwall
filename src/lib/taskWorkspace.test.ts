@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { AgentSession } from "../data";
-import type { BraveliSession, BraveliTask } from "../domain/types";
+import type { PitwallSession, PitwallTask } from "../domain/types";
 import { selectTaskWorkspace } from "./taskWorkspace";
 
-const task = { id: "task-1", identifier: "eng-412", worktree: "eng-412" } as BraveliTask;
+const task = { id: "task-1", identifier: "eng-412", worktree: "eng-412" } as PitwallTask;
 
 describe("selectTaskWorkspace", () => {
   it("prefers the checkout already owned by a task session", () => {
@@ -11,7 +11,7 @@ describe("selectTaskWorkspace", () => {
       task,
       projectPath: "/repo",
       sessions: [{ id: "session-1", worktreePath: "/managed/eng-412" } as AgentSession],
-      runs: [{ id: "session-1", taskId: "task-1" } as BraveliSession],
+      runs: [{ id: "session-1", taskId: "task-1" } as PitwallSession],
       worktrees: [{ path: "/managed/eng-412", branch: "session-branch" }, { path: "/other", branch: "eng-412" }],
     })).toEqual({ path: "/managed/eng-412", fallback: false });
   });
@@ -21,7 +21,7 @@ describe("selectTaskWorkspace", () => {
       task,
       projectPath: "/repo",
       sessions: [{ id: "session-1", worktreePath: "/removed/eng-412" } as AgentSession],
-      runs: [{ id: "session-1", taskId: "task-1" } as BraveliSession],
+      runs: [{ id: "session-1", taskId: "task-1" } as PitwallSession],
       worktrees: [{ path: "/live/eng-412", branch: "eng-412" }],
     })).toEqual({ path: "/live/eng-412", fallback: false });
   });

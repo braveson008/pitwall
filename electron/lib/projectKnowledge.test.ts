@@ -13,7 +13,7 @@ vi.setConfig({ testTimeout: 30_000 });
 const run = promisify(execFile);
 const fixtures: string[] = [];
 async function fixture(withGit = false) {
-  const root = await realpath(await mkdtemp(path.join(tmpdir(), "braveli-knowledge-")));
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), "pitwall-knowledge-")));
   fixtures.push(root);
   const projectPath = path.join(root, "project");
   const directory = path.join(root, "store");

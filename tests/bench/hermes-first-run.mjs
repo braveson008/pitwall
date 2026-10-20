@@ -22,7 +22,7 @@ const model = process.env.HERMES_MODEL || "poolside/laguna-s-2.1:free";
 const sourceHome = process.env.HERMES_FIRST_RUN_SOURCE;
 assert.ok(sourceHome, "set HERMES_FIRST_RUN_SOURCE to a throwaway Hermes home that signs in with an API key");
 assert.notEqual(path.resolve(sourceHome), path.join(os.homedir(), ".hermes"), "never your own Hermes home");
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-hermes-first-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-hermes-first-"));
 const hermesHome = path.join(temp, "hermes-home");
 await mkdir(hermesHome, { recursive: true });
 for (const name of ["config.yaml", ".env"]) await copyFile(path.join(sourceHome, name), path.join(hermesHome, name)).catch(() => {});
@@ -45,19 +45,19 @@ function runSession(page, payload, { until = "completed", waitMs = 240_000 } = {
       resolve({ ...seen, ...extra });
     };
     const stops = [
-      window.braveli.onAgentNotice((event) => {
+      window.pitwall.onAgentNotice((event) => {
         seen.notices.push(event.notice);
         if (until === "notice" && event.notice.tone === "error") setTimeout(() => finish(), 500);
       }),
-      window.braveli.onTerminalData((event) => { if (event.sessionId === payload.sessionId) seen.output = (seen.output + event.data).slice(-200_000); }),
-      window.braveli.onAgentCompleted((event) => {
+      window.pitwall.onTerminalData((event) => { if (event.sessionId === payload.sessionId) seen.output = (seen.output + event.data).slice(-200_000); }),
+      window.pitwall.onAgentCompleted((event) => {
         if (event.sessionId !== payload.sessionId) return;
         seen.completed = true;
         if (until === "completed") setTimeout(() => finish(), 1500);
       }),
     ];
     setTimeout(() => finish({ timedOut: true }), waitMs);
-    window.braveli.startTerminal({ ...payload, cols: 120, rows: 40 }).then((result) => {
+    window.pitwall.startTerminal({ ...payload, cols: 120, rows: 40 }).then((result) => {
       if (!result?.ok) finish({ startError: result?.error });
     });
   }), { payload, until, waitMs });
@@ -66,13 +66,13 @@ function runSession(page, payload, { until = "completed", waitMs = 240_000 } = {
 const app = await electron.launch({
   args: [root],
   cwd: root,
-  env: { ...process.env, HERMES_HOME: hermesHome, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HERMES_HOME: hermesHome, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 try {
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(1500);
-  await page.evaluate(() => localStorage.setItem("braveli-onboarded", "yes"));
+  await page.evaluate(() => localStorage.setItem("pitwall-onboarded", "yes"));
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForTimeout(1500);
 
@@ -88,14 +88,14 @@ try {
   assert.match(first.output, /FIRST-RUN-OK/, "Hermes answered the first turn");
   assert.doesNotMatch(first.output.slice(-4000), /Install it now\? \[Y\/n\]\s*$/, "no question is left waiting");
   console.log("PASS a brand-new Hermes is set up visibly and its first turn finishes");
-  await page.evaluate((id) => window.braveli.detachTerminal(id), "hermes-first");
+  await page.evaluate((id) => window.pitwall.detachTerminal(id), "hermes-first");
 
   const retired = await runSession(page, { ...base, sessionId: "hermes-retired", model: "stealth/space-bunny-alpha", initialPrompt: "hello" }, { until: "notice", waitMs: 90_000 });
   const problem = retired.notices.find((notice) => notice.tone === "error");
   assert.ok(problem, "a model that cannot answer is reported");
   assert.equal(problem.title, "Hermes needs a different model");
   console.log(`PASS a model that cannot answer is reported: “${problem.message}”`);
-  await page.evaluate((id) => window.braveli.detachTerminal(id), "hermes-retired");
+  await page.evaluate((id) => window.pitwall.detachTerminal(id), "hermes-retired");
 } finally {
   await app.close();
 }

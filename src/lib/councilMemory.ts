@@ -1,9 +1,9 @@
-import { COUNCIL_ARTEFACT_DIR } from "./councilRelay";
+import { COUNCIL_ARTEFACT_DIR, COUNCIL_ARTEFACT_DIRS } from "./councilRelay";
 
 /**
  * What the council learned, kept across runs.
  *
- * Everything else a council produces lives under `.braveli/council/<runId>/`
+ * Everything else a council produces lives under `.pitwall/council/<runId>/`
  * and dies with the run, so council #2 rediscovers the codebase from zero —
  * which build command actually works, that the test suite needs a running
  * Postgres, that `src/legacy/` is generated and must not be edited by hand.
@@ -15,7 +15,7 @@ import { COUNCIL_ARTEFACT_DIR } from "./councilRelay";
  * hard-won knowledge about a repository — had nothing.
  *
  * Lessons are a plain Markdown file in the project, on purpose. The council
- * already communicates through files in `.braveli/`, agents can read and edit
+ * already communicates through files in `.pitwall/`, agents can read and edit
  * it without new tooling, and a human can open it, disagree, and delete a line.
  * A store the user cannot inspect is a store they cannot trust.
  */
@@ -28,6 +28,11 @@ export const MAX_LESSONS = 40;
 /** One project-wide file, not one per run — that is the entire point. */
 export function getCouncilLessonsPath() {
   return `${COUNCIL_ARTEFACT_DIR}/council/lessons.md`;
+}
+
+/** Where lessons may already be: the current file, then one an older version wrote. */
+export function getCouncilLessonsPaths() {
+  return COUNCIL_ARTEFACT_DIRS.map((dir) => `${dir}/council/lessons.md`);
 }
 
 /**

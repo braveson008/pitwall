@@ -136,19 +136,19 @@ describe("resolveMemberRef", () => {
 
 describe("buildCouncilRelayTurn", () => {
   it("gives every turn its own handoff file so a stale file never re-triggers", () => {
-    expect(turnFor(1).stageFile).toBe(".braveli/council/run-1/stage-1.md");
-    expect(turnFor(2).stageFile).toBe(".braveli/council/run-1/stage-2.md");
+    expect(turnFor(1).stageFile).toBe(".pitwall/council/run-1/stage-1.md");
+    expect(turnFor(2).stageFile).toBe(".pitwall/council/run-1/stage-2.md");
     expect(new Set([1, 2, 3, 4].map((t) => turnFor(t).stageFile)).size).toBe(4);
   });
 
   it("reads the immediately preceding turn's file", () => {
     expect(turnFor(1).upstreamFile).toBeNull();
-    expect(turnFor(2).upstreamFile).toBe(".braveli/council/run-1/stage-1.md");
+    expect(turnFor(2).upstreamFile).toBe(".pitwall/council/run-1/stage-1.md");
   });
 
   it("points later turns at the shared thread, not just the last handoff", () => {
     expect(turnFor(1).prompt).not.toContain("thread.md");
-    expect(turnFor(2).prompt).toContain(".braveli/council/run-1/thread.md");
+    expect(turnFor(2).prompt).toContain(".pitwall/council/run-1/thread.md");
     expect(turnFor(2).prompt).toContain("full discussion so far");
   });
 
@@ -440,8 +440,9 @@ describe("repository evidence", () => {
     // Otherwise every member "produces work" merely by writing its handoff,
     // which is the exact claim this evidence exists to check.
     const after = snapshotRepoChanges([
-      { path: ".braveli/council/run-1/stage-2.md", status: "A" },
-      { path: ".braveli/council/run-1/thread.md", status: "A" },
+      { path: ".pitwall/council/run-1/stage-2.md", status: "A" },
+      { path: ".pitwall/council/run-1/thread.md", status: "A" },
+      { path: ".braveli/council/run-0/thread.md", status: "A" },
     ]);
     expect(after).toEqual({});
     expect(buildCouncilEvidence({ before: {}, after, member: implementer }).claimedWithoutChanges).toBe(true);
@@ -654,8 +655,8 @@ describe("conductor sees its own routing", () => {
 
 describe("buildRelayNudge", () => {
   it("asks only for the missing handoff, naming the file", () => {
-    const nudge = buildRelayNudge(".braveli/council/run-1/stage-4.md");
-    expect(nudge).toContain(".braveli/council/run-1/stage-4.md");
+    const nudge = buildRelayNudge(".pitwall/council/run-1/stage-4.md");
+    expect(nudge).toContain(".pitwall/council/run-1/stage-4.md");
     expect(nudge).toContain("TO: <member>");
     expect(nudge).toContain(RELAY_COMPLETE_MARKER);
   });
@@ -663,7 +664,7 @@ describe("buildRelayNudge", () => {
   it("restates the assignment, so a member that lost the thread can answer it", () => {
     // Asking only for the file is unanswerable by an agent that no longer knows
     // what it was doing, which spends the one rescue on a question it cannot act on.
-    const nudge = buildRelayNudge(".braveli/council/run-1/stage-4.md", {
+    const nudge = buildRelayNudge(".pitwall/council/run-1/stage-4.md", {
       roleLabel: "Architect",
       assignment: "Settle the rounding boundary before any code is written",
     });
@@ -712,8 +713,8 @@ describe("panels", () => {
   });
 
   it("gives each panel member its own handoff file", () => {
-    expect(getCouncilStageFile("run-1", 3)).toBe(".braveli/council/run-1/stage-3.md");
-    expect(getCouncilStageFile("run-1", 3, "qa-kimi")).toBe(".braveli/council/run-1/stage-3-qa-kimi.md");
+    expect(getCouncilStageFile("run-1", 3)).toBe(".pitwall/council/run-1/stage-3.md");
+    expect(getCouncilStageFile("run-1", 3, "qa-kimi")).toBe(".pitwall/council/run-1/stage-3-qa-kimi.md");
   });
 
   it("tells a panel member it is one voice of several and must not edit code", () => {
@@ -1134,8 +1135,8 @@ describe("relay guards and brief", () => {
   });
 
   it("numbers stage files from one and keeps one thread per run", () => {
-    expect(getCouncilStageFile("run-9", 1)).toBe(".braveli/council/run-9/stage-1.md");
-    expect(getCouncilThreadFile("run-9")).toBe(".braveli/council/run-9/thread.md");
+    expect(getCouncilStageFile("run-9", 1)).toBe(".pitwall/council/run-9/stage-1.md");
+    expect(getCouncilThreadFile("run-9")).toBe(".pitwall/council/run-9/thread.md");
   });
 
   it("preserves the complete multiline task in a file-backed brief", () => {
@@ -1147,7 +1148,7 @@ describe("relay guards and brief", () => {
 
   it("points agents to the complete task brief", () => {
     const path = getCouncilTaskBriefPath("run-1");
-    expect(path).toBe(".braveli/council/run-1/task.md");
+    expect(path).toBe(".pitwall/council/run-1/task.md");
     expect(formatCouncilTaskFilePrompt(path)).toContain(`Read the complete task brief at ${path}`);
   });
 });
@@ -1263,8 +1264,8 @@ describe("persisting standing instructions", () => {
 
 describe("where a turn's handoff goes", () => {
   it("keeps a solo turn on the unsuffixed file and gives each panel member its own", () => {
-    expect(getTurnStageFile("run-7", 4, "qa-kimi", 1)).toBe(".braveli/council/run-7/stage-4.md");
-    expect(getTurnStageFile("run-7", 4, "qa-kimi", 3)).toBe(".braveli/council/run-7/stage-4-qa-kimi.md");
+    expect(getTurnStageFile("run-7", 4, "qa-kimi", 1)).toBe(".pitwall/council/run-7/stage-4.md");
+    expect(getTurnStageFile("run-7", 4, "qa-kimi", 3)).toBe(".pitwall/council/run-7/stage-4-qa-kimi.md");
   });
 
   it("names the same file the member's own prompt told it to write", () => {
@@ -1311,7 +1312,7 @@ describe("where a turn's handoff goes", () => {
       isCycle: true,
       panel: [council[0]],
     });
-    expect(plan.stageFile).toBe(".braveli/council/run-7/stage-6.md");
+    expect(plan.stageFile).toBe(".pitwall/council/run-7/stage-6.md");
   });
 });
 
@@ -1550,7 +1551,7 @@ describe("council prompts delivered by file", () => {
 
   it("moves a long prompt into a file and types a short pointer that names the handoff", () => {
     const plan = planCouncilPromptDelivery({ runId: "run1", turn: 3, memberId: "qa-claude", stageFile: stage, prompt: long, stamp: 7 })!;
-    expect(plan.filePath).toBe(".braveli/council/run1/prompts/turn-3-qa-claude-7.md");
+    expect(plan.filePath).toBe(".pitwall/council/run1/prompts/turn-3-qa-claude-7.md");
     expect(plan.content).toBe(long);
     expect(plan.pointer.length).toBeLessThan(400);
     expect(plan.pointer).toContain(plan.filePath);

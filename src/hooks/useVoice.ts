@@ -21,7 +21,7 @@ export type VoiceHandlers = Record<string, VoiceHandler>;
 
 export interface VoiceLogEntry {
   id: string;
-  role: "user" | "braveli";
+  role: "user" | "pitwall";
   text: string;
   at: number;
   capabilityId?: string;
@@ -52,7 +52,7 @@ export function useVoice(handlers: VoiceHandlers) {
   }, []);
 
   useEffect(() => {
-    const api = window.braveli;
+    const api = window.pitwall;
     if (!api?.onVoiceEvent) return;
 
     void api.getVoiceStatus().then((status) => {
@@ -100,13 +100,13 @@ export function useVoice(handlers: VoiceHandlers) {
           append({ role: "user", text: event.text });
           break;
         case "voice:say":
-          append({ role: "braveli", text: event.text });
+          append({ role: "pitwall", text: event.text });
           break;
         case "voice:result":
           setLog((current) => {
             // Attach the outcome to the line Pitwall just spoke, so a failure
             // reads as a failure rather than as a confident sentence.
-            const index = current.map((entry) => entry.role).lastIndexOf("braveli");
+            const index = current.map((entry) => entry.role).lastIndexOf("pitwall");
             if (index === -1) return current;
             const next = [...current];
             next[index] = { ...next[index], ok: event.result.ok, capabilityId: event.result.capabilityId };
@@ -132,7 +132,7 @@ export function useVoice(handlers: VoiceHandlers) {
   // Renderer-surface capabilities. Every call must be answered exactly once —
   // main is holding a promise with a timeout behind each one.
   useEffect(() => {
-    const api = window.braveli;
+    const api = window.pitwall;
     if (!api?.onVoiceRendererCall) return;
 
     return api.onVoiceRendererCall(async ({ id, capabilityId, params }) => {
@@ -157,20 +157,20 @@ export function useVoice(handlers: VoiceHandlers) {
   }, []);
 
   const start = useCallback(async (config?: VoiceConfig) => {
-    const result = await window.braveli?.startVoice(config);
+    const result = await window.pitwall?.startVoice(config);
     if (result && !result.ok) setError({ message: result.error || "Voice could not start.", fatal: false });
     else setError(null);
     return result;
   }, []);
 
-  const stop = useCallback(async () => window.braveli?.stopVoice(), []);
-  const listenOnce = useCallback(async () => window.braveli?.voiceListenOnce(), []);
-  const submitText = useCallback(async (text: string) => window.braveli?.submitVoiceText({ text }), []);
-  const confirm = useCallback(async () => window.braveli?.confirmVoiceAction(), []);
-  const cancelConfirmation = useCallback(async () => window.braveli?.cancelVoiceConfirmation(), []);
-  const stopSpeaking = useCallback(async () => window.braveli?.stopVoiceSpeaking(), []);
+  const stop = useCallback(async () => window.pitwall?.stopVoice(), []);
+  const listenOnce = useCallback(async () => window.pitwall?.voiceListenOnce(), []);
+  const submitText = useCallback(async (text: string) => window.pitwall?.submitVoiceText({ text }), []);
+  const confirm = useCallback(async () => window.pitwall?.confirmVoiceAction(), []);
+  const cancelConfirmation = useCallback(async () => window.pitwall?.cancelVoiceConfirmation(), []);
+  const stopSpeaking = useCallback(async () => window.pitwall?.stopVoiceSpeaking(), []);
   /** End the exchange but keep the microphone on. */
-  const endTurn = useCallback(async () => window.braveli?.endVoiceTurn(), []);
+  const endTurn = useCallback(async () => window.pitwall?.endVoiceTurn(), []);
   const clearLog = useCallback(() => setLog([]), []);
 
   const busy = useMemo(() => state === "thinking" || state === "working", [state]);

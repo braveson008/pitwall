@@ -1,5 +1,5 @@
 import type { AgentSession } from "../data";
-import type { BraveliSession, BraveliTask } from "../domain/types";
+import type { PitwallSession, PitwallTask } from "../domain/types";
 
 type Worktree = { path: string; branch: string };
 
@@ -10,9 +10,9 @@ export function selectTaskWorkspace({
   worktrees,
   projectPath,
 }: {
-  task: BraveliTask;
+  task: PitwallTask;
   sessions: AgentSession[];
-  runs: BraveliSession[];
+  runs: PitwallSession[];
   worktrees: Worktree[];
   projectPath: string;
 }) {

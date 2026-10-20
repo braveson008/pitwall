@@ -11,9 +11,15 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { LEGACY_SCHEDULER_FIRE_FLAG } = require("./legacyNames.cjs");
 
 const SCHEDULER_LABEL = "app.pitwall.scheduler";
-const FIRE_FLAG = "--braveli-scheduler-fire";
+const FIRE_FLAG = "--pitwall-scheduler-fire";
+
+/** Jobs registered by an older version still wake the app with its flag until the next sync rewrites them. */
+function isSchedulerFire(argv) {
+  return Array.isArray(argv) && (argv.includes(FIRE_FLAG) || argv.includes(LEGACY_SCHEDULER_FIRE_FLAG));
+}
 
 function escapeXml(value) {
   return String(value)
@@ -114,4 +120,4 @@ function syncLaunchAgent({ home, executablePath, times = [], run }) {
   return { written: true, removed: false, path: target };
 }
 
-module.exports = { SCHEDULER_LABEL, FIRE_FLAG, escapeXml, plistPath, renderPlist, syncLaunchAgent };
+module.exports = { SCHEDULER_LABEL, FIRE_FLAG, isSchedulerFire, escapeXml, plistPath, renderPlist, syncLaunchAgent };

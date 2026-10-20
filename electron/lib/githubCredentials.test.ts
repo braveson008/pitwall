@@ -17,7 +17,7 @@ const newStore = () => createGitHubCredentialStore(join(directory, "credentials.
 const remember = (store: ReturnType<typeof newStore>, token = "live-token") =>
   store.remember({ projectId: "p1", projectPath: "/tmp/project", login: "someone", token });
 
-beforeEach(() => { directory = mkdtempSync(join(tmpdir(), "braveli-credentials-")); });
+beforeEach(() => { directory = mkdtempSync(join(tmpdir(), "pitwall-credentials-")); });
 afterEach(() => { rmSync(directory, { recursive: true, force: true }); });
 
 describe("getEnvironment", () => {

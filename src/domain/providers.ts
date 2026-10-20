@@ -1,7 +1,7 @@
 import type { AgentProvider } from "../data";
-import type { BraveliProviderId } from "./types";
+import type { PitwallProviderId } from "./types";
 
-const onWindows = typeof window !== "undefined" && (window as { braveli?: { platform?: string } }).braveli?.platform === "win32";
+const onWindows = typeof window !== "undefined" && (window as { pitwall?: { platform?: string } }).pitwall?.platform === "win32";
 
 const hermesInstall = {
   mac: "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
@@ -9,7 +9,7 @@ const hermesInstall = {
 };
 
 export interface ProviderDefinition {
-  id: BraveliProviderId;
+  id: PitwallProviderId;
   agent: Extract<AgentProvider, "Claude" | "Codex" | "Gemini" | "Grok" | "Kimi" | "Hermes">;
   displayName: string;
   icon: string;
@@ -106,11 +106,11 @@ export const providerRegistry: ProviderDefinition[] = [
   },
 ];
 
-export function getProviderById(id: BraveliProviderId) {
+export function getProviderById(id: PitwallProviderId) {
   return providerRegistry.find((provider) => provider.id === id);
 }
 
-export function providerIdFromAgent(agent: AgentProvider): BraveliProviderId {
+export function providerIdFromAgent(agent: AgentProvider): PitwallProviderId {
   const match = providerRegistry.find((provider) => provider.agent === agent);
   if (match) return match.id;
 
@@ -122,11 +122,11 @@ export function providerIdFromAgent(agent: AgentProvider): BraveliProviderId {
   return customId || "custom";
 }
 
-export function agentFromProviderId(id: BraveliProviderId) {
+export function agentFromProviderId(id: PitwallProviderId) {
   return getProviderById(id)?.agent ?? "Codex";
 }
 
-export function getProviderModelValue(id: BraveliProviderId, modelLabel: string) {
+export function getProviderModelValue(id: PitwallProviderId, modelLabel: string) {
   const provider = getProviderById(id);
   return provider?.supportedModels.find((model) => model.label === modelLabel)?.value ?? modelLabel;
 }

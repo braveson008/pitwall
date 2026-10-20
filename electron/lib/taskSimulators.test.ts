@@ -20,7 +20,7 @@ const owned = { udid: "A", name: "Pitwall WEB-1-0123456789ab", state: "Shutdown"
 const booted = { udid: "B", name: "Pitwall WEB-2-0123456789ab", state: "Booted" };
 const stock = { udid: "C", name: "iPhone 17 Pro", state: "Shutdown" };
 const lookalike = { udid: "D", name: "Pitwall demo", state: "Shutdown" };
-const otherApp = { udid: "E", name: "Braveli WEB-3-0123456789ab", state: "Shutdown" };
+const otherApp = { udid: "E", name: "Other WEB-3-0123456789ab", state: "Shutdown" };
 
 describe("task simulator cleanup", () => {
   it("deletes a released task's device, shutting it down first when booted", async () => {

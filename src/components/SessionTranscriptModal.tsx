@@ -47,13 +47,13 @@ export function SessionTranscriptModal({
    * words gone, which is what this dialog used to show.
    */
   useEffect(() => {
-    if (!sessionId || !window.braveli?.readAgentTranscript) {
+    if (!sessionId || !window.pitwall?.readAgentTranscript) {
       setEntries(null);
       return;
     }
     let active = true;
     setLoading(true);
-    void window.braveli
+    void window.pitwall
       .readAgentTranscript({ projectPath: cwd, claudeSessionId: nativeSessionId })
       .then((result) => {
         if (!active) return;

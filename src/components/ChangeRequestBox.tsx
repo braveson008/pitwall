@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import { isUsableRequest, pendingRequests, type TaskWithRequests } from "../lib/changeRequests";
 import { shortcutLabel } from "../lib/shortcutLabel";
 
@@ -16,8 +16,8 @@ export function ChangeRequestBox({
   task,
   onSubmit,
 }: {
-  task: BraveliTask;
-  onSubmit: (task: BraveliTask, body: string) => Promise<boolean>;
+  task: PitwallTask;
+  onSubmit: (task: PitwallTask, body: string) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState("");

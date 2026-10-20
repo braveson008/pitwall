@@ -92,7 +92,7 @@ describe("composeRequest", () => {
       task: task({
         completionSummary: {
           what: "The agent completed work for shop-1936.",
-          how: "Work was performed in /Users/someone/Library/Application Support/braveli/worktrees/x",
+          how: "Work was performed in /Users/someone/Library/Application Support/pitwall/worktrees/x",
           components: [],
           source: "derived",
           reportedAt: "",
@@ -103,7 +103,7 @@ describe("composeRequest", () => {
     });
     expect(body).toContain("Users cannot tell which folder a file is in.");
     expect(body).toContain("- Show the full path in the tooltip");
-    expect(body).not.toMatch(/agent|braveli|\/Users\/|claude|generated/i);
+    expect(body).not.toMatch(/agent|pitwall|\/Users\/|claude|generated/i);
     expect(body).toContain("- [ ] Checked locally");
   });
 

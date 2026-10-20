@@ -39,7 +39,7 @@ export function TaskImageAttachments({
     const picked = files.filter((file) => file.type.startsWith("image/"));
     if (picked.length === 0) return;
 
-    const api = window.braveli;
+    const api = window.pitwall;
     if (!api?.stageTerminalImages || !api.stageTerminalImageData || !api.getPathForFile) {
       setError("Image attachments are unavailable.");
       return;
@@ -87,7 +87,7 @@ export function TaskImageAttachments({
   };
 
   const choose = async () => {
-    const api = window.braveli;
+    const api = window.pitwall;
     if (!api?.chooseTerminalImages) {
       setError("Image attachments are unavailable.");
       return;

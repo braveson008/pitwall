@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { SCHEDULER_LABEL, plistPath, renderPlist, syncLaunchAgent } from "./launchAgent.cjs";
+import { SCHEDULER_LABEL, isSchedulerFire, plistPath, renderPlist, syncLaunchAgent } from "./launchAgent.cjs";
 
 describe("renderPlist", () => {
   const xml = renderPlist({
@@ -13,7 +13,7 @@ describe("renderPlist", () => {
   it("labels the agent and runs the executable with the fire flag", () => {
     expect(xml).toContain(`<string>${SCHEDULER_LABEL}</string>`);
     expect(xml).toContain("<string>/Applications/Pitwall.app/Contents/MacOS/Pitwall</string>");
-    expect(xml).toContain("<string>--braveli-scheduler-fire</string>");
+    expect(xml).toContain("<string>--pitwall-scheduler-fire</string>");
   });
 
   it("writes one StartCalendarInterval entry per time", () => {
@@ -110,5 +110,14 @@ describe("syncLaunchAgent", () => {
       run: (args) => { if (args[0] === "bootout") throw new Error("No such process"); },
     })).not.toThrow();
     expect(existsSync(plistPath(h))).toBe(true);
+  });
+});
+
+describe("isSchedulerFire", () => {
+  it("recognises the fire flag, and the one jobs registered by older versions still pass", () => {
+    expect(isSchedulerFire(["/Applications/Pitwall.app/Contents/MacOS/Pitwall", "--pitwall-scheduler-fire"])).toBe(true);
+    expect(isSchedulerFire(["/Applications/Pitwall.app/Contents/MacOS/Pitwall", "--braveli-scheduler-fire"])).toBe(true);
+    expect(isSchedulerFire(["/Applications/Pitwall.app/Contents/MacOS/Pitwall"])).toBe(false);
+    expect(isSchedulerFire(undefined)).toBe(false);
   });
 });

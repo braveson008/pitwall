@@ -59,10 +59,6 @@ npm run dist     # an unsigned local build in release/
 
 Projects, tasks, sessions and terminal history stay on your Mac. Agents talk to their own providers with your own accounts. GitHub and GitLab tokens are encrypted with macOS safe storage. See [SECURITY.md](SECURITY.md) for what an unattended agent can do.
 
-## History
-
-Pitwall began as an app called Braveli, so some internal names (environment variables, the renderer bridge) still say `braveli`.
-
 ## License
 
 [Apache-2.0](LICENSE). Third-party components are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

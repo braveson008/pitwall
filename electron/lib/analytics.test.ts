@@ -18,7 +18,7 @@ const make = (over: Record<string, unknown> = {}) => {
   return { analytics, fetchImpl };
 };
 
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "braveli-analytics-")); });
+beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "pitwall-analytics-")); });
 afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
 describe("identity", () => {
@@ -135,7 +135,7 @@ describe("failure", () => {
 });
 
 describe("the allowlists are the guarantee", () => {
-  const dir = mkdtempSync(join(tmpdir(), "braveli-analytics-guard-"));
+  const dir = mkdtempSync(join(tmpdir(), "pitwall-analytics-guard-"));
   const sent: Array<Record<string, unknown>> = [];
   const analytics = createAnalytics({
     filePath: join(dir, "analytics.json"),

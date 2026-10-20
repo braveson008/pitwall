@@ -81,9 +81,9 @@ export function McpTaskImportModal({
   if (!open) return null;
 
   async function saveScope() {
-    if (!selectedSource || !window.braveli?.setMcpTaskScope) return true;
+    if (!selectedSource || !window.pitwall?.setMcpTaskScope) return true;
     if (scope.trim() === (selectedSource.scope ?? "")) return true;
-    const saved = await window.braveli.setMcpTaskScope({
+    const saved = await window.pitwall.setMcpTaskScope({
       projectId,
       projectPath,
       provider: selectedSource.provider,
@@ -99,13 +99,13 @@ export function McpTaskImportModal({
   }
 
   async function loadTasks() {
-    if (!sourceReady || !selectedSource || !window.braveli?.listMcpTasks) return;
+    if (!sourceReady || !selectedSource || !window.pitwall?.listMcpTasks) return;
     setLoading(true);
     setLoaded(false);
     setError("");
     try {
       if (!(await saveScope())) return;
-      const result = await window.braveli.listMcpTasks({
+      const result = await window.pitwall.listMcpTasks({
         projectId,
         projectPath,
         provider: selectedSource.provider,
@@ -303,7 +303,7 @@ export function McpTaskImportModal({
                                     </span>
                                   </span>
                                   {duplicate ? <span className="dk-badge">Already imported</span> : null}
-                                  {task.url ? <button type="button" className="dk-icon-btn dk-icon-btn--sm" aria-label={`Open ${task.id || task.title}`} title="Open in tracker" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void window.braveli?.openExternalUrl(task.url!); }}><ExternalLink size={13} /></button> : null}
+                                  {task.url ? <button type="button" className="dk-icon-btn dk-icon-btn--sm" aria-label={`Open ${task.id || task.title}`} title="Open in tracker" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void window.pitwall?.openExternalUrl(task.url!); }}><ExternalLink size={13} /></button> : null}
                                 </label>
                               );
                             })}

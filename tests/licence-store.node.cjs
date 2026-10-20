@@ -21,7 +21,7 @@ const keychain = {
 };
 
 function withStore(run) {
-  const userDataPath = mkdtempSync(path.join(tmpdir(), "braveli-licence-"));
+  const userDataPath = mkdtempSync(path.join(tmpdir(), "pitwall-licence-"));
   try {
     return run({ userDataPath, safeStorage: keychain }, userDataPath);
   } finally {
@@ -33,16 +33,16 @@ function withStore(run) {
 
 test("reads back what was written", () => {
   withStore((context) => {
-    writeRecord(context, { installedAt: "2026-08-01T00:00:00.000Z", key: "BRAVELI-1234" });
-    assert.equal(readRecord(context).key, "BRAVELI-1234");
+    writeRecord(context, { installedAt: "2026-08-01T00:00:00.000Z", key: "PITWALL-1234" });
+    assert.equal(readRecord(context).key, "PITWALL-1234");
   });
 });
 
 test("never leaves the key in plain text on disk", () => {
   withStore((context, dir) => {
-    writeRecord(context, { installedAt: "2026-08-01T00:00:00.000Z", key: "BRAVELI-SECRET" });
+    writeRecord(context, { installedAt: "2026-08-01T00:00:00.000Z", key: "PITWALL-SECRET" });
     const onDisk = readFileSync(path.join(dir, FILE), "utf8");
-    assert.ok(!onDisk.includes("BRAVELI-SECRET"));
+    assert.ok(!onDisk.includes("PITWALL-SECRET"));
     assert.ok(onDisk.includes("keyCipher"));
   });
 });
@@ -99,8 +99,8 @@ test("never moves the install date afterwards", () => {
 
 test("keeps an existing key when stamping", () => {
   withStore((context) => {
-    writeRecord(context, { key: "BRAVELI-1234" });
-    assert.equal(ensureInstalled(context, "2026-08-23T00:00:00.000Z").key, "BRAVELI-1234");
+    writeRecord(context, { key: "PITWALL-1234" });
+    assert.equal(ensureInstalled(context, "2026-08-23T00:00:00.000Z").key, "PITWALL-1234");
   });
 });
 

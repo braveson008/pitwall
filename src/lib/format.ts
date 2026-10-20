@@ -1,4 +1,4 @@
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import type { ValidationResult } from "../domain/contracts";
 
 export function nowIso() {
@@ -16,7 +16,7 @@ export function formatActivityTime(value: string) {
   }
 }
 
-export function getTaskStatusLabel(status: BraveliTask["status"]) {
+export function getTaskStatusLabel(status: PitwallTask["status"]) {
   return status.replace("-", " ");
 }
 

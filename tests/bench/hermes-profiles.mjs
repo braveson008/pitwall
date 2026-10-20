@@ -22,7 +22,7 @@ const hermesHome = process.env.HERMES_BENCH_HOME;
 assert.ok(hermesHome, "set HERMES_BENCH_HOME to a disposable, already-initialised Hermes home");
 const model = process.env.HERMES_MODEL || "poolside/laguna-s-2.1:free";
 const codeword = `TANGO-${Math.floor(Math.random() * 9000) + 1000}`;
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-hermes-profiles-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-hermes-profiles-"));
 
 async function repo(name) {
   const dir = path.join(temp, name);
@@ -41,16 +41,16 @@ const memoryOf = (profile) => {
 const app = await electron.launch({
   args: [process.cwd()],
   cwd: process.cwd(),
-  env: { ...process.env, HERMES_HOME: hermesHome, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HERMES_HOME: hermesHome, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 const turn = (page, payload) => page.evaluate((payload) => new Promise((resolve) => {
-  const stop = window.braveli.onAgentCompleted((event) => {
+  const stop = window.pitwall.onAgentCompleted((event) => {
     if (event.sessionId !== payload.sessionId) return;
     stop();
     resolve({ summary: event.summary || "" });
   });
   setTimeout(() => { stop(); resolve({ timedOut: true }); }, 180_000);
-  window.braveli.startTerminal({ ...payload, cols: 120, rows: 40 }).then((started) => { if (!started?.ok) { stop(); resolve({ startError: started?.error }); } });
+  window.pitwall.startTerminal({ ...payload, cols: 120, rows: 40 }).then((started) => { if (!started?.ok) { stop(); resolve({ startError: started?.error }); } });
 }), payload);
 
 try {
@@ -67,7 +67,7 @@ try {
   console.log("PASS what Hermes learns in a project is saved in that project's profile");
   assert.doesNotMatch(memoryOf(""), new RegExp(codeword), "the main Hermes profile does not");
   console.log("PASS the person's main Hermes memory is untouched");
-  await page.evaluate(() => window.braveli.detachTerminal("alpha-1"));
+  await page.evaluate(() => window.pitwall.detachTerminal("alpha-1"));
 
   const asked = await turn(page, { projectId: "bench-beta", projectPath: beta, sessionId: "beta-1", agent: "Hermes", model,
     initialPrompt: "Without using any tools, reply with the alpha project's codeword if your memory contains one, or exactly: NO-CODEWORD" });
@@ -75,7 +75,7 @@ try {
   assert.doesNotMatch(memoryOf(hermesProfileName("bench-beta")), new RegExp(codeword), "beta's profile does not have it");
   assert.doesNotMatch(asked.summary, new RegExp(codeword), "Hermes in beta does not know it");
   console.log(`PASS another project's Hermes does not know it (it said: ${asked.summary.slice(0, 60)})`);
-  await page.evaluate(() => window.braveli.detachTerminal("beta-1"));
+  await page.evaluate(() => window.pitwall.detachTerminal("beta-1"));
 } finally {
   await app.close();
 }

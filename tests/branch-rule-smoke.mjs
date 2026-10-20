@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import { _electron as electron } from "playwright";
 
 const root = process.cwd();
-const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "braveli-branch-rule-"));
+const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-branch-rule-"));
 const git = (args, cwd) => execFileSync("git", ["-c", "user.email=a@b", "-c", "user.name=t", ...args], { cwd, encoding: "utf8" });
 
 const origin = path.join(temp, "origin.git");
@@ -42,12 +42,12 @@ await writeFile(path.join(worktree, "b.txt"), "b\n");
 git(["add", "."], worktree);
 git(["commit", "-q", "-m", "vip tag"], worktree);
 
-const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") } });
+const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") } });
 try {
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(1500);
-  const result = await page.evaluate((payload) => window.braveli.openPullRequest(payload), {
+  const result = await page.evaluate((payload) => window.pitwall.openPullRequest(payload), {
     projectPath: repo,
     worktreePath: worktree,
     branch: "acme-2687",

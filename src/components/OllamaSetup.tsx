@@ -112,12 +112,12 @@ export function OllamaSetup({ onAgentReady, onInstallAgent }: {
   const logRef = useRef<HTMLPreElement>(null);
 
   const refresh = async () => {
-    const next = await window.braveli?.ollamaStatus?.();
+    const next = await window.pitwall?.ollamaStatus?.();
     if (!next) return;
     setStatus(next as Status);
     // A model on its own cannot edit code. Ask what could drive it.
     const names = (next.models ?? []).map((model: OllamaModel) => model.name);
-    const status = await window.braveli?.ollamaBridgeStatus?.({ models: names });
+    const status = await window.pitwall?.ollamaBridgeStatus?.({ models: names });
     if (status?.ok) setBridge(status);
   };
 
@@ -125,7 +125,7 @@ export function OllamaSetup({ onAgentReady, onInstallAgent }: {
 
   // A pull is gigabytes over a network; showing its progress is the difference
   // between waiting and wondering whether it has hung.
-  useEffect(() => window.braveli?.onOllamaPullOutput?.((data) => {
+  useEffect(() => window.pitwall?.onOllamaPullOutput?.((data) => {
     setOutput((current) => `${current}${data.chunk}`);
   }), []);
 
@@ -137,7 +137,7 @@ export function OllamaSetup({ onAgentReady, onInstallAgent }: {
   const serve = async () => {
     setBusy("serve");
     try {
-      await window.braveli?.ollamaServe?.();
+      await window.pitwall?.ollamaServe?.();
       await refresh();
     } finally { setBusy(""); }
   };
@@ -147,7 +147,7 @@ export function OllamaSetup({ onAgentReady, onInstallAgent }: {
     setPulling(model);
     setOutput("");
     try {
-      await window.braveli?.ollamaPull?.({ model: model.trim() });
+      await window.pitwall?.ollamaPull?.({ model: model.trim() });
       await refresh();
     } finally { setPulling(""); }
   };
@@ -163,7 +163,7 @@ export function OllamaSetup({ onAgentReady, onInstallAgent }: {
     if (confirmRemove !== model) { setConfirmRemove(model); return; }
     setRemoving(model);
     try {
-      const result = await window.braveli?.ollamaRemove?.({ model });
+      const result = await window.pitwall?.ollamaRemove?.({ model });
       if (!result?.ok && result?.error) setOutput(result.error);
       await refresh();
     } finally { setRemoving(""); setConfirmRemove(""); }
@@ -173,7 +173,7 @@ export function OllamaSetup({ onAgentReady, onInstallAgent }: {
     if (!pulling) return;
     setCancelling(true);
     try {
-      await window.braveli?.ollamaPullCancel?.({ model: pulling });
+      await window.pitwall?.ollamaPullCancel?.({ model: pulling });
     } finally { setCancelling(false); }
   };
 
@@ -182,7 +182,7 @@ export function OllamaSetup({ onAgentReady, onInstallAgent }: {
     if (!agentId) return;
     setConnecting(model);
     try {
-      const result = await window.braveli?.connectOllamaAgent?.({
+      const result = await window.pitwall?.connectOllamaAgent?.({
         agentId,
         model,
         models: status?.models.map((entry) => entry.name) ?? [model],

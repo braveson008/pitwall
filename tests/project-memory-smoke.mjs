@@ -10,7 +10,7 @@ import { goTo } from "./helpers/goTo.mjs";
 import { readPointedPrompt } from "./fixtures/councilPrompts.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), "braveli-project-memory-"));
+const tempRoot = await mkdtemp(path.join(os.tmpdir(), "pitwall-project-memory-"));
 const projectPath = path.join(tempRoot, "project");
 const userDataPath = path.join(tempRoot, "user-data");
 const fakeHome = path.join(tempRoot, "home");
@@ -85,7 +85,7 @@ if (args.includes('-p')) {
   process.stdin.on('data', (data) => { emit({ data }); if (data.includes('MEMORY_FIXTURE_EXIT')) process.exit(0); });
   process.stdin.resume();
   console.log('${name} stub ready');
-  if (args.some((value) => value.includes('Work on task memory-101.'))) console.log('BRAVELI_MEMORY ' + JSON.stringify({ title: ${JSON.stringify(observationTitle)}, content: 'The rounding entry point is src/totals.ts.', kind: 'area', sourcePaths: ['src/totals.ts'] }));
+  if (args.some((value) => value.includes('Work on task memory-101.'))) console.log('PITWALL_MEMORY ' + JSON.stringify({ title: ${JSON.stringify(observationTitle)}, content: 'The rounding entry point is src/totals.ts.', kind: 'area', sourcePaths: ['src/totals.ts'] }));
 }
 `,
   );
@@ -192,8 +192,8 @@ async function capturedPrompts() {
   return prompts;
 }
 const inspect = () =>
-  page.evaluate((projectPath) => window.braveli.inspectProjectKnowledge({ projectPath }), projectPath);
-const stored = () => page.evaluate(() => JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}"));
+  page.evaluate((projectPath) => window.pitwall.inspectProjectKnowledge({ projectPath }), projectPath);
+const stored = () => page.evaluate(() => JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}"));
 async function openSection(name) {
   await goTo(page, name);
 }
@@ -216,8 +216,8 @@ async function launchApp() {
       ...process.env,
       HOME: fakeHome,
       PATH: [fakeBin, "/usr/bin", "/bin", "/usr/sbin", "/sbin"].join(path.delimiter),
-      BRAVELI_E2E: "1",
-      BRAVELI_USER_DATA_DIR: userDataPath,
+      PITWALL_E2E: "1",
+      PITWALL_USER_DATA_DIR: userDataPath,
       ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
     },
     timeout: 30_000,
@@ -234,14 +234,14 @@ try {
       localStorage.clear();
       localStorage.setItem("agent-studio-projects", JSON.stringify([project]));
       localStorage.setItem("agent-studio-active-project", project.id);
-      localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
-      localStorage.setItem("braveli-onboarded", "yes");
+      localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
+      localStorage.setItem("pitwall-onboarded", "yes");
     },
     { project, workspace },
   );
   await page.reload({ waitUntil: "domcontentloaded" });
   const learnedResult = await page.evaluate(
-    (projectPath) => window.braveli.learnProjectKnowledge({ projectPath }),
+    (projectPath) => window.pitwall.learnProjectKnowledge({ projectPath }),
     projectPath,
   );
   assert.equal(learnedResult.ok, true, learnedResult.error);
@@ -326,8 +326,8 @@ try {
   assert.deepEqual(first.manualEntryIds.sort(), ["public", "restricted"]);
   const handoff = `TO: implementer-codex\nArchitecture mapped.\n\n## Working set\n- src/totals.ts — Memory smoke rounding boundary.\n\n## Commands\n- npm test\n\n## Accepted decisions\n- Preserve source evidence for future tasks.\n\n## Open questions\n- Confirm rounding for negative values.\n`;
   const write = await page.evaluate(
-    ({ projectPath, filePath, content }) => window.braveli.writeProjectFile({ projectPath, filePath, content }),
-    { projectPath: first.workspacePath, filePath: `.braveli/council/${first.runId}/stage-1.md`, content: handoff },
+    ({ projectPath, filePath, content }) => window.pitwall.writeProjectFile({ projectPath, filePath, content }),
+    { projectPath: first.workspacePath, filePath: `.pitwall/council/${first.runId}/stage-1.md`, content: handoff },
   );
   assert.equal(write.ok, true, write.error);
   const later = await waitFor(
@@ -351,7 +351,7 @@ try {
   );
 
   const exited = await page.evaluate(
-    (sessionId) => window.braveli.writeTerminal({ sessionId, data: "MEMORY_FIXTURE_EXIT\r" }),
+    (sessionId) => window.pitwall.writeTerminal({ sessionId, data: "MEMORY_FIXTURE_EXIT\r" }),
     ordinary.sessionId,
   );
   assert.equal(exited.ok, true);
@@ -363,7 +363,7 @@ try {
   assert.equal(observed.status, "tentative");
   assert.equal(observed.sources[0].path, "src/totals.ts");
   assert.equal(observed.sources[0].hash, hash(await readFile(path.join(projectPath, "src/totals.ts"))));
-  log("ordinary agent completion captures its own source-backed BRAVELI_MEMORY observation as tentative");
+  log("ordinary agent completion captures its own source-backed PITWALL_MEMORY observation as tentative");
 
   await waitFor(
     async () =>
@@ -403,7 +403,7 @@ try {
   await page.evaluate(
     ({ command, at }) =>
       localStorage.setItem(
-        "braveli-custom-agents",
+        "pitwall-custom-agents",
         JSON.stringify([
           {
             id: "missing-fixture",
@@ -442,5 +442,5 @@ try {
   throw error;
 } finally {
   await app?.close();
-  if (process.env.BRAVELI_KEEP_SMOKE_ARTIFACTS !== "1") await rm(tempRoot, { recursive: true, force: true });
+  if (process.env.PITWALL_KEEP_SMOKE_ARTIFACTS !== "1") await rm(tempRoot, { recursive: true, force: true });
 }

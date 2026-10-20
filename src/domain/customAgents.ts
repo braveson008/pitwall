@@ -19,7 +19,7 @@ export interface CustomAgentDefinition {
   createdAt: string;
 }
 
-const STORE_KEY = "braveli-custom-agents";
+const STORE_KEY = "pitwall-custom-agents";
 const LEGACY_STORE_KEY = "bravely-custom-agents";
 
 export function readCustomAgents(): CustomAgentDefinition[] {

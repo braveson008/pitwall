@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CARRY_CHARACTERS, emptyPreviewWatch, seedPreviewWatch, watchPreview } from "./previewWatch";
 import { findLatestDevPreviewUrl } from "./devPreview";
 
-const marker = (url: string) => `BRAVELI_DEV_PREVIEW ${url}\r\n`;
+const marker = (url: string) => `PITWALL_DEV_PREVIEW ${url}\r\n`;
 
 describe("watchPreview", () => {
   it("finds a marked preview in newly arrived output", () => {

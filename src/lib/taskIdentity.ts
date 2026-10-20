@@ -1,4 +1,4 @@
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 
 const TASK_IDENTIFIER_PATTERN = /^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/;
 
@@ -15,6 +15,6 @@ export function validateTaskIdentifier(value: string): string | null {
   return null;
 }
 
-export function taskBranchName(task: Pick<BraveliTask, "identifier" | "worktree">) {
+export function taskBranchName(task: Pick<PitwallTask, "identifier" | "worktree">) {
   return task.identifier ? normalizeTaskIdentifier(task.identifier) : task.worktree;
 }

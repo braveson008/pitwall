@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import {
   allocateImportedTaskIdentifier,
   flattenMcpTaskSources,
@@ -31,7 +31,7 @@ describe("MCP task identity", () => {
     const stored = {
       title: "Fix parser",
       source: { kind: "mcp", name: "Linear", externalId: "ENG-412" },
-    } as BraveliTask;
+    } as PitwallTask;
     expect(importedTaskIdentity(stored)).toBe(mcpTaskIdentity("claude", "linear", { id: "eng-412", title: "Changed" }));
   });
 
@@ -70,7 +70,7 @@ describe("flattenMcpTaskSources", () => {
     const [bound] = flattenMcpTaskSources({
       claude: {
         ok: true, provider: "claude", installed: true, supported: true, servers: [atlassian],
-        authProfiles: [{ provider: "claude", name: "atlassian", alias: "braveli_atlassian_x", target: atlassian.target, transport: "http", authenticatedAt: "2026-10-01T00:00:00.000Z", scope: "SHOP", updatedAt: "" }],
+        authProfiles: [{ provider: "claude", name: "atlassian", alias: "pitwall_atlassian_x", target: atlassian.target, transport: "http", authenticatedAt: "2026-10-01T00:00:00.000Z", scope: "SHOP", updatedAt: "" }],
       },
     });
     expect(bound).toMatchObject({ name: "atlassian", status: "connected", scope: "SHOP" });
@@ -250,7 +250,7 @@ describe("grouping across trackers that organise work differently", () => {
 
 describe("planTrackerSync", () => {
   const source = { provider: "claude", name: "atlassian", target: "DELTA" };
-  const known = (over: Partial<BraveliTask> = {}): BraveliTask => ({
+  const known = (over: Partial<PitwallTask> = {}): PitwallTask => ({
     id: "task-1",
     projectId: "p",
     identifier: "acme-2581",

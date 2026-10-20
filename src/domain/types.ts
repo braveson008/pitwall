@@ -1,8 +1,8 @@
 import type { PairReviewer } from "./pairReviewer";
 // Built-in provider ids plus room for user-defined agents (any string).
-export type BraveliProviderId = "claude" | "codex" | "gemini" | "grok" | "kimi" | "hermes" | (string & {});
+export type PitwallProviderId = "claude" | "codex" | "gemini" | "grok" | "kimi" | "hermes" | (string & {});
 
-export type BraveliTaskStatus =
+export type PitwallTaskStatus =
   | "backlog"
   | "ready"
   | "running"
@@ -10,9 +10,9 @@ export type BraveliTaskStatus =
   | "completed"
   | "cancelled";
 
-export type BraveliTaskPriority = "low" | "medium" | "high" | "urgent";
+export type PitwallTaskPriority = "low" | "medium" | "high" | "urgent";
 
-export type BraveliSessionType =
+export type PitwallSessionType =
   | "architecture"
   | "implementation"
   | "debugging"
@@ -20,7 +20,7 @@ export type BraveliSessionType =
   | "code-review"
   | "research";
 
-export type BraveliSessionStatus =
+export type PitwallSessionStatus =
   | "starting"
   | "running"
   | "waiting"
@@ -41,28 +41,22 @@ export type ContextCategory =
 
 export type ContextVisibility = "all-agents" | "selected-agents" | "private";
 
-export interface BraveliProjectRecord {
+export interface PitwallProjectRecord {
   id: string;
   name: string;
   path: string;
   defaultBranch: string;
-  providerIds: BraveliProviderId[];
+  providerIds: PitwallProviderId[];
   /** Hermes as this project's reviewer, learning it between reviews. */
-  overseer?: BraveliProjectOverseer;
-  /** The git remote, normalised (`github.com/owner/repo`): how other computers recognise this project. */
-  remote?: string;
-  /** Where to clone it from, without credentials. */
-  remoteUrl?: string;
-  /** Agent conversations sync with the project unless this is false. */
-  cloudHistory?: boolean;
+  overseer?: PitwallProjectOverseer;
   createdAt: string;
   updatedAt: string;
 }
 
 /** Hermes reviews and learns every project unless the person turns it off there. */
-export const DEFAULT_OVERSEER: BraveliProjectOverseer = { enabled: true, model: "auto", rounds: 3 };
+export const DEFAULT_OVERSEER: PitwallProjectOverseer = { enabled: true, model: "auto", rounds: 3 };
 
-export interface BraveliProjectOverseer {
+export interface PitwallProjectOverseer {
   /** Every finished task is reviewed by Hermes, and Hermes learns from it and from your decisions. */
   enabled: boolean;
   /** The Hermes model value; "auto" is Hermes's own default. */
@@ -71,16 +65,16 @@ export interface BraveliProjectOverseer {
   rounds: number;
 }
 
-export interface BraveliTask {
+export interface PitwallTask {
   id: string;
   /** User-facing issue key and branch name. Optional only for legacy stored tasks. */
   identifier?: string;
   projectId: string;
   title: string;
   description: string;
-  status: BraveliTaskStatus;
-  priority: BraveliTaskPriority;
-  assignedAgent: BraveliProviderId | "council" | "";
+  status: PitwallTaskStatus;
+  priority: PitwallTaskPriority;
+  assignedAgent: PitwallProviderId | "council" | "";
   relatedFiles: string[];
   /**
    * Absolute paths to images attached to the description, staged into Pitwall's
@@ -94,7 +88,7 @@ export interface BraveliTask {
     /** "schedule": the record a scheduled run keeps for its session and review. Never on the board. */
     kind: "local" | "mcp" | "schedule";
     name?: string;
-    provider?: BraveliProviderId;
+    provider?: PitwallProviderId;
     target?: string;
     externalId?: string;
     url?: string;
@@ -123,13 +117,13 @@ export interface BraveliTask {
    * A reviewer agent paired with the implementer: it reads the change before
    * the person does, and sends it back a few rounds at most.
    */
-  pair?: BraveliTaskPair;
-  completionSummary?: BraveliTaskSummary;
+  pair?: PitwallTaskPair;
+  completionSummary?: PitwallTaskSummary;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface BraveliTaskPair {
+export interface PitwallTaskPair {
   /** The reviewer's CLI. */
   reviewer: PairReviewer;
   /** The reviewer's model, when one was chosen (Hermes's comes from the project). */
@@ -147,12 +141,12 @@ export interface BraveliTaskPair {
   implementerSessionId?: string;
   worktreePath?: string;
   /** Each round's verdict, newest last. */
-  rounds?: BraveliPairRound[];
+  rounds?: PitwallPairRound[];
   /** What the person decided on the reviewed work, beside what the reviewer had said: its track record. */
-  decisions?: BraveliPairDecision[];
+  decisions?: PitwallPairDecision[];
 }
 
-export interface BraveliPairDecision {
+export interface PitwallPairDecision {
   at: string;
   lead: "approved" | "sent-back";
   /** Where the reviewer had left it. */
@@ -160,7 +154,7 @@ export interface BraveliPairDecision {
   model?: string;
 }
 
-export interface BraveliPairRound {
+export interface PitwallPairRound {
   round: number;
   verdict: "approve" | "request_changes" | "unreadable";
   summary: string;
@@ -170,7 +164,7 @@ export interface BraveliPairRound {
   model?: string;
 }
 
-export interface BraveliTaskSummary {
+export interface PitwallTaskSummary {
   what: string;
   how: string;
   components: string[];
@@ -178,7 +172,7 @@ export interface BraveliTaskSummary {
   reportedAt: string;
 }
 
-export interface BraveliContextEntry {
+export interface PitwallContextEntry {
   id: string;
   projectId: string;
   title: string;
@@ -186,32 +180,32 @@ export interface BraveliContextEntry {
   content: string;
   visibility: ContextVisibility;
   priority: number;
-  providerIds: BraveliProviderId[];
+  providerIds: PitwallProviderId[];
   createdAt: string;
   updatedAt: string;
 }
 
-export interface BraveliContextSnapshot {
+export interface PitwallContextSnapshot {
   id: string;
   projectId: string;
   taskId: string;
   sessionId: string;
-  provider: BraveliProviderId;
+  provider: PitwallProviderId;
   model: string;
   files: string[];
-  task: Pick<BraveliTask, "id" | "identifier" | "title" | "description" | "status" | "priority" | "relatedFiles" | "worktree">;
-  contextEntries: Array<Pick<BraveliContextEntry, "id" | "title" | "category" | "content" | "priority">>;
+  task: Pick<PitwallTask, "id" | "identifier" | "title" | "description" | "status" | "priority" | "relatedFiles" | "worktree">;
+  contextEntries: Array<Pick<PitwallContextEntry, "id" | "title" | "category" | "content" | "priority">>;
   receipt?: import("./projectKnowledge").DeliveryReceipt;
   createdAt: string;
 }
 
-export interface BraveliSession {
+export interface PitwallSession {
   id: string;
   projectId: string;
-  provider: BraveliProviderId;
+  provider: PitwallProviderId;
   taskId: string;
-  type: BraveliSessionType;
-  status: BraveliSessionStatus;
+  type: PitwallSessionType;
+  status: PitwallSessionStatus;
   model: string;
   worktreePath?: string;
   nativeSessionId?: string;
@@ -228,12 +222,12 @@ export interface BraveliSession {
   updatedAt: string;
 }
 
-export interface BraveliActivityEvent {
+export interface PitwallActivityEvent {
   id: string;
   projectId: string;
   taskId?: string;
   sessionId?: string;
-  provider?: BraveliProviderId;
+  provider?: PitwallProviderId;
   type:
     | "task-created"
     | "task-started"
@@ -249,19 +243,19 @@ export interface BraveliActivityEvent {
   createdAt: string;
 }
 
-export interface BraveliCouncilRun {
+export interface PitwallCouncilRun {
   id: string;
   name?: string;
   projectId: string;
   taskId: string;
   prompt: string;
-  providerIds: BraveliProviderId[];
-  synthesizer: BraveliProviderId;
+  providerIds: PitwallProviderId[];
+  synthesizer: PitwallProviderId;
   status: "draft" | "running" | "ready" | "completed";
   responses: Array<{
-    provider: BraveliProviderId;
+    provider: PitwallProviderId;
     sessionId: string;
-    status: BraveliSessionStatus;
+    status: PitwallSessionStatus;
   }>;
   /**
    * The council's conversation and routing state. Held here so a run survives a
@@ -272,29 +266,29 @@ export interface BraveliCouncilRun {
   createdAt: string;
 }
 
-export interface BraveliCompareRun {
+export interface PitwallCompareRun {
   id: string;
   projectId: string;
   taskId: string;
   prompt: string;
-  providerIds: BraveliProviderId[];
+  providerIds: PitwallProviderId[];
   status: "running" | "ready" | "completed";
   responses: Array<{
-    provider: BraveliProviderId;
+    provider: PitwallProviderId;
     sessionId: string;
-    status: BraveliSessionStatus;
+    status: PitwallSessionStatus;
   }>;
   createdAt: string;
 }
 
-export interface BraveliWorkspaceState {
+export interface PitwallWorkspaceState {
   version: 1;
-  projects: BraveliProjectRecord[];
-  tasks: BraveliTask[];
-  contextEntries: BraveliContextEntry[];
-  contextSnapshots: BraveliContextSnapshot[];
-  sessions: BraveliSession[];
-  activity: BraveliActivityEvent[];
-  councilRuns: BraveliCouncilRun[];
-  compareRuns: BraveliCompareRun[];
+  projects: PitwallProjectRecord[];
+  tasks: PitwallTask[];
+  contextEntries: PitwallContextEntry[];
+  contextSnapshots: PitwallContextSnapshot[];
+  sessions: PitwallSession[];
+  activity: PitwallActivityEvent[];
+  councilRuns: PitwallCouncilRun[];
+  compareRuns: PitwallCompareRun[];
 }

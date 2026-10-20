@@ -1,22 +1,22 @@
 "use strict";
 
 /**
- * Pitwall's first launch brings over what Braveli knew: projects, tasks,
+ * Pitwall's first launch brings over what the app knew under its old name: projects, tasks,
  * sessions, memory, schedules, settings. Once, before any store opens.
  *
  * Left behind on purpose:
  * - worktrees: tens of gigabytes, and git records their paths. Sessions keep
  *   pointing at them where they are.
  * - caches, which rebuild themselves.
- * - runtime-state.json, or Pitwall would relaunch whatever Braveli last ran.
- * - anything encrypted with Braveli's Keychain entry. Pitwall has its own and
+ * - runtime-state.json, or Pitwall would relaunch whatever the old app last ran.
+ * - anything encrypted with the old app's Keychain entry. Pitwall has its own and
  *   cannot read those, so they would show as connected and not work.
  */
 
 const fs = require("node:fs");
 const path = require("node:path");
 
-const MARKER = ".imported-from-braveli";
+const { LEGACY_IMPORT_MARKER: MARKER } = require("./legacyNames.cjs");
 
 const SKIP = new Set([
   "worktrees",
@@ -38,8 +38,8 @@ const SKIP = new Set([
   "pitwall-account.json",
 ]);
 
-/** Braveli holds its profile open while it runs; Chromium records who in SingletonLock. */
-function braveliRunning(from) {
+/** The old app holds its profile open while it runs; Chromium records who in SingletonLock. */
+function legacyAppRunning(from) {
   try {
     const owner = fs.readlinkSync(path.join(from, "SingletonLock"));
     const pid = Number(owner.split("-").pop());
@@ -51,7 +51,7 @@ function braveliRunning(from) {
   }
 }
 
-/** Pitwall starts without Braveli's data, by choice; the import is not offered again. */
+/** Pitwall starts without the old app's data, by choice; the import is not offered again. */
 function declineImport(to) {
   fs.mkdirSync(to, { recursive: true });
   fs.writeFileSync(path.join(to, MARKER), `declined ${new Date().toISOString()}\n`);
@@ -62,12 +62,12 @@ function skipped(name) {
 }
 
 /**
- * Copies Braveli's data into an empty Pitwall folder. Returns what happened:
+ * Copies the old app's data into an empty Pitwall folder. Returns what happened:
  * "imported", "already" (done before), "fresh" (Pitwall already has data of
- * its own), "none" (no Braveli to import from), or "busy" (Braveli is open, so
+ * its own), "none" (nothing to import from), or "busy" (the old app is open, so
  * its database is mid-write; nothing is copied and nothing is recorded).
  */
-function importFromBraveli({ from, to, isRunning = braveliRunning }) {
+function importLegacyProfile({ from, to, isRunning = legacyAppRunning }) {
   if (fs.existsSync(path.join(to, MARKER))) return "already";
   if (!from || !fs.existsSync(from) || path.resolve(from) === path.resolve(to)) return "none";
   if (isRunning(from)) return "busy";
@@ -105,4 +105,4 @@ function importFromBraveli({ from, to, isRunning = braveliRunning }) {
   return "imported";
 }
 
-module.exports = { MARKER, braveliRunning, declineImport, importFromBraveli };
+module.exports = { MARKER, legacyAppRunning, declineImport, importLegacyProfile };

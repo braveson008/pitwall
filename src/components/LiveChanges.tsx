@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Undo2 } from "lucide-react";
 import { parseDiff, LARGE_DIFF_LINES, type DiffHunk } from "../lib/diff";
 
-const STATUS_LETTER: Record<BraveliChangedFile["status"], string> = {
+const STATUS_LETTER: Record<PitwallChangedFile["status"], string> = {
   added: "A",
   modified: "M",
   deleted: "D",
@@ -13,16 +13,16 @@ const STATUS_LETTER: Record<BraveliChangedFile["status"], string> = {
 };
 
 /** Subscribes to what a session's agent has changed, pushed by main as files change. */
-export function useLiveChanges(sessionId: string | undefined, projectPath: string | undefined): BraveliLiveChanges | null {
-  const [summary, setSummary] = useState<BraveliLiveChanges | null>(null);
+export function useLiveChanges(sessionId: string | undefined, projectPath: string | undefined): PitwallLiveChanges | null {
+  const [summary, setSummary] = useState<PitwallLiveChanges | null>(null);
   useEffect(() => {
     setSummary(null);
-    if (!sessionId || !projectPath || !window.braveli?.subscribeLiveChanges) return;
-    const stop = window.braveli.onLiveChanges?.((next) => { if (next.sessionId === sessionId) setSummary(next); });
-    void window.braveli.subscribeLiveChanges({ sessionId, projectPath }).catch(() => undefined);
+    if (!sessionId || !projectPath || !window.pitwall?.subscribeLiveChanges) return;
+    const stop = window.pitwall.onLiveChanges?.((next) => { if (next.sessionId === sessionId) setSummary(next); });
+    void window.pitwall.subscribeLiveChanges({ sessionId, projectPath }).catch(() => undefined);
     return () => {
       stop?.();
-      void window.braveli?.unsubscribeLiveChanges?.({ sessionId }).catch(() => undefined);
+      void window.pitwall?.unsubscribeLiveChanges?.({ sessionId }).catch(() => undefined);
     };
   }, [sessionId, projectPath]);
   return summary;
@@ -39,7 +39,7 @@ interface LiveChangesProps {
   sessionId: string;
   projectPath: string;
   branch: string;
-  summary: BraveliLiveChanges | null;
+  summary: PitwallLiveChanges | null;
   /** A file to open first, e.g. one picked from the sidebar. */
   focusPath?: string;
 }
@@ -75,7 +75,7 @@ export function LiveChanges({ sessionId, projectPath, branch, summary, focusPath
       return;
     }
     const id = ++request.current;
-    void window.braveli?.getLiveFileDiff?.({ sessionId, file: current }).then((result) => {
+    void window.pitwall?.getLiveFileDiff?.({ sessionId, file: current }).then((result) => {
       if (id !== request.current) return;
       if (!result?.ok) {
         setError(result?.error || "Could not read this file's changes.");
@@ -107,7 +107,7 @@ export function LiveChanges({ sessionId, projectPath, branch, summary, focusPath
 
   const revertAll = () => act(async () => {
     for (const file of files) {
-      const result = await window.braveli?.revertLiveChange?.({ sessionId, file });
+      const result = await window.pitwall?.revertLiveChange?.({ sessionId, file });
       if (result && !result.ok) return result;
     }
     return { ok: true };
@@ -134,7 +134,7 @@ export function LiveChanges({ sessionId, projectPath, branch, summary, focusPath
         </span>
         <span className="dk-spacer" />
         {error ? <span className="dk-hint dk-livechanges-error" role="alert">{error}</span> : null}
-        <button type="button" className="dk-btn dk-btn--sm" disabled={busy} onClick={() => void act(() => window.braveli!.keepLiveChange!({ sessionId }))}>
+        <button type="button" className="dk-btn dk-btn--sm" disabled={busy} onClick={() => void act(() => window.pitwall!.keepLiveChange!({ sessionId }))}>
           <Check size={13} aria-hidden="true" /> Keep all
         </button>
         <button
@@ -172,10 +172,10 @@ export function LiveChanges({ sessionId, projectPath, branch, summary, focusPath
                   {file.path.includes("/") ? <span className="dk-branchdiff-dir">{file.path.split("/").slice(0, -1).join("/")}</span> : null}
                 </button>
                 <span className="dk-livechanges-actions">
-                  <button type="button" className="dk-icon-btn dk-icon-btn--sm" disabled={busy} title={`Keep ${file.path}`} aria-label={`Keep ${file.path}`} onClick={() => void act(() => window.braveli!.keepLiveChange!({ sessionId, file }))}>
+                  <button type="button" className="dk-icon-btn dk-icon-btn--sm" disabled={busy} title={`Keep ${file.path}`} aria-label={`Keep ${file.path}`} onClick={() => void act(() => window.pitwall!.keepLiveChange!({ sessionId, file }))}>
                     <Check size={13} />
                   </button>
-                  <button type="button" className="dk-icon-btn dk-icon-btn--sm" disabled={busy} title={`Revert ${file.path}`} aria-label={`Revert ${file.path}`} onClick={() => void act(() => window.braveli!.revertLiveChange!({ sessionId, file }))}>
+                  <button type="button" className="dk-icon-btn dk-icon-btn--sm" disabled={busy} title={`Revert ${file.path}`} aria-label={`Revert ${file.path}`} onClick={() => void act(() => window.pitwall!.revertLiveChange!({ sessionId, file }))}>
                     <Undo2 size={13} />
                   </button>
                 </span>
@@ -193,7 +193,7 @@ export function LiveChanges({ sessionId, projectPath, branch, summary, focusPath
           ) : (
             <>
               <p className="dk-branchdiff-path">
-                <button type="button" className="dk-link dk-mono" onClick={() => void window.braveli?.openFileInEditor?.({ projectPath, branch, filePath: current.path })}>
+                <button type="button" className="dk-link dk-mono" onClick={() => void window.pitwall?.openFileInEditor?.({ projectPath, branch, filePath: current.path })}>
                   {current.path}
                 </button>
               </p>
@@ -207,7 +207,7 @@ export function LiveChanges({ sessionId, projectPath, branch, summary, focusPath
                           type="button"
                           className="dk-link"
                           disabled={busy}
-                          onClick={() => void act(() => window.braveli!.revertLiveChange!({ sessionId, file: current, hunk: patch.ids[index] }))}
+                          onClick={() => void act(() => window.pitwall!.revertLiveChange!({ sessionId, file: current, hunk: patch.ids[index] }))}
                         >
                           Revert this change
                         </button>

@@ -15,16 +15,21 @@ const {
   selectWindowsOrphans,
 } = require("./sessionProcesses.cjs");
 
-const WORKTREE = "/Users/me/Library/Application Support/braveli/worktrees/abc/sched-1";
+const WORKTREE = "/Users/me/Library/Application Support/pitwall/worktrees/abc/sched-1";
 
 describe("parseProcessList", () => {
   it("reads the session marker out of ps's environment column", () => {
     const output = [
-      `  3606 node ${WORKTREE}/node_modules/.bin/vite --port 8177 BRAVELI_SESSION_NAME=Check if staging · Implementer BRAVELI_SESSION_ID=claude-p-1-x PATH=/usr/bin`,
+      `  3606 node ${WORKTREE}/node_modules/.bin/vite --port 8177 PITWALL_SESSION_NAME=Check if staging · Implementer PITWALL_SESSION_ID=claude-p-1-x PATH=/usr/bin`,
       "  3568 npm run dev --port 8177",
       "   901 /bin/zsh -l",
     ].join("\n");
     expect(parseProcessList(output)).toEqual([{ pid: 3606, sessionId: "claude-p-1-x" }]);
+  });
+
+  it("still finds processes a session of an older version left behind", () => {
+    const output = `  4100 node ${WORKTREE}/node_modules/.bin/vite BRAVELI_SESSION_ID=claude-p-0-old PATH=/usr/bin`;
+    expect(parseProcessList(output)).toEqual([{ pid: 4100, sessionId: "claude-p-0-old" }]);
   });
 });
 
@@ -87,14 +92,14 @@ describe("terminateSessionProcesses", () => {
   it.runIf(process.platform === "darwin" || process.platform === "linux")(
     "ends a detached process the session left in its workspace, and nothing else",
     async () => {
-      const workspace = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "braveli-session-")));
-      const elsewhere = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "braveli-elsewhere-")));
+      const workspace = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-session-")));
+      const elsewhere = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-elsewhere-")));
       const sessionId = `test-session-${process.pid}-${Date.now()}`;
       // Detached the way an agent's tool shell is: its own session, no terminal.
       // Node rather than /bin/sleep: macOS does not show a platform binary's environment.
       const start = (cwd: string, id: string) => {
         const child = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60000)"], {
-          cwd, detached: true, stdio: "ignore", env: { ...process.env, BRAVELI_SESSION_ID: id },
+          cwd, detached: true, stdio: "ignore", env: { ...process.env, PITWALL_SESSION_ID: id },
         });
         child.unref();
         children.push(child.pid!);
@@ -117,7 +122,7 @@ describe("terminateSessionProcesses", () => {
 });
 
 describe("selectOrphanedProcesses", () => {
-  const ROOT = "/Users/me/Library/Application Support/braveli/worktrees";
+  const ROOT = "/Users/me/Library/Application Support/pitwall/worktrees";
   const processes = [
     { pid: 1, sessionId: "a", cwd: `${ROOT}/abc/sched-1` },
     { pid: 2, sessionId: "b", cwd: `${ROOT}/abc/sched-2/apps/voy` },
@@ -189,14 +194,14 @@ describe("terminateOrphanedProcesses", () => {
   it.skipIf(process.platform === "win32")(
     "ends what a crashed run left in the worktrees and spares live sessions and everything outside",
     async () => {
-      const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "braveli-worktrees-")));
-      const elsewhere = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "braveli-elsewhere-")));
+      const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-worktrees-")));
+      const elsewhere = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-elsewhere-")));
       fs.mkdirSync(path.join(root, "p", "s1"), { recursive: true });
       const tag = `orphan-${process.pid}-${Date.now()}`;
       const started: number[] = [];
       const start = (cwd: string, id: string) => {
         const child = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60000)"], {
-          cwd, detached: true, stdio: "ignore", env: { ...process.env, BRAVELI_SESSION_ID: id },
+          cwd, detached: true, stdio: "ignore", env: { ...process.env, PITWALL_SESSION_ID: id },
         });
         child.unref();
         started.push(child.pid!);

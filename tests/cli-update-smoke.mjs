@@ -11,7 +11,7 @@ import { _electron as electron } from "playwright";
 const root = process.cwd();
 
 async function run({ claudeBody, expectTitle, expectText }) {
-  const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "braveli-cli-update-"));
+  const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-cli-update-"));
   const fakeHome = path.join(temp, "home");
   const fakeBin = path.join(temp, "bin");
   const profile = path.join(temp, "profile");
@@ -32,7 +32,7 @@ ${claudeBody}
   const app = await electron.launch({
     args: [root],
     cwd: root,
-    env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: profile, BRAVELI_CLI_CHECK_DELAY_MS: "1500" },
+    env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: profile, PITWALL_CLI_CHECK_DELAY_MS: "1500" },
   });
   try {
     const page = await app.firstWindow();

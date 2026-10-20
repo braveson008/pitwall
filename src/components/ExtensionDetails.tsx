@@ -225,7 +225,7 @@ function ServerDetail({ server }: { server: RegistryMcpServer }) {
           <button
             type="button"
             className="dk-link dk-detail-link"
-            onClick={() => void window.braveli?.openExternalUrl?.(server.websiteUrl)}
+            onClick={() => void window.pitwall?.openExternalUrl?.(server.websiteUrl)}
           >
             <Plug size={12} />
             {server.websiteUrl}

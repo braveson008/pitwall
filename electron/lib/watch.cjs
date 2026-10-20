@@ -550,14 +550,6 @@ function createWatchStore(filePath, options = {}) {
     list() {
       return { watches: state.watches.map((watch) => ({ ...watch })), findings: state.findings.map((finding) => ({ ...finding })) };
     },
-    /** Everything at once, as another computer's copy says. */
-    replaceAll(next) {
-      state = {
-        watches: Array.isArray(next?.watches) ? next.watches.map((watch) => ({ ...watch })) : [],
-        findings: Array.isArray(next?.findings) ? next.findings.map((finding) => ({ ...finding })) : [],
-      };
-      write();
-    },
     watchFor(projectId, kind = "review-requested") {
       return state.watches.find((watch) => watch.projectId === projectId && watch.kind === kind) || null;
     },

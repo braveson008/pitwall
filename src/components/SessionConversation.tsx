@@ -70,12 +70,12 @@ export const SessionConversation = memo(function SessionConversation({
   const signatureRef = useRef("");
 
   const read = useCallback(async () => {
-    if (!window.braveli?.readSessionConversation) {
+    if (!window.pitwall?.readSessionConversation) {
       setState("unsupported");
       return;
     }
     try {
-      const result = await window.braveli.readSessionConversation({
+      const result = await window.pitwall.readSessionConversation({
         sessionId,
         agent: agent.toLowerCase(),
         cwd,

@@ -13,7 +13,7 @@ let home = "";
 const mirrors: Array<{ stop: () => void }> = [];
 
 function freshHome() {
-  home = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-mirror-"));
+  home = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-mirror-"));
   fs.mkdirSync(claudeProjectDirectory(cwd, home), { recursive: true });
   // The reader resolves HOME itself, so the test points the process at a
   // throwaway one rather than reaching into the developer's real sessions.

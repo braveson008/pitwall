@@ -335,13 +335,7 @@ function createScheduleStore(filePath, options = {}) {
     return record;
   }
 
-  /** Every job at once, as another computer's copy of the schedule says. */
-  function replaceAll(next) {
-    jobs = Array.isArray(next) ? next.map((job) => ({ ...job })) : [];
-    write();
-  }
-
-  return { list: () => jobs.map((job) => ({ ...job })), save, remove, recordRun, replaceAll };
+  return { list: () => jobs.map((job) => ({ ...job })), save, remove, recordRun };
 }
 
 module.exports = { RUN_WINDOW_MINUTES, catchUpMinutes, runnable, localDateKey, runsToday, occurrencesToday, currentOccurrence, wakeTimes, dueJobs, missedJobs, createScheduleStore };

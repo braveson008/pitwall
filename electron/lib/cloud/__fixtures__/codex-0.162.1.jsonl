@@ -1,5 +1,0 @@
-{"timestamp": "2026-10-12T10:00:00.000Z", "type": "session_meta", "payload": {"id": "019fdb82-1972-7bb1-8d5b-73626a797dae", "session_id": "019fdb82-1972-7bb1-8d5b-73626a797dae", "timestamp": "2026-10-12T10:00:00.000Z", "cwd": "/Users/fixture/Projects/shop", "originator": "codex_cli_rs", "cli_version": "0.162.1", "source": "cli", "model_provider": "openai", "git": {"branch": "fix-cart"}}}
-{"timestamp": "2026-10-12T10:00:01.000Z", "type": "turn_context", "payload": {"cwd": "/Users/fixture/Projects/shop", "approval_policy": "on-request", "model": "gpt-6.1"}}
-{"timestamp": "2026-10-12T10:00:02.000Z", "type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "Fix the cart total"}]}}
-{"timestamp": "2026-10-12T10:00:03.000Z", "type": "response_item", "payload": {"type": "custom_tool_call", "call_id": "c1", "name": "apply_patch", "input": "*** Update File: /Users/fixture/Projects/shop/src/cart.ts\n-1\n+2"}}
-{"timestamp": "2026-10-12T10:00:04.000Z", "type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "Done: discounts are subtracted now."}]}}

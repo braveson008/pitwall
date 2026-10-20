@@ -59,7 +59,7 @@ export default function FilesPanel({ root, openRequest, editorName, onOpenExtern
 
   // ── listing and status ───────────────────────────────────────────────
   const relist = useCallback(async () => {
-    const result = await window.braveli?.listFiles?.({ root });
+    const result = await window.pitwall?.listFiles?.({ root });
     if (!result || rootRef.current !== root) return;
     if (!result.ok) {
       setListError(result.error || "The files could not be listed");
@@ -70,7 +70,7 @@ export default function FilesPanel({ root, openRequest, editorName, onOpenExtern
   }, [root]);
 
   const refreshStatus = useCallback(async () => {
-    const status = await window.braveli?.fileChanges?.({ root }).catch(() => null);
+    const status = await window.pitwall?.fileChanges?.({ root }).catch(() => null);
     if (!status?.ok || rootRef.current !== root) return;
     const key = status.changes.map((change) => `${change.kind}:${change.path}`).join("\n");
     if (key === changeKey.current) return;
@@ -103,7 +103,7 @@ export default function FilesPanel({ root, openRequest, editorName, onOpenExtern
 
   // ── the open file ───────────────────────────────────────────────────
   const openFile = useCallback(async (filePath: string) => {
-    const result = await window.braveli?.readFile?.({ root, path: filePath });
+    const result = await window.pitwall?.readFile?.({ root, path: filePath });
     if (rootRef.current !== root) return;
     setSelection(null);
     setSaveNote("");
@@ -137,7 +137,7 @@ export default function FilesPanel({ root, openRequest, editorName, onOpenExtern
   const reload = useCallback(async () => {
     const current = openRef.current;
     if (!current) return;
-    const result = await window.braveli?.readFile?.({ root, path: current.path });
+    const result = await window.pitwall?.readFile?.({ root, path: current.path });
     if (!result?.ok) {
       setOpen({ ...current, stale: false, error: result?.error || "The file could not be read" });
       return;
@@ -150,11 +150,11 @@ export default function FilesPanel({ root, openRequest, editorName, onOpenExtern
   // lost, and ask only when there are edits of yours to lose.
   useEffect(() => {
     const path = open?.path;
-    if (!path || !window.braveli?.watchFile) return;
-    void window.braveli.watchFile({ root, path });
-    const off = window.braveli.onFileChanged?.((event) => {
+    if (!path || !window.pitwall?.watchFile) return;
+    void window.pitwall.watchFile({ root, path });
+    const off = window.pitwall.onFileChanged?.((event) => {
       if (event.root !== root || event.path !== path) return;
-      void window.braveli?.readFile?.({ root, path }).then((result) => {
+      void window.pitwall?.readFile?.({ root, path }).then((result) => {
         const current = openRef.current;
         if (!result?.ok || !current || current.path !== path || result.hash === current.hash) return;
         if (dirtyRef.current) setOpen({ ...current, stale: true });
@@ -163,20 +163,20 @@ export default function FilesPanel({ root, openRequest, editorName, onOpenExtern
     });
     return () => {
       off?.();
-      void window.braveli?.unwatchFile?.();
+      void window.pitwall?.unwatchFile?.();
     };
   }, [open?.path, root]);
 
   const save = useCallback(async (text: string) => {
     const current = openRef.current;
-    if (!current || !window.braveli?.writeFile) return false;
-    const result = await window.braveli.writeFile({ root, path: current.path, content: text, hash: current.hash });
+    if (!current || !window.pitwall?.writeFile) return false;
+    const result = await window.pitwall.writeFile({ root, path: current.path, content: text, hash: current.hash });
     if (!result.ok) {
       if (result.conflict) setOpen({ ...current, stale: true });
       setSaveNote(result.conflict ? "" : result.error || "Not saved");
       return false;
     }
-    void window.braveli?.captureEvent?.("file_saved", { surface: "files" });
+    void window.pitwall?.captureEvent?.("file_saved", { surface: "files" });
     // The hash moves on, the text does not: replacing it would rebuild the editor under the cursor.
     openRef.current = { ...current, hash: result.hash ?? current.hash, stale: false };
     setOpen(openRef.current);

@@ -83,7 +83,7 @@ test("Kimi MCP output preserves transport and authentication state", () => {
 });
 
 test("runtime journal reports only interrupted resources", () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-journal-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-journal-"));
   const file = path.join(root, "runtime-state.json");
   const first = createRuntimeJournal(file);
   assert.equal(first.beginStartup().recovered, false);
@@ -112,7 +112,7 @@ test("runtime journal reports only interrupted resources", () => {
 });
 
 test("Claude sessions use stable native ids and migrate the latest worktree conversation", () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-claude-session-"));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-claude-session-"));
   const cwd = path.join(home, "project with spaces");
   const directory = claudeProjectDirectory(cwd, home);
   const older = "11111111-1111-4111-8111-111111111111";
@@ -173,7 +173,7 @@ test("Claude and Codex receive their first task as a launch argument without exp
 });
 
 test("terminal images are copied out of temporary paths and clipboard data is persisted", async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-terminal-images-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-terminal-images-"));
   const source = path.join(root, "ephemeral-source", "NSIRD-test", "Screenshot with spaces.png");
   const storage = path.join(root, "user-data", "terminal-attachments");
   fs.mkdirSync(path.dirname(source), { recursive: true });
@@ -215,7 +215,7 @@ test("terminal images are copied out of temporary paths and clipboard data is pe
 });
 
 test("project GitHub tokens are encrypted and resolved without exposing them in status", () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-github-auth-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-github-auth-"));
   const file = path.join(root, "github-credentials.json");
   const encryption = {
     isEncryptionAvailable: () => true,
@@ -238,10 +238,10 @@ test("project GitHub tokens are encrypted and resolved without exposing them in 
   const environment = store.getEnvironment({ projectId: "project-a" });
   assert.equal(environment.GH_TOKEN, "github-secret-token");
   assert.equal(environment.GITHUB_TOKEN, "github-secret-token");
-  assert.equal(environment.BRAVELI_GITHUB_TOKEN, "github-secret-token");
+  assert.equal(environment.PITWALL_GITHUB_TOKEN, "github-secret-token");
   assert.equal(environment.GIT_CONFIG_KEY_0, "credential.https://github.com.helper");
   assert.equal(environment.GIT_CONFIG_VALUE_0, "");
-  assert.match(environment.GIT_CONFIG_VALUE_1, /BRAVELI_GITHUB_TOKEN/);
+  assert.match(environment.GIT_CONFIG_VALUE_1, /PITWALL_GITHUB_TOKEN/);
   const credential = spawnSync("git", ["credential", "fill"], {
     input: "protocol=https\nhost=github.com\npath=owner/repository.git\n\n",
     encoding: "utf8",
@@ -302,7 +302,7 @@ test("GitHub remotes and stored gh accounts retain repository identity", () => {
 });
 
 test("MCP OAuth bindings stay isolated by project and provider alias", () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-mcp-auth-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-mcp-auth-"));
   const file = path.join(root, "mcp-auth-profiles.json");
   const store = createMcpAuthProfileStore(file);
   const first = store.upsert({
@@ -346,15 +346,38 @@ test("MCP OAuth bindings stay isolated by project and provider alias", () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test("an MCP alias stored by an older version is kept, never regenerated", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-mcp-legacy-"));
+  const file = path.join(root, "mcp-auth-profiles.json");
+  const legacy = {
+    provider: "claude",
+    name: "linear",
+    alias: "braveli_linear_3eb8a846c6",
+    target: "https://mcp.linear.app/mcp",
+    transport: "HTTP",
+    authenticatedAt: "2026-08-20T00:00:00.000Z",
+  };
+  fs.writeFileSync(file, JSON.stringify({ version: 1, projects: { "project-a": { projectId: "project-a", projectPath: "/tmp/a", bindings: [legacy] } } }));
+  const store = createMcpAuthProfileStore(file);
+  const again = store.upsert({ projectId: "project-a", projectPath: "/tmp/a", provider: "claude", name: "linear", target: legacy.target });
+  assert.equal(again.alias, legacy.alias);
+  assert.equal(again.authenticatedAt, legacy.authenticatedAt);
+  assert.equal(createMcpAuthProfileStore(file).list({ projectId: "project-a" })[0].alias, legacy.alias);
+  // A different server is a different login, and gets an alias of its own.
+  const moved = store.upsert({ projectId: "project-a", projectPath: "/tmp/a", provider: "claude", name: "linear", target: "https://mcp.linear.app/sse" });
+  assert.match(moved.alias, /^pitwall_linear_[0-9a-f]{10}$/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test("authenticated project MCP profiles use the live private-alias status", () => {
   const discovered = [
     { name: "linear", target: "https://mcp.linear.app/mcp", transport: "HTTP", status: "needs-auth", statusText: "Needs authentication" },
-    { name: "braveli_linear_private", target: "https://mcp.linear.app/mcp", transport: "HTTP", status: "connected", statusText: "Connected" },
+    { name: "pitwall_linear_private", target: "https://mcp.linear.app/mcp", transport: "HTTP", status: "connected", statusText: "Connected" },
     { name: "figma", target: "https://mcp.figma.com/mcp", transport: "HTTP", status: "connected", statusText: "Connected" },
   ];
   const profiles = [{
     name: "linear",
-    alias: "braveli_linear_private",
+    alias: "pitwall_linear_private",
     target: "https://mcp.linear.app/mcp",
     transport: "http",
     authenticatedAt: "2026-08-17T00:00:00.000Z",
@@ -368,14 +391,14 @@ test("authenticated project MCP profiles use the live private-alias status", () 
 test("agents never see a tracker logged in for another project", () => {
   const servers = [
     { name: "atlassian", target: "https://mcp.atlassian.com/v2/mcp", transport: "HTTP" },
-    { name: "braveli_atlassian_mine", target: "https://mcp.atlassian.com/v2/mcp", transport: "HTTP" },
-    { name: "braveli_linear_other", target: "https://mcp.linear.app/mcp", transport: "HTTP" },
+    { name: "pitwall_atlassian_mine", target: "https://mcp.atlassian.com/v2/mcp", transport: "HTTP" },
+    { name: "pitwall_linear_other", target: "https://mcp.linear.app/mcp", transport: "HTTP" },
     { name: "figma", target: "https://mcp.figma.com/mcp", transport: "HTTP" },
     { name: "jira-local", target: "npx jira-server", transport: "STDIO" },
   ];
-  const bindings = [{ name: "atlassian", alias: "braveli_atlassian_mine" }];
-  assert.deepEqual(borrowedTrackerServers(servers, bindings), ["atlassian", "braveli_linear_other"]);
-  assert.deepEqual(borrowedTrackerServers(servers, []), ["atlassian", "braveli_atlassian_mine", "braveli_linear_other"]);
+  const bindings = [{ name: "atlassian", alias: "pitwall_atlassian_mine" }];
+  assert.deepEqual(borrowedTrackerServers(servers, bindings), ["atlassian", "pitwall_linear_other"]);
+  assert.deepEqual(borrowedTrackerServers(servers, []), ["atlassian", "pitwall_atlassian_mine", "pitwall_linear_other"]);
 });
 
 test("interactive OAuth commands run inside a PTY and preserve actionable failures", async () => {
@@ -566,7 +589,7 @@ test("agent completion adapters preserve provider-native lifecycle signals", () 
 
   const gemini = geminiCompletionSettings({ hooks: { BeforeAgent: [{ hooks: [] }] } }, endpoint);
   assert.equal(gemini.hooks.BeforeAgent.length, 1);
-  assert.equal(gemini.hooks.AfterAgent[0].hooks[0].name, "braveli-turn-complete");
+  assert.equal(gemini.hooks.AfterAgent[0].hooks[0].name, "pitwall-turn-complete");
 
   const kimi = kimiCompletionConfig('default_model = "kimi-for-coding"\n', endpoint);
   assert.match(kimi, /\[\[hooks\]\]\nevent = "Stop"/);
@@ -628,7 +651,7 @@ test("completion adapters detect built-ins, Kimi custom agents, and terminal pro
 });
 
 test("new project folders resolve inside the chosen parent or are rejected", () => {
-  const parent = path.join(os.tmpdir(), "braveli-parent");
+  const parent = path.join(os.tmpdir(), "pitwall-parent");
 
   const ok = resolveNewProjectPath({ parentPath: parent, folderName: "my-todo-app" });
   assert.equal(ok.ok, true);

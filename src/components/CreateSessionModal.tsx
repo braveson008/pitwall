@@ -7,9 +7,9 @@ import type { AgentOption, ModelOption } from "../domain/agents";
 import { PAIR_REVIEWERS, pairReviewerLabel } from "../domain/pairReviewer";
 import { autoApproveFor } from "../domain/autoApprove";
 import { getRole, roleOrder, roles } from "../domain/roles";
-import type { BraveliSessionType } from "../domain/types";
+import type { PitwallSessionType } from "../domain/types";
 
-type ChoiceKey = "agent" | "billing" | "model" | "role" | "task" | "pair" | "context" | "access";
+type ChoiceKey = "agent" | "model" | "role" | "task" | "pair" | "context" | "access";
 
 /** A pair's reviewer, as "<cli>:<rounds>", or "" for none. */
 const DEFAULT_PAIR_ROUNDS = 3;
@@ -65,7 +65,6 @@ export function CreateSessionModal({
   pairRounds = DEFAULT_PAIR_ROUNDS,
   onCouncil,
   onCompare,
-  billing,
   onModelChange,
   onRefreshModels,
   onToggleContext,
@@ -82,7 +81,7 @@ export function CreateSessionModal({
   draftTaskId: string;
   /** What the agent is asked to do; blank starts it with only its role (and task, if one is picked). */
   draftInstruction: string;
-  draftSessionType: BraveliSessionType;
+  draftSessionType: PitwallSessionType;
   draftBootCommand: string;
   /** Launch this session in its CLI's own no-prompts mode. */
   draftAutoApprove: boolean;
@@ -104,7 +103,7 @@ export function CreateSessionModal({
   onAddAgent: () => void;
   onTaskChange: (id: string) => void;
   onInstructionChange: (instruction: string) => void;
-  onRoleChange: (type: BraveliSessionType) => void;
+  onRoleChange: (type: PitwallSessionType) => void;
   onAutoApproveChange: (on: boolean) => void;
   /** A reviewer agent paired with this session's implementer, as "<cli>:<rounds>". */
   draftPair?: string;
@@ -114,13 +113,6 @@ export function CreateSessionModal({
   /** More than one agent on the work: offered beside the reviewers. */
   onCouncil?: () => void;
   onCompare?: () => void;
-  /** Offered when the chosen agent can run on Pitwall credits. */
-  billing?: {
-    value: "login" | "credits";
-    creditsReady: boolean;
-    note: string;
-    onChange: (value: "login" | "credits") => void;
-  };
   onModelChange: (label: string) => void;
   onRefreshModels: () => void;
   onToggleContext: (id: string, checked: boolean) => void;
@@ -204,7 +196,6 @@ export function CreateSessionModal({
 
   const choices: Array<{ key: ChoiceKey; label: string; value: string; toggle?: boolean }> = [
     { key: "agent", label: "Agent", value: String(draftAgent) },
-    ...(billing ? [{ key: "billing" as const, label: "Pay with", value: billing.value === "credits" ? "Credits" : "Your login" }] : []),
     { key: "model", label: "Model", value: draftModel || "Auto" },
     { key: "role", label: "Role", value: getRole(draftSessionType)?.label ?? "Agent" },
     ...(projectTasks?.length ? [{ key: "task" as const, label: "Task", value: taskTitle ?? "None" }] : []),
@@ -233,17 +224,6 @@ export function CreateSessionModal({
       selected: [String(draftAgent)],
       pick: (value) => onSelectAgent(value as AgentProvider),
     },
-    billing: {
-      options: [
-        { value: "login", label: "Your login", hint: `Uses your own ${String(draftAgent)} sign-in` },
-        { value: "credits", label: "Credits", hint: billing?.note, status: billing?.creditsReady ? undefined : "not ready", tone: billing?.creditsReady ? undefined : "warn" },
-      ],
-      selected: [billing?.value ?? "login"],
-      pick: (value) => {
-        if (value === "credits" && !billing?.creditsReady) return;
-        billing?.onChange(value as "login" | "credits");
-      },
-    },
     model: {
       options: draftModels.map((model) => ({ value: model.label, label: model.label })),
       selected: [draftModel],
@@ -252,7 +232,7 @@ export function CreateSessionModal({
     role: {
       options: roleOrder.map((type) => ({ value: type, label: roles[type].label, hint: roles[type].summary })),
       selected: [draftSessionType],
-      pick: (value) => onRoleChange(value as BraveliSessionType),
+      pick: (value) => onRoleChange(value as PitwallSessionType),
     },
     task: {
       options: [{ value: "", label: "No task" }, ...(projectTasks ?? []).map((task) => ({ value: task.id, label: task.title }))],
@@ -281,7 +261,6 @@ export function CreateSessionModal({
 
   const detailFor = (key: ChoiceKey | null) => {
     if (key === "agent" && draftState) return draftState.text;
-    if (key === "billing" && billing) return billing.value === "credits" ? `Runs through Pitwall's gateway, with no ${String(draftAgent)} login. ${billing.note}.` : billing.note;
     if (key === "model") return modelNote;
     if (key === "role") return getRole(draftSessionType)?.summary;
     if (key === "pair") {

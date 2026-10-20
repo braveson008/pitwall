@@ -2,7 +2,7 @@ import { Markdown } from "./Markdown";
 import { isScheduledRunTask } from "../domain/schedule";
 import { GitBranch } from "lucide-react";
 import type { AgentSession, Project } from "../data";
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import { getTaskStatusLabel } from "../lib/format";
 import { roleLabel, roleStateLabel, rolesOnTask, type RoleRun } from "../lib/taskRoles";
 import { mcpTaskSourceLabel } from "../lib/taskImport";
@@ -17,7 +17,7 @@ const runDot: Record<AgentSession["status"], string> = {
   disconnected: "is-failed",
 };
 
-const statusBadge: Partial<Record<BraveliTask["status"], string>> = {
+const statusBadge: Partial<Record<PitwallTask["status"], string>> = {
   running: "dk-badge--green",
   review: "dk-badge--amber",
   completed: "dk-badge--accent",
@@ -42,7 +42,7 @@ const runStateLabel: Record<AgentSession["status"], string> = {
 
 interface WorkspaceInspectorProps {
   project: Project;
-  activeTask?: BraveliTask;
+  activeTask?: PitwallTask;
   selectedSession?: AgentSession;
   assignedAgentLabel: string;
   runCount: number;
@@ -50,7 +50,7 @@ interface WorkspaceInspectorProps {
   /** Every run on the current task, so the roles working it can be shown. */
   taskRuns: RoleRun[];
   /** What the selected run's agent has changed so far, live. */
-  liveChanges?: BraveliLiveChanges | null;
+  liveChanges?: PitwallLiveChanges | null;
   onOpenChanges?: (filePath?: string) => void;
   /** The tail of the selected run's terminal, for the preview. */
   /** True when the agent has asked something and is waiting for an answer. */

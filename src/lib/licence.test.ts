@@ -18,7 +18,7 @@ const daysAgo = (n: number) => new Date(NOW - n * DAY).toISOString();
 const trial = (installedDaysAgo: number): LicenceRecord => ({ installedAt: daysAgo(installedDaysAgo) });
 const licensed = (verifiedDaysAgo: number, extra: Partial<LicenceRecord> = {}): LicenceRecord => ({
   installedAt: daysAgo(90),
-  key: "BRAVELI-1234-5678",
+  key: "PITWALL-1234-5678",
   active: true,
   verifiedAt: daysAgo(verifiedDaysAgo),
   ...extra,
@@ -143,11 +143,11 @@ describe("shouldRecheck", () => {
 
 describe("keys as people actually enter them", () => {
   it("survives padding, line breaks and case", () => {
-    expect(normaliseKey("  braveli-1234-5678\n ")).toBe("BRAVELI-1234-5678");
+    expect(normaliseKey("  pitwall-1234-5678\n ")).toBe("PITWALL-1234-5678");
   });
 
   it("accepts a plausible key", () => {
-    expect(looksLikeKey("BRAVELI-1234-5678")).toBe(true);
+    expect(looksLikeKey("PITWALL-1234-5678")).toBe(true);
   });
 
   it("rejects something that is obviously not one", () => {

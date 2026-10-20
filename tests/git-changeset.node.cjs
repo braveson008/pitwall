@@ -118,11 +118,11 @@ describe("buildChangeset reports only what git tracks", () => {
   });
 
   it("has no opinion about which directory a file is in", () => {
-    // The old rule singled out .braveli. Whether a file counts is now decided
+    // The old rule singled out .pitwall. Whether a file counts is now decided
     // by git, not by its name.
     const result = buildChangeset(
-      "A\t.braveli/council/a/thread.md\nA\tgraphify-out/.graphify_root\n",
-      "357\t0\t.braveli/council/a/thread.md\n1\t0\tgraphify-out/.graphify_root\n",
+      "A\t.pitwall/council/a/thread.md\nA\tgraphify-out/.graphify_root\n",
+      "357\t0\t.pitwall/council/a/thread.md\n1\t0\tgraphify-out/.graphify_root\n",
     );
     assert.equal(result.files.length, 2);
   });

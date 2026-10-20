@@ -22,7 +22,7 @@ const PER_PROJECT = Number(process.argv[3] || 4);
 const SWITCHES = Number(process.argv[4] || 12);
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), "braveli-switch-"));
+const tempRoot = await mkdtemp(path.join(os.tmpdir(), "pitwall-switch-"));
 const userDataPath = path.join(tempRoot, "user-data");
 const agentPath = path.join(tempRoot, "noisy-agent.zsh");
 await mkdir(userDataPath, { recursive: true });
@@ -75,7 +75,7 @@ const customAgent = { id: "noisy", name: "Noisy", command: agentPath, args: "", 
 
 const app = await electron.launch({
   args: [root], cwd: root,
-  env: { ...process.env, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: userDataPath, ELECTRON_DISABLE_SECURITY_WARNINGS: "true" },
+  env: { ...process.env, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: userDataPath, ELECTRON_DISABLE_SECURITY_WARNINGS: "true" },
   timeout: 30_000,
 });
 const page = await app.firstWindow({ timeout: 20_000 });
@@ -83,12 +83,12 @@ await page.waitForLoadState("domcontentloaded");
 
 await page.evaluate(({ projectValues, agentValue }) => {
   localStorage.clear();
-  localStorage.setItem("braveli-projects", JSON.stringify(projectValues));
-  localStorage.setItem("braveli-active-project", JSON.stringify(projectValues[0].id));
-  localStorage.setItem("braveli-custom-agents", JSON.stringify([agentValue]));
-  localStorage.setItem("braveli-onboarded", "yes");
-  localStorage.setItem("braveli-workspace-section", JSON.stringify("work"));
-  localStorage.setItem("braveli-terminal-webgl", "yes");
+  localStorage.setItem("pitwall-projects", JSON.stringify(projectValues));
+  localStorage.setItem("pitwall-active-project", JSON.stringify(projectValues[0].id));
+  localStorage.setItem("pitwall-custom-agents", JSON.stringify([agentValue]));
+  localStorage.setItem("pitwall-onboarded", "yes");
+  localStorage.setItem("pitwall-workspace-section", JSON.stringify("work"));
+  localStorage.setItem("pitwall-terminal-webgl", "yes");
 }, { projectValues: projects, agentValue: customAgent });
 await page.reload({ waitUntil: "domcontentloaded" });
 await page.waitForTimeout(1800);
@@ -99,7 +99,7 @@ for (const project of projects) {
   const results = await page.evaluate(async ({ ids, cwd, command, projectId }) => {
     const out = [];
     for (const id of ids) {
-      const r = await window.braveli.startTerminal({
+      const r = await window.pitwall.startTerminal({
         projectId, sessionId: id, sessionName: id, agent: "Noisy", provider: "noisy",
         model: "auto", projectPath: cwd, command, args: [], cols: 120, rows: 32,
       });

@@ -30,7 +30,7 @@ function createMcpAlias({ projectId, provider, name, target }) {
     .update(`${projectId}\0${provider}\0${name}\0${target}`)
     .digest("hex")
     .slice(0, 10);
-  return `braveli_${slug}_${digest}`;
+  return `pitwall_${slug}_${digest}`;
 }
 
 function tomlKeySegment(value) {
@@ -127,14 +127,6 @@ function createMcpAuthProfileStore(filePath) {
   }
 
   return {
-    exportAll() {
-      return JSON.parse(JSON.stringify(state));
-    },
-    /** One project's bindings, as another computer has them, under this computer's path for it. */
-    replaceProject({ projectId, projectPath, bindings }) {
-      state.projects[projectId] = { projectId, projectPath: normalizeProjectPath(projectPath), bindings: Array.isArray(bindings) ? bindings : [] };
-      write();
-    },
     list(payload = {}) {
       const project = findProject(payload);
       const bindings = Array.isArray(project?.bindings) ? project.bindings : [];
@@ -148,8 +140,9 @@ function createMcpAuthProfileStore(filePath) {
         projectPath: normalizeProjectPath(projectPath),
         bindings: [],
       };
-      const alias = createMcpAlias({ projectId, provider, name, target });
       const existing = project.bindings.find((binding) => binding.provider === provider && binding.name === name);
+      // The CLI keeps the login under the alias, so a stored one (older versions wrote another prefix) is never replaced.
+      const alias = existing?.target === target && existing.alias ? existing.alias : createMcpAlias({ projectId, provider, name, target });
       const next = {
         provider,
         name,

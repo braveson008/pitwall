@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import {
   formatChangeRequestPrompt,
   isUsableRequest,
@@ -119,7 +119,7 @@ describe("statusAfterRequest", () => {
   });
 
   it("never leaves the task in review", () => {
-    const outcomes: BraveliTask["status"][] = [statusAfterRequest(true), statusAfterRequest(false)];
+    const outcomes: PitwallTask["status"][] = [statusAfterRequest(true), statusAfterRequest(false)];
     expect(outcomes).not.toContain("review");
   });
 });

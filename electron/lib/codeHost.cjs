@@ -188,14 +188,14 @@ function tokenEnvironment({ kind, host, token }) {
   const credentialKey = `credential.https://${host}.helper`;
   return {
     ...cli,
-    BRAVELI_GIT_TOKEN: token,
+    PITWALL_GIT_TOKEN: token,
     // Kept for agents and scripts written against the old name.
-    BRAVELI_GITHUB_TOKEN: token,
+    PITWALL_GITHUB_TOKEN: token,
     GIT_CONFIG_COUNT: "3",
     GIT_CONFIG_KEY_0: credentialKey,
     GIT_CONFIG_VALUE_0: "",
     GIT_CONFIG_KEY_1: credentialKey,
-    GIT_CONFIG_VALUE_1: `!f() { if [ "$1" = get ]; then printf '%s\\n' 'username=${user}' "password=$BRAVELI_GIT_TOKEN"; fi; }; f`,
+    GIT_CONFIG_VALUE_1: `!f() { if [ "$1" = get ]; then printf '%s\\n' 'username=${user}' "password=$PITWALL_GIT_TOKEN"; fi; }; f`,
     GIT_CONFIG_KEY_2: `credential.https://${host}.useHttpPath`,
     GIT_CONFIG_VALUE_2: "true",
   };

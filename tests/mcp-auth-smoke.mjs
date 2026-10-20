@@ -10,7 +10,7 @@ import { execFileSync } from "node:child_process";
 import { _electron as electron } from "playwright";
 
 const root = process.cwd();
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-mcp-auth-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-mcp-auth-"));
 const fakeHome = path.join(temp, "home");
 const fakeBin = path.join(temp, "bin");
 await mkdir(fakeHome, { recursive: true });
@@ -41,7 +41,7 @@ await chmod(path.join(fakeBin, "claude"), 0o755);
 const app = await electron.launch({
   args: [root],
   cwd: root,
-  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 try {
   const page = await app.firstWindow();
@@ -51,8 +51,8 @@ try {
   const payload = { projectId: "admin", projectPath: project, provider: "claude", name: "atlassian", target: "https://mcp.atlassian.com/v2/mcp", transport: "http" };
   await page.evaluate((payload) => {
     window.__signIn = { url: "", result: null };
-    window.braveli.onMcpAuthUrl((event) => { if (event.name === payload.name) window.__signIn.url = event.url; });
-    void window.braveli.connectMcpAuth(payload).then((result) => { window.__signIn.result = result; });
+    window.pitwall.onMcpAuthUrl((event) => { if (event.name === payload.name) window.__signIn.url = event.url; });
+    void window.pitwall.connectMcpAuth(payload).then((result) => { window.__signIn.result = result; });
   }, payload);
 
   await page.waitForFunction(() => window.__signIn.url, null, { timeout: 30000 });
@@ -61,7 +61,7 @@ try {
 
   const pid = Number((await readFile(pidFile, "utf8")).trim());
   const started = Date.now();
-  await page.evaluate((payload) => window.braveli.cancelMcpAuth({ projectPath: payload.projectPath, provider: payload.provider, name: payload.name }), payload);
+  await page.evaluate((payload) => window.pitwall.cancelMcpAuth({ projectPath: payload.projectPath, provider: payload.provider, name: payload.name }), payload);
   await page.waitForFunction(() => window.__signIn.result, null, { timeout: 10000 });
   const result = await page.evaluate(() => window.__signIn.result);
   assert.equal(result.ok, false);
@@ -74,7 +74,7 @@ try {
   console.log("PASS cancelling stops the sign-in at once and says it was cancelled");
 
   // Nothing running: cancelling is harmless.
-  const idle = await page.evaluate((payload) => window.braveli.cancelMcpAuth({ projectPath: payload.projectPath, provider: payload.provider, name: payload.name }), payload);
+  const idle = await page.evaluate((payload) => window.pitwall.cancelMcpAuth({ projectPath: payload.projectPath, provider: payload.provider, name: payload.name }), payload);
   assert.deepEqual(idle, { ok: true, running: false });
   console.log("PASS cancelling with nothing running does nothing");
 } finally {

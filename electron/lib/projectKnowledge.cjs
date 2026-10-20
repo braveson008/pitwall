@@ -4,6 +4,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
+const { OWN_DIRS } = require("./worktreeFiles.cjs");
 
 const runFile = promisify(execFile);
 const queues = new Map();
@@ -83,7 +84,7 @@ const MEMORY_CHARS = 18000;
 const INLINE_MANUAL_CHARS = 24000;
 const KINDS = new Set(["overview", "area", "command", "convention", "decision", "pitfall"]);
 const STATUSES = new Set(["observed", "tentative", "superseded", "forgotten"]);
-const SKIP_DIRS = new Set([".git", ".braveli", ".codex", ".claude", "node_modules", "vendor", "dist", "build", "release", "coverage", ".next", ".cache", ".venv", "venv", "target", "__pycache__"]);
+const SKIP_DIRS = new Set([".git", ...OWN_DIRS, ".codex", ".claude", "node_modules", "vendor", "dist", "build", "release", "coverage", ".next", ".cache", ".venv", "venv", "target", "__pycache__"]);
 const TEXT_EXTENSIONS = /\.(?:md|mdx|txt|json|ya?ml|toml|[cm]?[jt]sx?|py|rb|go|rs|java|kt|swift|php|vue|svelte|css|scss|sh|sql|xml|gradle)$/i;
 const LOCK_FILE = /^(?:package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|Cargo\.lock|poetry\.lock|Gemfile\.lock)$/i;
 const INSTRUCTION_FILE = /^(?:AGENTS|CLAUDE|GEMINI|README|ARCHITECTURE|CONTRIBUTING)(?:\.[\w-]+)?\.md$/i;
@@ -116,8 +117,8 @@ function inside(root, target) {
   return relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative));
 }
 function secretPath(relative) {
-  return relative.split("/").some((part) =>
-    /^(?:\.git|\.braveli|\.codex|\.claude|\.env(?:\..*)?|\.npmrc|\.netrc|\.pypirc|\.ssh|\.aws|\.gnupg|credentials?(?:\..*)?|secrets?(?:\..*)?|auth\.json|id_(?:rsa|ed25519|ecdsa)(?:\.pub)?)$/i.test(part)
+  return relative.split("/").some((part) => OWN_DIRS.includes(part.toLowerCase()) ||
+    /^(?:\.git|\.codex|\.claude|\.env(?:\..*)?|\.npmrc|\.netrc|\.pypirc|\.ssh|\.aws|\.gnupg|credentials?(?:\..*)?|secrets?(?:\..*)?|auth\.json|id_(?:rsa|ed25519|ecdsa)(?:\.pub)?)$/i.test(part)
     || /\.(?:pem|key|p12|pfx|keystore)$/i.test(part));
 }
 function relativePath(value) {
@@ -941,28 +942,7 @@ function createProjectKnowledgeStore({ directory }) {
     });
   }
 
-  /** What this repository's store holds, for sync: facts and receipts, not this machine's file hashes. */
-  async function exportState(input) {
-    return operate(input, async (state, location) => {
-      // Every change is saved before the next operation runs, so the file's stamp says whether anything changed.
-      const saved = await fs.stat(path.join(storeDirectory, `${location.repositoryId}.json`)).catch(() => null);
-      const fingerprint = saved ? `${location.repositoryId}:${saved.mtimeMs}:${saved.size}` : "";
-      return { ok: true, records: state.records, receipts: state.receipts, fingerprint };
-    });
-  }
-
-  /** Another computer's facts and receipts, already merged with these, saved through the same queue as every write. */
-  async function importState(input) {
-    return operate(input, async (state) => {
-      state.records = Array.isArray(input.records) ? input.records : state.records;
-      state.receipts = Array.isArray(input.receipts) ? input.receipts : state.receipts;
-      trimToLimit(state);
-      await save(state);
-      return { ok: true };
-    });
-  }
-
-  return { inspect, learn, remember, update, prepare, markReceipt, exportState, importState };
+  return { inspect, learn, remember, update, prepare, markReceipt };
 }
 
 module.exports = { createProjectKnowledgeStore, trimToLimit, MAX_RECORDS };

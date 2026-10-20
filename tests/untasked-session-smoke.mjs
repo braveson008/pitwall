@@ -10,7 +10,7 @@ import { _electron as electron } from "playwright";
 import { openProject } from "./helpers/openProject.mjs";
 
 const root = process.cwd();
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-untasked-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-untasked-"));
 const fakeHome = path.join(temp, "home");
 const fakeBin = path.join(temp, "bin");
 await mkdir(fakeHome, { recursive: true });
@@ -51,7 +51,7 @@ const workspace = {
 const app = await electron.launch({
   args: [root],
   cwd: root,
-  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 try {
   const page = await app.firstWindow();
@@ -59,9 +59,9 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "shop-frontend");
@@ -78,14 +78,14 @@ try {
     for (let i = 0; i < 20; i += 1) {
       const now = await page.evaluate(async () => ({
         shown: document.querySelectorAll(".dk-terminal.is-active .xterm-rows > div").length,
-        pty: (await window.braveli.getTerminalSize("tasked"))?.rows,
+        pty: (await window.pitwall.getTerminalSize("tasked"))?.rows,
       }));
       if (now.shown && now.shown === now.pty) return now;
       await page.waitForTimeout(250);
     }
     return page.evaluate(async () => ({
       shown: document.querySelectorAll(".dk-terminal.is-active .xterm-rows > div").length,
-      pty: (await window.braveli.getTerminalSize("tasked"))?.rows,
+      pty: (await window.pitwall.getTerminalSize("tasked"))?.rows,
     }));
   })();
   assert.equal(heights.pty, heights.shown, `the agent draws in every row the pane shows (${JSON.stringify(heights)})`);
@@ -100,7 +100,7 @@ try {
   assert.equal(await page.getByRole("button", { name: "Files", exact: true }).count(), 0, "the Files panel stays off until it is finished");
   console.log("PASS the unfinished Files panel is not offered");
 
-  // Two lists, as in Braveli: sessions, and work in review. Tasks no agent is
+  // Two lists, as in Pitwall: sessions, and work in review. Tasks no agent is
   // on live on the board, not here.
   const names = await page.locator(".dk-tsb-group .dk-tsb-heading-toggle > span:nth-child(2)").allInnerTexts();
   assert.deepEqual(names, ["Working"]);

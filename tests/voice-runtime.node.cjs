@@ -7,7 +7,7 @@ const { EventEmitter } = require("node:events");
 const { createVoiceRuntime } = require("../electron/lib/voiceRuntime.cjs");
 
 function fixture(t, overrides = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-voice-runtime-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-voice-runtime-"));
   const ipcMain = new EventEmitter();
   ipcMain.handle = () => {};
   const runtime = createVoiceRuntime({

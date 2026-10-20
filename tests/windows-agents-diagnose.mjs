@@ -23,7 +23,7 @@ await writeFile(path.join(project, "README.md"), "# shop\n");
 execFileSync("git", ["-C", project, "add", "."]);
 execFileSync("git", ["-C", project, "-c", "user.email=a@b", "-c", "user.name=t", "commit", "-qm", "init"]);
 
-const app = await electron.launch({ executablePath: exe, env: { ...process.env, BRAVELI_USER_DATA_DIR: path.join(temp, "profile") }, timeout: 90_000 });
+const app = await electron.launch({ executablePath: exe, env: { ...process.env, PITWALL_USER_DATA_DIR: path.join(temp, "profile") }, timeout: 90_000 });
 const proc = app.process();
 proc.stdout.on("data", (chunk) => process.stdout.write(`[main] ${chunk}`));
 proc.stderr.on("data", (chunk) => process.stdout.write(`[main:err] ${chunk}`));
@@ -37,13 +37,13 @@ await page.waitForTimeout(3000);
 
 await page.evaluate(() => {
   window.diag = {};
-  window.braveli.onTerminalData(({ sessionId, data }) => { (window.diag[sessionId] ||= { out: "", closed: null }).out += data; });
-  window.braveli.onTerminalClosed((event) => { (window.diag[event.sessionId] ||= { out: "", closed: null }).closed = event; });
+  window.pitwall.onTerminalData(({ sessionId, data }) => { (window.diag[sessionId] ||= { out: "", closed: null }).out += data; });
+  window.pitwall.onTerminalClosed((event) => { (window.diag[event.sessionId] ||= { out: "", closed: null }).closed = event; });
 });
 
 for (const agent of ["Claude", "Codex"]) {
   const sessionId = `diag-${agent.toLowerCase()}`;
-  const started = await page.evaluate((payload) => window.braveli.startTerminal(payload), {
+  const started = await page.evaluate((payload) => window.pitwall.startTerminal(payload), {
     projectId: "shop", projectPath: project, sessionId, sessionName: `Diag ${agent}`, agent, model: "",
     nativeSessionId: agent === "Claude" ? randomUUID() : undefined, resumeSession: false, cols: 120, rows: 40,
   }).catch((error) => ({ thrown: error.message }));
@@ -53,7 +53,7 @@ for (const agent of ["Claude", "Codex"]) {
   const text = String(seen?.out || "").replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "").replace(/\x1b\][^\x07]*\x07/g, "");
   log(`=== ${agent} closed:`, JSON.stringify(seen?.closed));
   log(`=== ${agent} output (last 3000 chars):\n${text.slice(-3000)}\n=== end ${agent}`);
-  await page.evaluate((id) => window.braveli.runSessionAction({ sessionId: id, action: "stop" }), sessionId).catch(() => {});
+  await page.evaluate((id) => window.pitwall.runSessionAction({ sessionId: id, action: "stop" }), sessionId).catch(() => {});
 }
 
 const profile = path.join(temp, "profile");

@@ -52,7 +52,7 @@ export function useLicence() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const result = await window.braveli?.getLicence?.();
+      const result = await window.pitwall?.getLicence?.();
       if (cancelled) return;
       setRecord(result?.record ?? null);
       if (result?.checkoutUrl) setCheckoutUrl(result.checkoutUrl);
@@ -83,7 +83,7 @@ export function useLicence() {
     inFlightRef.current = true;
     void (async () => {
       try {
-        const result = await window.braveli?.verifyLicence?.();
+        const result = await window.pitwall?.verifyLicence?.();
         if (result?.record) setRecord(result.record);
       } finally {
         inFlightRef.current = false;
@@ -97,7 +97,7 @@ export function useLicence() {
     // round trip. Whether the key is *real* remains the merchant's to say.
     if (!looksLikeKey(key)) return { ok: false, reason: "malformed" };
 
-    const result = await window.braveli?.activateLicence?.({ key });
+    const result = await window.pitwall?.activateLicence?.({ key });
     if (result?.record) setRecord(result.record);
     if (!result) return { ok: false, reason: "unavailable" };
     // A completed check that came back negative is a different answer from a
@@ -107,7 +107,7 @@ export function useLicence() {
   }, []);
 
   const clear = useCallback(async () => {
-    const result = await window.braveli?.clearLicence?.();
+    const result = await window.pitwall?.clearLicence?.();
     setRecord(result?.record ?? null);
     attemptedAtRef.current = 0;
   }, []);

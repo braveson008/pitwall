@@ -21,7 +21,7 @@ const MEMBERS = Number(process.argv[2] || 4);
 const SECONDS = Number(process.argv[3] || 10);
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), "braveli-council-perf-"));
+const tempRoot = await mkdtemp(path.join(os.tmpdir(), "pitwall-council-perf-"));
 const projectPath = path.join(tempRoot, "project");
 const userDataPath = path.join(tempRoot, "user-data");
 const fakeHome = path.join(tempRoot, "home");
@@ -79,19 +79,19 @@ const workspace = {
 const app = await electron.launch({
   args: [root], cwd: root,
   env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
-         BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: userDataPath, ELECTRON_DISABLE_SECURITY_WARNINGS: "true" },
+         PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: userDataPath, ELECTRON_DISABLE_SECURITY_WARNINGS: "true" },
   timeout: 30_000,
 });
 const page = await app.firstWindow({ timeout: 20_000 });
 await page.waitForLoadState("domcontentloaded");
 await page.evaluate(({ projectValue, workspaceValue }) => {
   localStorage.clear();
-  localStorage.setItem("braveli-projects", JSON.stringify([projectValue]));
-  localStorage.setItem("braveli-active-project", JSON.stringify(projectValue.id));
-  localStorage.setItem("braveli-workspace-state", JSON.stringify(workspaceValue));
-  localStorage.setItem("braveli-onboarded", "yes");
-  localStorage.setItem("braveli-workspace-section", JSON.stringify("work"));
-  localStorage.setItem("braveli-terminal-webgl", "yes");
+  localStorage.setItem("pitwall-projects", JSON.stringify([projectValue]));
+  localStorage.setItem("pitwall-active-project", JSON.stringify(projectValue.id));
+  localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspaceValue));
+  localStorage.setItem("pitwall-onboarded", "yes");
+  localStorage.setItem("pitwall-workspace-section", JSON.stringify("work"));
+  localStorage.setItem("pitwall-terminal-webgl", "yes");
 }, { projectValue: project, workspaceValue: workspace });
 await page.reload({ waitUntil: "domcontentloaded" });
 await page.waitForTimeout(1800);
@@ -184,10 +184,10 @@ await page.waitForTimeout(800);
 // both over a quiet window, with no interaction at all.
 const churn = await page.evaluate(async () => {
   const counts = { resize: 0, reset: 0 };
-  const realResize = window.braveli.resizeTerminal;
-  window.braveli.resizeTerminal = (payload) => { counts.resize += 1; return realResize(payload); };
+  const realResize = window.pitwall.resizeTerminal;
+  window.pitwall.resizeTerminal = (payload) => { counts.resize += 1; return realResize(payload); };
   await new Promise((r) => setTimeout(r, 5000));
-  window.braveli.resizeTerminal = realResize;
+  window.pitwall.resizeTerminal = realResize;
   return counts;
 });
 console.log(`  resize calls in 5 idle seconds: ${churn.resize}`);
@@ -254,7 +254,7 @@ if (measureCallers.size) {
 const renderer = await page.evaluate(() => {
   const canvas = document.createElement("canvas");
   const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
-  return { webgl: Boolean(gl), stored: localStorage.getItem("braveli-terminal-webgl") };
+  return { webgl: Boolean(gl), stored: localStorage.getItem("pitwall-terminal-webgl") };
 });
 const canvases = await page.evaluate(() =>
   [...document.querySelectorAll(".xterm")].map((el) => el.querySelectorAll("canvas").length));

@@ -2,7 +2,7 @@ import { ArrowUpRight, RotateCw, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { writeStoredJson } from "../lib/storage";
 
-const LATER_KEY = "braveli-update-later";
+const LATER_KEY = "pitwall-update-later";
 /** "Later" holds for this long before the banner asks once more. */
 const ASK_AGAIN_MS = 3 * 24 * 60 * 60 * 1000;
 const CHANGELOG_URL = "https://github.com/braveson008/pitwall/releases";
@@ -41,7 +41,7 @@ export function UpdateBanner({ state, workingCount, onRestart }: {
   const [later, setLater] = useState<Later | null>(readLater);
   const offered = shouldOfferUpdate(state, later);
   useEffect(() => {
-    if (offered) void window.braveli?.captureEvent?.("update_offered", { surface: "update" });
+    if (offered) void window.pitwall?.captureEvent?.("update_offered", { surface: "update" });
   }, [offered]);
   if (!offered) return null;
   const version = state!.availableVersion!;
@@ -61,7 +61,7 @@ export function UpdateBanner({ state, workingCount, onRestart }: {
           ? `Restarting interrupts ${workingCount === 1 ? "the agent that is" : `the ${workingCount} agents that are`} working; sessions reopen afterwards.`
           : "Restart to use it — your sessions reopen afterwards."}
       </span>
-      <button type="button" className="dk-link-btn dk-update-notes" onClick={() => void window.braveli?.openExternalUrl?.(CHANGELOG_URL)}>
+      <button type="button" className="dk-link-btn dk-update-notes" onClick={() => void window.pitwall?.openExternalUrl?.(CHANGELOG_URL)}>
         What&rsquo;s new <ArrowUpRight size={12} aria-hidden="true" />
       </button>
       <span className="dk-spacer" />
@@ -69,7 +69,7 @@ export function UpdateBanner({ state, workingCount, onRestart }: {
         Later
       </button>
       <button type="button" className="dk-btn dk-btn--sm dk-btn--primary" onClick={() => {
-        void window.braveli?.captureEvent?.("update_restart_clicked", { surface: "update" });
+        void window.pitwall?.captureEvent?.("update_restart_clicked", { surface: "update" });
         onRestart();
       }}>
         Restart now

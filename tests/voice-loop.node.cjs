@@ -129,7 +129,7 @@ function harness({ routeTo = { capabilityId: "tests.run", params: {} }, capabili
       },
     },
     memory: { recordSnapshot: () => {} },
-    getContext: async () => ({ projectName: "braveli" }),
+    getContext: async () => ({ projectName: "pitwall" }),
     emit: (event) => emitted.push(event),
   });
 
@@ -311,10 +311,10 @@ test("prefers Pitwall's own state when Pitwall is frontmost", async () => {
     },
   });
 
-  const result = await screen.describe({}, { projectName: "braveli", branch: "voice", terminalTail: "npm test" });
+  const result = await screen.describe({}, { projectName: "pitwall", branch: "voice", terminalTail: "npm test" });
   assert.equal(result.ok, true);
-  assert.equal(result.tier, "braveli-state");
-  assert.match(prompt, /Project: braveli/);
+  assert.equal(result.tier, "pitwall-state");
+  assert.match(prompt, /Project: pitwall/);
 });
 
 test("falls back to a screenshot only when nothing structured is readable", async () => {
@@ -341,7 +341,7 @@ test("the accessibility tree beats a screenshot", async () => {
       ok: true,
       trusted: true,
       app: "Google Chrome",
-      window: "PR #42 · braveli",
+      window: "PR #42 · pitwall",
       text: "Checks have failed. 1 failing check: build (macos-latest). Merge blocked.",
     }),
     capture: async () => {

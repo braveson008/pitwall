@@ -12,8 +12,8 @@ let home: string;
 const newSandbox = () => createAgentSandbox({ directory, homeDirectory: home });
 
 beforeEach(() => {
-  directory = mkdtempSync(join(tmpdir(), "braveli-sandbox-"));
-  home = mkdtempSync(join(tmpdir(), "braveli-home-"));
+  directory = mkdtempSync(join(tmpdir(), "pitwall-sandbox-"));
+  home = mkdtempSync(join(tmpdir(), "pitwall-home-"));
   writeFileSync(join(home, ".gitconfig"), "[pull]\n\trebase = true\n");
 });
 afterEach(() => {
@@ -87,7 +87,7 @@ describe("what git actually does with it", () => {
   it("reads the real global through the include and writes only into the sandbox", () => {
     const sandbox = newSandbox();
     const environment = sandbox.environment({ projectId: "p1" });
-    const repository = mkdtempSync(join(tmpdir(), "braveli-repo-"));
+    const repository = mkdtempSync(join(tmpdir(), "pitwall-repo-"));
     git(["init", "-q", "."], {}, repository);
 
     // The user's own settings still apply.
@@ -105,11 +105,11 @@ describe("what git actually does with it", () => {
   });
 
   it("survives a home directory with a space in it", () => {
-    const spaced = mkdtempSync(join(tmpdir(), "braveli home "));
+    const spaced = mkdtempSync(join(tmpdir(), "pitwall home "));
     writeFileSync(join(spaced, ".gitconfig"), "[pull]\n\trebase = true\n");
     const sandbox = createAgentSandbox({ directory, homeDirectory: spaced });
     const environment = sandbox.environment({ projectId: "p1" });
-    const repository = mkdtempSync(join(tmpdir(), "braveli-repo-"));
+    const repository = mkdtempSync(join(tmpdir(), "pitwall-repo-"));
     git(["init", "-q", "."], {}, repository);
     expect(git(["config", "--get", "pull.rebase"], environment, repository)).toBe("true");
     rmSync(repository, { recursive: true, force: true });

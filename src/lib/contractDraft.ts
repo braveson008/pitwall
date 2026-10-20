@@ -1,4 +1,4 @@
-import type { BraveliProviderId } from "../domain/types";
+import type { PitwallProviderId } from "../domain/types";
 import type { ImplementationContract, RiskLevel } from "../domain/contracts";
 import type { StageContext } from "./stageContext";
 
@@ -42,12 +42,12 @@ const SECTIONS = [
 
 /** Where the architect leaves its contract, relative to the project. */
 export function contractFile(runId: string, revision = 1): string {
-  return `.braveli/contracts/${runId}/contract-${revision}.md`;
+  return `.pitwall/contracts/${runId}/contract-${revision}.md`;
 }
 
 /** Where a reviewer leaves its verdict. Numbered, so rounds do not overwrite. */
 export function verdictFile(runId: string, round: number): string {
-  return `.braveli/contracts/${runId}/verdict-${round}.md`;
+  return `.pitwall/contracts/${runId}/verdict-${round}.md`;
 }
 
 /**
@@ -166,7 +166,7 @@ export function parseContract(
     taskId: string;
     projectId: string;
     architectModel: string;
-    architectProvider: BraveliProviderId | "";
+    architectProvider: PitwallProviderId | "";
     createdAt: string;
     /** Used when the architect gave no TASK line of its own. */
     fallbackTask?: string;

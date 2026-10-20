@@ -27,7 +27,7 @@ import { fileURLToPath } from "node:url";
  */
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const binary = path.join(root, "electron", "voice", "bin", "braveli-voice");
+const binary = path.join(root, "electron", "voice", "bin", "pitwall-voice");
 
 if (!fs.existsSync(binary)) {
   console.log("Voice sidecar not built — skipping. Run `npm run build:voice`.");
@@ -85,7 +85,7 @@ try {
     process.exit(0);
   }
 
-  send({ type: "configure", silenceTimeout: 3, wakeWords: ["braveli"] });
+  send({ type: "configure", silenceTimeout: 3, wakeWords: ["pitwall"] });
   await wait(300);
   check("applies configuration", seen("configured").length === 1);
 

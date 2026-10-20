@@ -3985,7 +3985,7 @@ kbd {
 /* The directory truncates, the filename never does. Done with two elements
    rather than `direction: rtl`, which truncates from the left correctly but
    runs the string through the bidi algorithm — and a leading dot is a neutral
-   character, so `.braveli/x.md` came out as `braveli/x.md.`. */
+   character, so `.pitwall/x.md` came out as `pitwall/x.md.`. */
 
 /* ── version footer ──────────────────────────────────────────────────
    Pitwall updates weekly and a stale copy looks identical to a current

@@ -13,7 +13,7 @@ import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
 const root = process.cwd();
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-watch-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-watch-"));
 const fakeHome = path.join(temp, "home");
 const fakeBin = path.join(temp, "bin");
 await mkdir(fakeHome, { recursive: true });
@@ -143,12 +143,12 @@ case "$1" in
   --version) echo "Hermes Agent v0.21.5 (2026.9.24)"; exit 0 ;;
   tools|plugins|setup) exit 0 ;;
   profile) [ "$2" = "create" ] && mkdir -p "$HOME/.hermes/profiles/$3" && cp "$HOME/.hermes/config.yaml" "$HOME/.hermes/profiles/$3/config.yaml"; exit 0 ;;
-  config) [ "$2" = "get" ] && case "$3" in plugins.enabled) echo '["braveli-reviewer"]' ;; plugins.disabled) echo '[]' ;; mcp_servers) echo '{}' ;; esac; exit 0 ;;
+  config) [ "$2" = "get" ] && case "$3" in plugins.enabled) echo '["pitwall-reviewer"]' ;; plugins.disabled) echo '[]' ;; mcp_servers) echo '{}' ;; esac; exit 0 ;;
   chat) ;;
   *) exit 0 ;;
 esac
 n=$(ls '${hermesCalls}' | wc -l | tr -d ' ')
-printf 'profile=%s reviewer=%s args=%s\\n' "$PROFILE" "$BRAVELI_HERMES_REVIEWER" "$*" > '${hermesCalls}/'$n'.meta'
+printf 'profile=%s reviewer=%s args=%s\\n' "$PROFILE" "$PITWALL_HERMES_REVIEWER" "$*" > '${hermesCalls}/'$n'.meta'
 cat > '${hermesCalls}/'$n'.prompt'
 echo '{"verdict":"comment","summary":"Rounding looks safe for whole numbers.","comments":[{"path":"rates.ts","line":1,"body":"Round half-cents up, as finance asked."}],"note":"Hermes added the rounding rule."}'
 echo
@@ -183,7 +183,7 @@ const workspace = { version: 1, projects: [{ id: "payments", name: "payments", p
 const app = await electron.launch({
   args: [root],
   cwd: root,
-  env: { ...process.env, HOME: fakeHome, HERMES_HOME: path.join(fakeHome, ".hermes"), PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HOME: fakeHome, HERMES_HOME: path.join(fakeHome, ".hermes"), PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 try {
   const page = await app.firstWindow();
@@ -192,9 +192,9 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project: projectRecord, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "payments");
@@ -379,7 +379,7 @@ try {
   const meta = await readFile(path.join(hermesCalls, metas[0]), "utf8");
   assert.match(meta, /reviewer=1 /, "with Pitwall's read-only guard switched on");
   assert.match(meta, /--oneshot -t file,todo,clarify,memory,skills/, "file and memory tools only");
-  assert.match(meta, /^profile=braveli-/, "on the project's own Hermes profile");
+  assert.match(meta, /^profile=pitwall-/, "on the project's own Hermes profile");
   assert.match(await readFile(path.join(hermesCalls, metas[0].replace(".meta", ".prompt")), "utf8"), /rates\.ts/, "given the change itself, since it cannot pick up Codex's conversation");
   const ciRow = page.locator(".dk-watch-row", { hasText: "CI fails" });
   if (await ciRow.count()) {

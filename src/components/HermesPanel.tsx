@@ -1,4 +1,4 @@
-import type { BraveliActivityEvent, BraveliProjectOverseer, BraveliTask } from "../domain/types";
+import type { PitwallActivityEvent, PitwallProjectOverseer, PitwallTask } from "../domain/types";
 import { Dropdown } from "./Dropdown";
 import type { ReviewerScorecard, ScoreLine } from "../lib/reviewerScorecard";
 
@@ -15,7 +15,7 @@ function recordLine(line: ScoreLine) {
 export type HermesState =
   | { kind: "not-set-up"; installed: boolean }
   | { kind: "signed-out" }
-  | { kind: "reviewing"; tasks: BraveliTask[] }
+  | { kind: "reviewing"; tasks: PitwallTask[] }
   | { kind: "learning"; keys: string[] }
   | { kind: "off" }
   | { kind: "ready" };
@@ -59,7 +59,7 @@ const ago = (iso: string) => {
   return hours < 24 ? `${hours}h ago` : `${Math.round(hours / 24)}d ago`;
 };
 
-const key = (task: BraveliTask) => (task.identifier || task.title).toUpperCase();
+const key = (task: PitwallTask) => (task.identifier || task.title).toUpperCase();
 
 /**
  * Everything Hermes is and has been doing, in one place: whether it can work,
@@ -82,19 +82,19 @@ export function HermesPanel({
 }: {
   state: HermesState;
   projectName: string;
-  overseer: BraveliProjectOverseer;
+  overseer: PitwallProjectOverseer;
   models: Array<{ value: string; label: string }>;
   /** Tasks Hermes reviewed, newest first. */
-  reviews: BraveliTask[];
+  reviews: PitwallTask[];
   /** "Hermes learned …" activity, newest first. */
-  learned: BraveliActivityEvent[];
+  learned: PitwallActivityEvent[];
   /** How its verdicts compared with your decisions in this project. */
   scorecard: ReviewerScorecard;
   onToggle: (enabled: boolean) => void;
   onModel: (model: string) => void;
   onSignIn: () => void;
   onSetUp: () => void;
-  onOpenReview: (task: BraveliTask) => void;
+  onOpenReview: (task: PitwallTask) => void;
   onOpenMemory: () => void;
 }) {
   const line = hermesStatusLine(state);

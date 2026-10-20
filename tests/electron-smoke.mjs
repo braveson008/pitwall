@@ -9,20 +9,20 @@ import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), "braveli-electron-smoke-"));
+const tempRoot = await mkdtemp(path.join(os.tmpdir(), "pitwall-electron-smoke-"));
 const projectPath = path.join(tempRoot, "sample-project");
 const userDataPath = path.join(tempRoot, "user-data");
-const screenshotPath = path.join(tempRoot, "braveli-smoke.png");
-const notificationScreenshotPath = path.join(tempRoot, "braveli-project-notification.png");
-const connectionsScreenshotPath = path.join(tempRoot, "braveli-connections-responsive.png");
-const overviewScreenshotPath = path.join(tempRoot, "braveli-project-overview.png");
-const tasksScreenshotPath = path.join(tempRoot, "braveli-task-board.png");
-const taskDetailScreenshotPath = path.join(tempRoot, "braveli-task-detail.png");
-const bulkTaskScreenshotPath = path.join(tempRoot, "braveli-bulk-task-start.png");
-const longTaskSessionScreenshotPath = path.join(tempRoot, "braveli-long-task-session.png");
-const mcpImportScreenshotPath = path.join(tempRoot, "braveli-mcp-task-import.png");
-const reviewScreenshotPath = path.join(tempRoot, "braveli-review-gate.png");
-const connectionsPageScreenshotPath = path.join(tempRoot, "braveli-connections-page.png");
+const screenshotPath = path.join(tempRoot, "pitwall-smoke.png");
+const notificationScreenshotPath = path.join(tempRoot, "pitwall-project-notification.png");
+const connectionsScreenshotPath = path.join(tempRoot, "pitwall-connections-responsive.png");
+const overviewScreenshotPath = path.join(tempRoot, "pitwall-project-overview.png");
+const tasksScreenshotPath = path.join(tempRoot, "pitwall-task-board.png");
+const taskDetailScreenshotPath = path.join(tempRoot, "pitwall-task-detail.png");
+const bulkTaskScreenshotPath = path.join(tempRoot, "pitwall-bulk-task-start.png");
+const longTaskSessionScreenshotPath = path.join(tempRoot, "pitwall-long-task-session.png");
+const mcpImportScreenshotPath = path.join(tempRoot, "pitwall-mcp-task-import.png");
+const reviewScreenshotPath = path.join(tempRoot, "pitwall-review-gate.png");
+const connectionsPageScreenshotPath = path.join(tempRoot, "pitwall-connections-page.png");
 const temporaryImagePath = path.join(tempRoot, "ephemeral-source", "NSIRD-test", "Dragged screenshot.png");
 const smokeAgentPath = path.join(tempRoot, "smoke-agent.zsh");
 const completionPreviewUrl = "http://127.0.0.1:8090/smoke-427";
@@ -82,16 +82,16 @@ await writeFile(
   // whatever was typed ahead of its first prompt. Commands the test sent
   // across that window were dropped, so the session never exited and the
   // wait for its completion summary timed out — in about one run in three.
-  "#!/bin/zsh\nprint -r -- \"RUNTIME:${BRAVELI_PREVIEW_PORT}:${BRAVELI_MOBILE_DEVICE_NAME}\"\nprint -r -- 'Smoke Shell ready'\nIFS= read -r first_prompt\nprint -r -- \"RECEIVED:${first_prompt}\"\nwhile IFS= read -r line; do\n  eval \"$line\"\ndone\n",
+  "#!/bin/zsh\nprint -r -- \"RUNTIME:${PITWALL_PREVIEW_PORT}:${PITWALL_MOBILE_DEVICE_NAME}\"\nprint -r -- 'Smoke Shell ready'\nIFS= read -r first_prompt\nprint -r -- \"RECEIVED:${first_prompt}\"\nwhile IFS= read -r line; do\n  eval \"$line\"\ndone\n",
 );
 await chmod(smokeAgentPath, 0o755);
 await writeFile(
   path.join(projectPath, "package.json"),
-  `${JSON.stringify({ name: "braveli-smoke-project", version: "1.0.0", private: true }, null, 2)}\n`,
+  `${JSON.stringify({ name: "pitwall-smoke-project", version: "1.0.0", private: true }, null, 2)}\n`,
 );
 await writeFile(path.join(projectPath, "README.md"), "# Smoke project\n");
 execFileSync("git", ["init", "-q", "-b", "main"], { cwd: projectPath });
-execFileSync("git", ["config", "user.email", "braveli-smoke@example.invalid"], { cwd: projectPath });
+execFileSync("git", ["config", "user.email", "pitwall-smoke@example.invalid"], { cwd: projectPath });
 execFileSync("git", ["config", "user.name", "Pitwall Smoke Test"], { cwd: projectPath });
 execFileSync("git", ["add", "."], { cwd: projectPath });
 execFileSync("git", ["commit", "-qm", "Initial smoke project"], { cwd: projectPath });
@@ -157,8 +157,8 @@ try {
     cwd: root,
     env: {
       ...process.env,
-      BRAVELI_E2E: "1",
-      BRAVELI_USER_DATA_DIR: userDataPath,
+      PITWALL_E2E: "1",
+      PITWALL_USER_DATA_DIR: userDataPath,
       ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
     },
     timeout: 30_000,
@@ -184,9 +184,9 @@ try {
       localStorage.setItem("bravely-workspace-state", JSON.stringify(workspaceValue));
       localStorage.setItem("bravely-custom-agents", JSON.stringify([customAgentValue]));
       localStorage.setItem("bravely-onboarded", "yes");
-      localStorage.setItem("braveli-terminal-font-family", '"Intel One Mono", monospace');
-      localStorage.setItem("braveli-terminal-webgl", "yes");
-      localStorage.setItem("braveli-terminal-unicode11", "yes");
+      localStorage.setItem("pitwall-terminal-font-family", '"Intel One Mono", monospace');
+      localStorage.setItem("pitwall-terminal-webgl", "yes");
+      localStorage.setItem("pitwall-terminal-unicode11", "yes");
     },
     {
       projectValue: project,
@@ -203,18 +203,18 @@ try {
 
   const identity = await page.evaluate(() => ({
     title: document.title,
-    hasBraveli: Boolean(window.braveli),
+    hasPitwall: Boolean(window.pitwall),
     hasLegacyBridge: "agentStudio" in window,
-    projectKey: localStorage.getItem("braveli-projects"),
-    workspaceKey: localStorage.getItem("braveli-workspace-state"),
-    customAgentsKey: localStorage.getItem("braveli-custom-agents"),
+    projectKey: localStorage.getItem("pitwall-projects"),
+    workspaceKey: localStorage.getItem("pitwall-workspace-state"),
+    customAgentsKey: localStorage.getItem("pitwall-custom-agents"),
     oldProjectKey: localStorage.getItem("agent-studio-projects"),
     oldWorkspaceKey: localStorage.getItem("bravely-workspace-state"),
-    terminalFontFamily: localStorage.getItem("braveli-terminal-font-family"),
-    terminalWebgl: localStorage.getItem("braveli-terminal-webgl"),
-    terminalUnicode11: localStorage.getItem("braveli-terminal-unicode11"),
+    terminalFontFamily: localStorage.getItem("pitwall-terminal-font-family"),
+    terminalWebgl: localStorage.getItem("pitwall-terminal-webgl"),
+    terminalUnicode11: localStorage.getItem("pitwall-terminal-unicode11"),
   }));
-  assert.equal(identity.hasBraveli, true);
+  assert.equal(identity.hasPitwall, true);
   assert.equal(identity.hasLegacyBridge, false);
   assert.match(identity.projectKey ?? "", /Pitwall Smoke Project/);
   assert.match(identity.workspaceKey ?? "", /smoke-project/);
@@ -228,7 +228,7 @@ try {
   log("Pitwall identity, storage, and safe terminal renderer migration");
 
   const attachment = await page.evaluate(
-    (sourcePath) => window.braveli.stageTerminalImages({
+    (sourcePath) => window.pitwall.stageTerminalImages({
       sessionId: "smoke-image-session",
       paths: [sourcePath],
     }),
@@ -238,7 +238,7 @@ try {
   assert.equal(attachment.paths.length, 1);
   await rm(temporaryImagePath, { force: true });
   assert.deepEqual(await readFile(attachment.paths[0]), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
-  const clipboardAttachment = await page.evaluate(() => window.braveli.stageTerminalImageData({
+  const clipboardAttachment = await page.evaluate(() => window.pitwall.stageTerminalImageData({
     sessionId: "smoke-image-session",
     images: [{
       name: "clipboard-capture",
@@ -251,8 +251,8 @@ try {
   log("temporary and clipboard images persist in per-session attachment storage");
 
   const providerStatus = await page.evaluate(async () => {
-    const providers = await window.braveli.listProviders({ refresh: false });
-    const checks = await Promise.all(["Claude", "Codex", "Gemini", "Grok", "Kimi"].map((name) => window.braveli.checkAgent(name)));
+    const providers = await window.pitwall.listProviders({ refresh: false });
+    const checks = await Promise.all(["Claude", "Codex", "Gemini", "Grok", "Kimi"].map((name) => window.pitwall.checkAgent(name)));
     return { providers, checks };
   });
   assert.equal(providerStatus.providers.ok, true);
@@ -276,12 +276,12 @@ try {
     const completed = new Promise((resolve) => {
       finish = resolve;
     });
-    const unsubscribe = window.braveli.onTerminalData(({ sessionId, data }) => {
+    const unsubscribe = window.pitwall.onTerminalData(({ sessionId, data }) => {
       if (sessionId !== "native-claude-probe") return;
       output += data;
       if (output.includes(nativeSessionId)) finish();
     });
-    const started = await window.braveli.startTerminal({
+    const started = await window.pitwall.startTerminal({
       projectId: "smoke-project",
       projectPath: rootPath,
       sessionId: "native-claude-probe",
@@ -327,13 +327,13 @@ try {
   log("connection diagnostics and compact viewport remain usable");
 
   const backgroundNotification = await page.evaluate(async ({ rootPath }) => {
-    window.__braveliToneCount = 0;
+    window.__pitwallToneCount = 0;
     const originalCreateOscillator = AudioContext.prototype.createOscillator;
     AudioContext.prototype.createOscillator = function (...args) {
-      window.__braveliToneCount += 1;
+      window.__pitwallToneCount += 1;
       return originalCreateOscillator.apply(this, args);
     };
-    const started = await window.braveli.startTerminal({
+    const started = await window.pitwall.startTerminal({
       projectId: "background-project",
       projectPath: rootPath,
       sessionId: "background-notification-session",
@@ -346,7 +346,7 @@ try {
       rows: 24,
     });
     if (started.ok) {
-      await window.braveli.writeTerminal({
+      await window.pitwall.writeTerminal({
         sessionId: "background-notification-session",
         data: "exit\r",
       });
@@ -363,9 +363,9 @@ try {
     await page.keyboard.press("Escape");
     return /1 new/.test(text);
   });
-  await waitFor(() => page.evaluate(() => window.__braveliToneCount >= 2));
+  await waitFor(() => page.evaluate(() => window.__pitwallToneCount >= 2));
   const persistedNotification = await page.evaluate(() =>
-    JSON.parse(localStorage.getItem("braveli-project-notifications") || "{}")["background-project"],
+    JSON.parse(localStorage.getItem("pitwall-project-notifications") || "{}")["background-project"],
   );
   assert.equal(persistedNotification.sessionName, "Background review");
   assert.equal(persistedNotification.count, 1);
@@ -381,15 +381,15 @@ try {
   log("opening the notified project clears its unread badge");
 
   const fileResult = await page.evaluate(async (rootPath) => {
-    const files = await window.braveli.listProjectFiles(rootPath);
-    const read = await window.braveli.readProjectFile({ projectPath: rootPath, filePath: "README.md" });
-    const write = await window.braveli.writeProjectFile({
+    const files = await window.pitwall.listProjectFiles(rootPath);
+    const read = await window.pitwall.readProjectFile({ projectPath: rootPath, filePath: "README.md" });
+    const write = await window.pitwall.writeProjectFile({
       projectPath: rootPath,
       filePath: "src/smoke.ts",
       content: "export const smoke = true;\n",
     });
-    const git = await window.braveli.getGitStatus(rootPath);
-    const diff = await window.braveli.getGitDiff({ projectPath: rootPath, filePath: "src/smoke.ts" });
+    const git = await window.pitwall.getGitStatus(rootPath);
+    const diff = await window.pitwall.getGitDiff({ projectPath: rootPath, filePath: "src/smoke.ts" });
     return { files, read, write, git, diff };
   }, projectPath);
   assert.equal(fileResult.files.ok, true);
@@ -403,18 +403,18 @@ try {
 
   const worktreeResult = await page.evaluate(async (rootPath) => {
     const [alpha, beta] = await Promise.all([
-      window.braveli.ensureWorktree({ projectPath: rootPath, branch: "smoke/alpha", baseBranch: "main" }),
-      window.braveli.ensureWorktree({ projectPath: rootPath, branch: "smoke/beta", baseBranch: "main" }),
+      window.pitwall.ensureWorktree({ projectPath: rootPath, branch: "smoke/alpha", baseBranch: "main" }),
+      window.pitwall.ensureWorktree({ projectPath: rootPath, branch: "smoke/beta", baseBranch: "main" }),
     ]);
     if (!alpha.ok || !beta.ok) return { alpha, beta, listed: null };
     await Promise.all([
-      window.braveli.writeProjectFile({ projectPath: alpha.path, filePath: "alpha.txt", content: "alpha\n" }),
-      window.braveli.writeProjectFile({ projectPath: beta.path, filePath: "beta.txt", content: "beta\n" }),
+      window.pitwall.writeProjectFile({ projectPath: alpha.path, filePath: "alpha.txt", content: "alpha\n" }),
+      window.pitwall.writeProjectFile({ projectPath: beta.path, filePath: "beta.txt", content: "beta\n" }),
     ]);
     const [alphaStatus, betaStatus, listed] = await Promise.all([
-      window.braveli.getGitStatus(alpha.path),
-      window.braveli.getGitStatus(beta.path),
-      window.braveli.listWorktrees(rootPath),
+      window.pitwall.getGitStatus(alpha.path),
+      window.pitwall.getGitStatus(beta.path),
+      window.pitwall.listWorktrees(rootPath),
     ]);
     return { alpha, beta, alphaStatus, betaStatus, listed };
   }, projectPath);
@@ -428,8 +428,8 @@ try {
 
   const ptyOutputs = await page.evaluate(async ({ alphaPath, betaPath }) => {
     const sessions = [
-      { id: "electron-smoke-pty-alpha", path: alphaPath, marker: "BRAVELI_ALPHA_OK", pathMarker: "smoke-alpha" },
-      { id: "electron-smoke-pty-beta", path: betaPath, marker: "BRAVELI_BETA_OK", pathMarker: "smoke-beta" },
+      { id: "electron-smoke-pty-alpha", path: alphaPath, marker: "PITWALL_ALPHA_OK", pathMarker: "smoke-alpha" },
+      { id: "electron-smoke-pty-beta", path: betaPath, marker: "PITWALL_BETA_OK", pathMarker: "smoke-beta" },
     ];
     const outputs = Object.fromEntries(sessions.map((session) => [session.id, ""]));
     return await new Promise(async (resolve, reject) => {
@@ -437,7 +437,7 @@ try {
         unsubscribe();
         reject(new Error(`Concurrent PTY timeout: ${JSON.stringify(outputs)}`));
       }, 10_000);
-      const unsubscribe = window.braveli.onTerminalData((payload) => {
+      const unsubscribe = window.pitwall.onTerminalData((payload) => {
         if (!(payload.sessionId in outputs)) return;
         outputs[payload.sessionId] += payload.data;
         if (!sessions.every((session) =>
@@ -448,7 +448,7 @@ try {
       });
       const starts = [];
       for (const session of sessions) {
-        starts.push(await window.braveli.startTerminal({
+        starts.push(await window.pitwall.startTerminal({
           projectId: "smoke-project",
           projectPath: session.path,
           sessionId: session.id,
@@ -467,18 +467,18 @@ try {
         reject(new Error(`PTY failed: ${JSON.stringify(starts)}`));
         return;
       }
-      await Promise.all(sessions.map((session) => window.braveli.writeTerminal({
+      await Promise.all(sessions.map((session) => window.pitwall.writeTerminal({
         sessionId: session.id,
         data: `printf '${session.marker}:%s\\n' \"$PWD\"\r`,
       })));
-    }).finally(() => Promise.all(sessions.map((session) => window.braveli.runSessionAction({
+    }).finally(() => Promise.all(sessions.map((session) => window.pitwall.runSessionAction({
       projectId: "smoke-project",
       sessionId: session.id,
       action: "stop",
     }))));
   }, { alphaPath: worktreeResult.alpha.path, betaPath: worktreeResult.beta.path });
-  assert.match(ptyOutputs["electron-smoke-pty-alpha"], /BRAVELI_ALPHA_OK/);
-  assert.match(ptyOutputs["electron-smoke-pty-beta"], /BRAVELI_BETA_OK/);
+  assert.match(ptyOutputs["electron-smoke-pty-alpha"], /PITWALL_ALPHA_OK/);
+  assert.match(ptyOutputs["electron-smoke-pty-beta"], /PITWALL_BETA_OK/);
   assert.match(ptyOutputs["electron-smoke-pty-alpha"], /smoke-alpha/);
   assert.match(ptyOutputs["electron-smoke-pty-beta"], /smoke-beta/);
   log("two real node-pty agent sessions remain isolated under concurrent load");
@@ -486,7 +486,7 @@ try {
   // Pitwall no longer ships an editor. What has to work is finding the ones the
   // user already has and handing a project to one — the detection is what the
   // Editor tab is built on, and it is the part that can silently find nothing.
-  const editors = await page.evaluate(() => window.braveli.listEditors());
+  const editors = await page.evaluate(() => window.pitwall.listEditors());
   assert.equal(editors.ok, true);
   assert.ok(Array.isArray(editors.editors), "listEditors must always answer with a list");
   for (const editor of editors.editors) {
@@ -495,7 +495,7 @@ try {
   // Opening is only asserted where an editor actually exists: a CI box with none
   // installed should not fail this, and the reveal fallback is still a success.
   const opened = await page.evaluate(
-    (rootPath) => window.braveli.openInEditor({ projectPath: rootPath }),
+    (rootPath) => window.pitwall.openInEditor({ projectPath: rootPath }),
     projectPath,
   );
   assert.equal(opened.ok, true, opened.error);
@@ -544,7 +544,7 @@ try {
   await importDialog.waitFor({ state: "visible" });
   await importDialog.getByText(/connected|source/i).first().waitFor();
   const claudeMcp = await page.evaluate(
-    ({ projectId, projectPath }) => window.braveli.listMcpServers({ provider: "claude", projectId, projectPath }),
+    ({ projectId, projectPath }) => window.pitwall.listMcpServers({ provider: "claude", projectId, projectPath }),
     { projectId: project.id, projectPath: project.path },
   );
   const linearSource = claudeMcp.servers.find((server) => /linear/i.test(server.name));
@@ -596,9 +596,9 @@ try {
   log("create distinct shared context through the UI");
 
   await page.evaluate(() => {
-    window.__braveliTaskPromptOutput = "";
-    window.__braveliTaskPromptUnsubscribe = window.braveli.onTerminalData(({ data }) => {
-      window.__braveliTaskPromptOutput += data;
+    window.__pitwallTaskPromptOutput = "";
+    window.__pitwallTaskPromptUnsubscribe = window.pitwall.onTerminalData(({ data }) => {
+      window.__pitwallTaskPromptOutput += data;
     });
   });
   // New work lives in the sidebar; "Start" is the dialog's confirm.
@@ -615,7 +615,7 @@ try {
   // raced the persistence effect rather than waiting for it.
   const persisted = await waitFor(async () => {
     const state = await page.evaluate(() => {
-      const stored = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const stored = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       return {
         task: stored.tasks?.find((item) => item.title === "Verify Pitwall workflow"),
         context: stored.contextEntries?.find((item) => item.title === "Smoke constraint"),
@@ -636,7 +636,7 @@ try {
   assert.equal(execFileSync("git", ["branch", "--show-current"], { cwd: persisted.session.worktreePath, encoding: "utf8" }).trim(), "smoke-427");
   assert.ok(persisted.snapshot);
   const taskPromptOutput = await waitFor(() => page.evaluate(() => {
-    const output = window.__braveliTaskPromptOutput;
+    const output = window.__pitwallTaskPromptOutput;
     return output.includes("Work on task smoke-427.") &&
       output.includes('"title":"Verify Pitwall workflow"') &&
       output.includes('"description":"Exercise task, context, snapshot, and session persistence."') &&
@@ -649,7 +649,7 @@ try {
   const instructedPort = taskPromptOutput.match(/owns local preview port (\d+)/)?.[1];
   assert.equal(instructedPort, environmentPort);
   const startedTaskStatus = await waitFor(() => page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+    const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
     const status = state.tasks?.find((task) => task.identifier === "smoke-427")?.status;
     return status === "running" ? status : null;
   }));
@@ -661,16 +661,16 @@ try {
   // it before that handover feeds it to the `read` instead, which swallows it
   // and leaves a session that never exits. RECEIVED is the agent saying the
   // read is done, so it is the signal to wait for.
-  await waitFor(() => page.evaluate(() => window.__braveliTaskPromptOutput.includes("RECEIVED:")), 20_000);
-  await page.evaluate(() => window.__braveliTaskPromptUnsubscribe?.());
+  await waitFor(() => page.evaluate(() => window.__pitwallTaskPromptOutput.includes("RECEIVED:")), 20_000);
+  await page.evaluate(() => window.__pitwallTaskPromptUnsubscribe?.());
 
-  const exitWrite = await page.evaluate(({ sessionId, previewUrl }) => window.braveli.writeTerminal({
+  const exitWrite = await page.evaluate(({ sessionId, previewUrl }) => window.pitwall.writeTerminal({
     sessionId,
-    data: `print -r -- 'BRAVELI_DEV_PREVIEW ${previewUrl}'; print -r -- 'BRAVELI_TASK_SUMMARY {"what":"Verified the complete task workflow","how":"Exercised the isolated task session and persistence path","components":["src/workflow.ts"]}'; exit\r`,
+    data: `print -r -- 'PITWALL_DEV_PREVIEW ${previewUrl}'; print -r -- 'PITWALL_TASK_SUMMARY {"what":"Verified the complete task workflow","how":"Exercised the isolated task session and persistence path","components":["src/workflow.ts"]}'; exit\r`,
   }), { sessionId: persisted.session.id, previewUrl: completionPreviewUrl });
   assert.equal(exitWrite.ok, true, "the session's terminal must accept the completion command");
   const capturedSummary = await waitFor(() => page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+    const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
     return state.tasks?.find((task) => task.identifier === "smoke-427")?.completionSummary || null;
   }), 15_000);
   assert.equal(capturedSummary.what, "Verified the complete task workflow");
@@ -678,7 +678,7 @@ try {
   assert.ok(capturedSummary.components.includes("src/workflow.ts"));
   log("agent completion stores a structured what/how/components handoff");
   const capturedPreview = await waitFor(() => page.evaluate(({ projectId, taskId }) => {
-    const previews = JSON.parse(localStorage.getItem("braveli-preview-urls") || "{}");
+    const previews = JSON.parse(localStorage.getItem("pitwall-preview-urls") || "{}");
     return previews[projectId]?.[taskId]?.url || null;
   }, { projectId: project.id, taskId: persisted.task.id }), 15_000);
   assert.equal(capturedPreview, completionPreviewUrl);
@@ -689,7 +689,7 @@ try {
   // status rather than clicking is the point: the button reappearing would mean
   // the auto-advance had stopped working.
   await waitFor(() => page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+    const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
     return state.tasks?.find((task) => task.identifier === "smoke-427")?.status === "review" || null;
   }), 15_000);
   log("an agent finishing moves its task to Review without being asked");
@@ -739,8 +739,8 @@ try {
   await page.getByRole("button", { name: "Terminal font family" }).click();
   await page.getByRole("option", { name: "JetBrains Mono" }).click();
   const terminalTypography = await page.evaluate(() => ({
-    size: localStorage.getItem("braveli-terminal-font-size"),
-    family: localStorage.getItem("braveli-terminal-font-family"),
+    size: localStorage.getItem("pitwall-terminal-font-size"),
+    family: localStorage.getItem("pitwall-terminal-font-family"),
   }));
   assert.equal(terminalTypography.size, "10");
   assert.equal(terminalTypography.family, '"JetBrains Mono", monospace');
@@ -776,7 +776,7 @@ try {
   });
   await page.getByRole("status").filter({ hasText: "1 image ready" }).waitFor();
   await page.evaluate(
-    ({ sessionId }) => window.braveli.writeTerminal({ sessionId, data: "\u0015" }),
+    ({ sessionId }) => window.pitwall.writeTerminal({ sessionId, data: "\u0015" }),
     { sessionId: persisted.session.id },
   );
   log("pasting an image into the xterm surface stages it for the active session");
@@ -791,10 +791,10 @@ try {
   // printed them, and the project's known server is one chip in the session
   // header. What still belongs to Pitwall is the boundary that decides what may
   // be handed to the OS, so that is what is asserted here.
-  const refused = await page.evaluate(() => window.braveli.openExternalUrl("file:///etc/passwd"));
+  const refused = await page.evaluate(() => window.pitwall.openExternalUrl("file:///etc/passwd"));
   assert.equal(refused.ok, false);
   assert.match(refused.error, /HTTP, HTTPS, and Expo/);
-  const blank = await page.evaluate(() => window.braveli.openExternalUrl("   "));
+  const blank = await page.evaluate(() => window.pitwall.openExternalUrl("   "));
   assert.equal(blank.ok, false);
   assert.equal(await page.getByRole("button", { name: /^preview$/i }).count(), 0, "the preview tab is gone");
   log("external-open bridge refuses unsupported URL schemes, and the preview tab is gone");
@@ -826,7 +826,7 @@ try {
   await deleteDialog.getByRole("button", { name: "Delete session" }).click();
   await waitFor(async () =>
     page.evaluate((deletedSessionId) => {
-      const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       return state.sessions?.every((session) => session.provider !== "smoke-shell") &&
         state.contextSnapshots?.every((snapshot) => snapshot.sessionId !== deletedSessionId);
     }, persisted.session.id),
@@ -839,8 +839,8 @@ try {
 
   await page.evaluate(
     ({ rootPath, taskId, timestamp }) => {
-      const projectState = JSON.parse(localStorage.getItem("braveli-projects") || "[]");
-      const workspaceState = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const projectState = JSON.parse(localStorage.getItem("pitwall-projects") || "[]");
+      const workspaceState = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       const agentSessions = ["architect", "implementer"].map((role, index) => ({
         id: `smoke-council-${role}`,
         name: `Smoke Council · ${role === "architect" ? "Architect" : "Implementer"}`,
@@ -889,8 +889,8 @@ try {
         })),
         createdAt: timestamp,
       }];
-      localStorage.setItem("braveli-projects", JSON.stringify(projectState));
-      localStorage.setItem("braveli-workspace-state", JSON.stringify(workspaceState));
+      localStorage.setItem("pitwall-projects", JSON.stringify(projectState));
+      localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspaceState));
     },
     { rootPath: projectPath, taskId: persisted.task.id, timestamp: new Date().toISOString() },
   );
@@ -903,7 +903,7 @@ try {
   await page.locator(".dk-council-composer").getByRole("button", { name: "Send", exact: true }).click();
   await waitFor(async () =>
     page.evaluate(() => {
-      const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       return state.sessions
         ?.filter((session) => session.id.startsWith("smoke-council-"))
         .every((session) => session.messages?.some((message) => message.content.includes("COUNCIL_BROADCAST_OK")));
@@ -922,7 +922,7 @@ try {
   await deleteCouncilMemberDialog.getByRole("button", { name: "Delete session" }).click();
   await waitFor(async () =>
     page.evaluate(() => {
-      const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       return state.councilRuns?.[0]?.responses?.length === 1 &&
         state.sessions?.every((session) => session.id !== "smoke-council-architect");
     }),
@@ -945,7 +945,7 @@ try {
   await deleteCouncilDialog.getByRole("button", { name: "Delete Council" }).click();
   await waitFor(async () =>
     page.evaluate(() => {
-      const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       return state.councilRuns?.length === 0 && state.sessions?.every((session) => !session.id.startsWith("smoke-council-"));
     }),
   );
@@ -960,8 +960,8 @@ try {
 
   await page.evaluate(
     ({ taskId, worktreePath, timestamp }) => {
-      const projectState = JSON.parse(localStorage.getItem("braveli-projects") || "[]");
-      const workspaceState = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const projectState = JSON.parse(localStorage.getItem("pitwall-projects") || "[]");
+      const workspaceState = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       const session = {
         id: "smoke-task-dependent-session",
         name: "Verify Pitwall workflow · Architect",
@@ -1006,8 +1006,8 @@ try {
         responses: [{ provider: "smoke-shell", sessionId: session.id, status: "running" }],
         createdAt: timestamp,
       }];
-      localStorage.setItem("braveli-projects", JSON.stringify(projectState));
-      localStorage.setItem("braveli-workspace-state", JSON.stringify(workspaceState));
+      localStorage.setItem("pitwall-projects", JSON.stringify(projectState));
+      localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspaceState));
     },
     { taskId: persisted.task.id, worktreePath: persisted.session.worktreePath, timestamp: new Date().toISOString() },
   );
@@ -1032,7 +1032,7 @@ try {
   await deleteTaskDialog.getByRole("button", { name: "Delete task" }).click();
   await waitFor(async () =>
     page.evaluate((deletedTaskId) => {
-      const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       return state.tasks?.some((task) => task.identifier === "keep-428") &&
         state.tasks?.every((task) => task.id !== deletedTaskId) &&
         state.sessions?.every((session) => session.taskId !== deletedTaskId) &&
@@ -1061,9 +1061,9 @@ try {
     await page.locator(".dk-board-card").filter({ hasText: title }).first().click({ modifiers: ["Meta"] });
   }
   await page.evaluate(() => {
-    window.__braveliBulkPromptOutput = {};
-    window.__braveliBulkPromptUnsubscribe = window.braveli.onTerminalData(({ sessionId, data }) => {
-      window.__braveliBulkPromptOutput[sessionId] = (window.__braveliBulkPromptOutput[sessionId] || "") + data;
+    window.__pitwallBulkPromptOutput = {};
+    window.__pitwallBulkPromptUnsubscribe = window.pitwall.onTerminalData(({ sessionId, data }) => {
+      window.__pitwallBulkPromptOutput[sessionId] = (window.__pitwallBulkPromptOutput[sessionId] || "") + data;
     });
   });
   await page.getByRole("button", { name: "Start 3", exact: true }).click();
@@ -1073,7 +1073,7 @@ try {
   await parallelStartDialog.getByRole("button", { name: "Start 3 sessions" }).click();
   const parallelSessions = await waitFor(async () => {
     const records = await page.evaluate(() => {
-      const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       const parallelTaskIds = new Set(
         state.tasks
           ?.filter((task) => ["keep-428", "parallel-429", "parallel-430"].includes(task.identifier))
@@ -1084,14 +1084,14 @@ try {
       );
       const sessions = state.sessions?.filter((session) => parallelTaskIds.has(session.taskId)) ?? [];
       return sessions.length === 3 && sessions.every((session) =>
-        window.__braveliBulkPromptOutput[session.id]?.includes(`Work on task ${identifiers[session.taskId]}.`),
+        window.__pitwallBulkPromptOutput[session.id]?.includes(`Work on task ${identifiers[session.taskId]}.`),
       ) ? sessions : [];
     });
     return records.length === 3 && records.every((session) => session.worktreePath) ? records : null;
   }, 30_000);
   assert.equal(new Set(parallelSessions.map((session) => session.taskId)).size, 3);
   assert.equal(new Set(parallelSessions.map((session) => session.worktreePath)).size, 3);
-  await page.evaluate(() => window.__braveliBulkPromptUnsubscribe?.());
+  await page.evaluate(() => window.__pitwallBulkPromptUnsubscribe?.());
   log("three selected tasks launch as three distinct sessions, worktrees, and PTY prompts");
 
   const longTaskTitle = "A very long imported task title that must stay inside the task selector without covering the role field";
@@ -1161,7 +1161,7 @@ try {
 
   await page.screenshot({ path: screenshotPath, fullPage: false });
   console.log(`  Screenshot: ${screenshotPath}`);
-  console.log("\nBraveli Electron smoke test passed.");
+  console.log("\nPitwall Electron smoke test passed.");
 } finally {
   if (app) {
     const processRef = app.process();
@@ -1171,5 +1171,5 @@ try {
     ]);
     if (!processRef.killed) processRef.kill("SIGKILL");
   }
-  if (process.env.BRAVELI_KEEP_SMOKE_ARTIFACTS !== "1") await rm(tempRoot, { recursive: true, force: true });
+  if (process.env.PITWALL_KEEP_SMOKE_ARTIFACTS !== "1") await rm(tempRoot, { recursive: true, force: true });
 }

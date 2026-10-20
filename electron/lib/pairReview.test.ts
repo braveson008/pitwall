@@ -55,6 +55,6 @@ describe("pair review", () => {
     const hermes = reviewerLaunch("hermes");
     expect(hermes.args).toEqual(["chat", "--cli", "-t", "file,todo,clarify,memory,skills"]);
     expect(reviewerLaunch("hermes", { model: "poolside/laguna-s-2.1:free" }).args).toContain("poolside/laguna-s-2.1:free");
-    expect(hermes.env).toEqual({ BRAVELI_HERMES_REVIEWER: "1" });
+    expect(hermes.env).toEqual({ PITWALL_HERMES_REVIEWER: "1" });
   });
 });

@@ -45,9 +45,9 @@ const DEFAULT_SILENCE_TIMEOUT = 1.5;
 
 function observerBinaryPath(options = {}) {
   const candidates = [
-    process.env.BRAVELI_VOICE_OBSERVER,
-    options.resourcesPath ? path.join(options.resourcesPath, "voice", "braveli-observe") : null,
-    path.join(__dirname, "..", "voice", "bin", "braveli-observe"),
+    process.env.PITWALL_VOICE_OBSERVER,
+    options.resourcesPath ? path.join(options.resourcesPath, "voice", "pitwall-observe") : null,
+    path.join(__dirname, "..", "voice", "bin", "pitwall-observe"),
   ].filter(Boolean);
   for (const candidate of candidates) {
     try {

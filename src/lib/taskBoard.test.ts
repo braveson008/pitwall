@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { BraveliTask, BraveliTaskStatus } from "../domain/types";
+import type { PitwallTask, PitwallTaskStatus } from "../domain/types";
 import { buildBoard, columnFor, columnRank, localStateLabel, normaliseStatus, showsLocalState } from "./taskBoard";
 
-const task = (over: Partial<BraveliTask> & { id: string }): BraveliTask =>
+const task = (over: Partial<PitwallTask> & { id: string }): PitwallTask =>
   ({
     projectId: "p",
     identifier: over.id,
     title: "a task",
     description: "",
-    status: "ready" as BraveliTaskStatus,
+    status: "ready" as PitwallTaskStatus,
     priority: "medium",
     assignedAgent: "",
     relatedFiles: [],
@@ -16,7 +16,7 @@ const task = (over: Partial<BraveliTask> & { id: string }): BraveliTask =>
     createdAt: "",
     updatedAt: "",
     ...over,
-  }) as BraveliTask;
+  }) as PitwallTask;
 
 describe("columnFor", () => {
   it("uses the tracker's status for an imported task", () => {

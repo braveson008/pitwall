@@ -37,7 +37,7 @@ const projects = [project("web", "web", webDir, [session("w1", "Web work", "Clau
 const task = { id: "t1", projectId: "api", identifier: "api-7", title: "Rate limits", description: "x", status: "running", priority: "medium", assignedAgent: "codex", relatedFiles: [], worktree: "api-7", createdAt: now, updatedAt: now };
 const workspace = { version: 1, projects: [{ id: "web", name: "web", path: webDir, defaultBranch: "main", providerIds: [], createdAt: now, updatedAt: now }, { id: "api", name: "api", path: apiDir, defaultBranch: "main", providerIds: [], createdAt: now, updatedAt: now }], tasks: [task], contextEntries: [], contextSnapshots: [], sessions: [{ id: "a2", projectId: "api", taskId: "t1", type: "implementation", provider: "codex", status: "running", createdAt: now, updatedAt: now }], activity: [], taskRuns: [], councilRuns: [], compareRuns: [] };
 
-const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") } });
+const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") } });
 const send = (channel, payload) => app.evaluate(({ BrowserWindow }, [channel, payload]) => BrowserWindow.getAllWindows()[0].webContents.send(channel, payload), [channel, payload]);
 try {
   const page = await app.firstWindow();
@@ -45,10 +45,10 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ projects, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify(projects));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
-    localStorage.setItem("braveli-sidebar-project", "");
+    localStorage.setItem("pitwall-projects", JSON.stringify(projects));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-sidebar-project", "");
   }, { projects, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "web");

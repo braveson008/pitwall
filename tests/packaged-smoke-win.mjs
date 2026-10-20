@@ -42,8 +42,8 @@ try {
     executablePath,
     env: {
       ...process.env,
-      BRAVELI_E2E: "1",
-      BRAVELI_USER_DATA_DIR: userDataPath,
+      PITWALL_E2E: "1",
+      PITWALL_USER_DATA_DIR: userDataPath,
       ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
     },
     timeout: 60_000,
@@ -52,7 +52,7 @@ try {
   await page.waitForLoadState("domcontentloaded");
   const identity = await page.evaluate(() => ({
     title: document.title,
-    bridge: Boolean(window.braveli),
+    bridge: Boolean(window.pitwall),
     platform: document.documentElement.dataset.platform ?? null,
   }));
   assert.equal(identity.title, "Pitwall");
@@ -73,7 +73,7 @@ try {
   for (const theme of ["light", "dark"]) {
     await page.evaluate((theme) => {
       document.documentElement.dataset.theme = theme;
-      void window.braveli.setWindowChrome?.({ dark: theme === "dark" });
+      void window.pitwall.setWindowChrome?.({ dark: theme === "dark" });
     }, theme);
     await page.waitForTimeout(500);
     const image = await app.evaluate(async ({ BrowserWindow }) => {
@@ -88,35 +88,35 @@ try {
   });
   step(`screenshots saved; header padding-right ${overlay.headerPaddingRight} (platform ${overlay.platform})`);
 
-  const editors = await page.evaluate(() => window.braveli.listEditors());
+  const editors = await page.evaluate(() => window.pitwall.listEditors());
   assert.equal(editors.ok, true);
   step(`editor detection answers (${editors.editors.length} found)`);
 
   await page.evaluate(() => {
     window.winOut = "";
     window.winClosed = false;
-    window.braveli.onTerminalData(({ sessionId, data }) => {
+    window.pitwall.onTerminalData(({ sessionId, data }) => {
       if (sessionId === "win-terminal") window.winOut += data;
     });
-    window.braveli.onTerminalClosed(({ sessionId }) => {
+    window.pitwall.onTerminalClosed(({ sessionId }) => {
       if (sessionId === "win-terminal") window.winClosed = true;
     });
   });
-  const started = await page.evaluate((projectPath) => window.braveli.startTerminal({
+  const started = await page.evaluate((projectPath) => window.pitwall.startTerminal({
     projectId: "win-project", projectPath, sessionId: "win-terminal",
     sessionName: "Windows fixture", agent: "Package Shell", command: "cmd.exe", args: ["/d", "/q"],
   }), projectPath);
   assert.equal(started.ok, true, JSON.stringify(started));
-  await page.evaluate(() => window.braveli.writeTerminal({
+  await page.evaluate(() => window.pitwall.writeTerminal({
     sessionId: "win-terminal", data: "echo PITWALL_%COMPUTERNAME%_OK\r",
   }));
   await page.waitForFunction(() => /PITWALL_\S+_OK/.test(window.winOut), null, { timeout: 30_000 });
-  const stopped = await page.evaluate(() => window.braveli.runSessionAction({ sessionId: "win-terminal", action: "stop" }));
+  const stopped = await page.evaluate(() => window.pitwall.runSessionAction({ sessionId: "win-terminal", action: "stop" }));
   assert.equal(stopped.ok, true, JSON.stringify(stopped));
   await page.waitForFunction(() => window.winClosed, null, { timeout: 30_000 });
   step("ConPTY terminal starts in a path with a space, runs a command, stops");
 
-  const missing = await page.evaluate(() => window.braveli.startTerminal({
+  const missing = await page.evaluate(() => window.pitwall.startTerminal({
     projectId: "win-project", projectPath: "C:\\nowhere\\pitwall-missing", sessionId: "win-missing",
     sessionName: "Missing folder", agent: "Package Shell", command: "cmd.exe", args: ["/d", "/q"],
   }));
@@ -124,7 +124,7 @@ try {
   assert.match(missing.error, /doesn't exist on this computer/);
   step("a session whose folder is missing says so instead of failing with error 267");
 
-  const updates = await page.evaluate(() => window.braveli.getUpdateState());
+  const updates = await page.evaluate(() => window.pitwall.getUpdateState());
   step(`update state: ${updates.status}`);
 } finally {
   if (app) {

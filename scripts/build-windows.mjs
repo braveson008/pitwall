@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 loadEnv(root);
 const url = feedUrl();
-if (!url) throw new Error("PITWALL_UPDATE_URL (or BRAVELI_UPDATE_URL) is required for a Windows release build");
+if (!url) throw new Error("PITWALL_DOWNLOADS_URL (or PITWALL_UPDATE_URL) is required for a Windows release build");
 
 const builder = path.join(root, "node_modules", "electron-builder", "cli.js");
 const result = spawnSync(process.execPath, [

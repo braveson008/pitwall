@@ -6,7 +6,7 @@ const test = require("node:test");
 const { ensureClaudeTrust, ensureCodexTrust, ensureClaudeBypassAccepted } = require("../electron/lib/projectTrust.cjs");
 
 function fixture(t) {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-trust-test-"));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-trust-test-"));
   t.after(() => fs.rmSync(home, { recursive: true, force: true }));
   return home;
 }
@@ -21,8 +21,8 @@ test("concurrent Claude trust merges every project and keeps config/backup priva
   assert.equal(Object.keys(config.projects).length, 24);
   assert.equal(config.preference, "keep");
   assert.equal(fs.statSync(file).mode & 0o777, 0o600);
-  assert.equal(fs.statSync(`${file}.braveli.bak`).mode & 0o777, 0o600);
-  assert.deepEqual(fs.readdirSync(home).sort(), [".claude.json", ".claude.json.braveli.bak"]);
+  assert.equal(fs.statSync(`${file}.pitwall.bak`).mode & 0o777, 0o600);
+  assert.deepEqual(fs.readdirSync(home).sort(), [".claude.json", ".claude.json.pitwall.bak"]);
 });
 
 test("Codex trust updates existing trust level and preserves concurrent sections", async (t) => {
@@ -56,9 +56,9 @@ test("existing trusted config and backups from older releases are made private",
   const file = path.join(home, ".claude.json");
   const content = JSON.stringify({ projects: { "/project": { hasTrustDialogAccepted: true } } });
   fs.writeFileSync(file, content, { mode: 0o644 });
-  fs.writeFileSync(`${file}.braveli.bak`, content, { mode: 0o644 });
+  fs.writeFileSync(`${file}.pitwall.bak`, content, { mode: 0o644 });
   assert.equal((await ensureClaudeTrust("/project", home)).changed, false);
   assert.equal(fs.statSync(file).mode & 0o777, 0o600);
-  assert.equal(fs.statSync(`${file}.braveli.bak`).mode & 0o777, 0o600);
+  assert.equal(fs.statSync(`${file}.pitwall.bak`).mode & 0o777, 0o600);
   assert.equal(fs.readFileSync(file, "utf8"), content);
 });

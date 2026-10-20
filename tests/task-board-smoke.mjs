@@ -15,7 +15,7 @@ import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
 const root = process.cwd();
-const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "braveli-board-"));
+const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-board-"));
 const fakeHome = path.join(temp, "home");
 await mkdir(fakeHome, { recursive: true });
 await writeFile(path.join(fakeHome, ".claude.json"), JSON.stringify({ projects: {} }), { mode: 0o600 });
@@ -31,7 +31,7 @@ const activity = Array.from({ length: 30 }, (_, index) => ({ id: `a${index}`, pr
 const project = { id: "p", name: "repo", path: dir, branch: "main", status: "active", accent: "#5368dc", health: 100, openSessions: 0, queuedTasks: 0, lastCommit: "now", ci: "pending", sessions: [], queue: [], timeline: [] };
 const workspace = { version: 1, projects: [{ id: "p", name: "repo", path: dir, defaultBranch: "main", providerIds: ["claude"], createdAt: now, updatedAt: now }], tasks: [task("t-1", "First pick", "backlog"), task("t-2", "Second pick", "ready"), task("t-3", "Left alone", "ready")], contextEntries: [], contextSnapshots: [], sessions: [], activity, taskRuns: [], councilRuns: [], compareRuns: [] };
 
-const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") } });
+const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") } });
 let passed = false;
 try {
   const page = await app.firstWindow();
@@ -40,9 +40,9 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "repo");
@@ -68,7 +68,7 @@ try {
   await dialog.getByRole("button", { name: "Delete task" }).click();
   await dialog.waitFor({ state: "detached" });
   assert.deepEqual(await cards(), ["Left alone"], "both picked tasks are removed, the other is not");
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("braveli-workspace-state")).tasks.map((item) => item.id));
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("pitwall-workspace-state")).tasks.map((item) => item.id));
   assert.deepEqual(stored, ["t-3"]);
   console.log("PASS Remove 2 removes both picked tasks");
 

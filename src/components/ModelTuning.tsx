@@ -61,7 +61,7 @@ export function ModelTuning({ model, onClose }: { model: string; onClose: () => 
   useEffect(() => {
     let live = true;
     void (async () => {
-      const next = await window.braveli?.ollamaTuning?.({ model });
+      const next = await window.pitwall?.ollamaTuning?.({ model });
       if (!live || !next) return;
       setTuning(next);
       // What is set, else what is loaded, else what this machine can afford.
@@ -74,12 +74,12 @@ export function ModelTuning({ model, onClose }: { model: string; onClose: () => 
   async function apply() {
     setApplying(true);
     setResult(null);
-    const next = await window.braveli?.ollamaTune?.({ model, context, keepAlive });
+    const next = await window.pitwall?.ollamaTune?.({ model, context, keepAlive });
     setApplying(false);
     if (!next) return;
     setResult({ served: next.served ?? 0, short: Boolean(next.short), error: next.error });
     // Re-read rather than assume: the panel should show what is true now.
-    const refreshed = await window.braveli?.ollamaTuning?.({ model });
+    const refreshed = await window.pitwall?.ollamaTuning?.({ model });
     if (refreshed) setTuning(refreshed);
   }
 

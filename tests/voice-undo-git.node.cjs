@@ -34,7 +34,7 @@ const git = createGitCapabilities({
 let repoCount = 0;
 
 async function makeRepo({ empty = false } = {}) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `braveli-undo-${repoCount++}-`));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `pitwall-undo-${repoCount++}-`));
   await runGit(["init", "--initial-branch=main"], dir);
   await runGit(["config", "user.email", "test@example.com"], dir);
   await runGit(["config", "user.name", "Test"], dir);
@@ -93,7 +93,7 @@ test("refuses when something has been committed since", async (t) => {
 
 test("refuses when the commit has already been pushed", async (t) => {
   const { dir, context } = await makeRepo();
-  const remote = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-undo-remote-"));
+  const remote = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-undo-remote-"));
   t.after(() => {
     cleanup(dir);
     cleanup(remote);

@@ -4,7 +4,7 @@ import type { CatalogueEntry } from "../domain/agentCatalogue";
 import { AgentMarketplace, type LiveModels } from "./AgentMarketplace";
 import { providerRegistry, type ProviderDefinition } from "../domain/providers";
 import type { AgentProvider } from "../data";
-import type { BraveliProviderId } from "../domain/types";
+import type { PitwallProviderId } from "../domain/types";
 
 /** How the screen names a project's code host. */
 export interface RepositoryHostWords {
@@ -33,8 +33,8 @@ interface ConnectionsPanelProps {
   projectName: string;
   githubLogin: string | null;
   checks: Partial<Record<string, ProviderConnection>>;
-  mcpByProvider: Partial<Record<BraveliProviderId, McpListResult>>;
-  focusedProvider: BraveliProviderId | null;
+  mcpByProvider: Partial<Record<PitwallProviderId, McpListResult>>;
+  focusedProvider: PitwallProviderId | null;
   refreshing: boolean;
   /** Opens the add-agent flow. Connections is where you come to see which
       agents you have, so it is where adding one belongs. */
@@ -68,9 +68,9 @@ interface ConnectionsPanelProps {
   embedded?: boolean;
   onClose?: () => void;
   onGitHub: () => void;
-  onProvider: (provider: BraveliProviderId) => void;
-  onMcp: (provider: BraveliProviderId) => void;
-  onBrowseExtensions?: (provider: BraveliProviderId) => void;
+  onProvider: (provider: PitwallProviderId) => void;
+  onMcp: (provider: PitwallProviderId) => void;
+  onBrowseExtensions?: (provider: PitwallProviderId) => void;
   onRefresh: () => void;
 }
 
@@ -101,7 +101,7 @@ export function ConnectionsPanel({
   onBrowseExtensions,
   onRefresh,
 }: ConnectionsPanelProps) {
-  const [diagnosing, setDiagnosing] = useState<BraveliProviderId | null>(null);
+  const [diagnosing, setDiagnosing] = useState<PitwallProviderId | null>(null);
   const idPrefix = `connection-${embedded ? "page-" : ""}`;
 
   useEffect(() => {
@@ -416,14 +416,14 @@ export function ConnectionsModal({
   githubLogin: string | null;
   repositoryHost?: RepositoryHostWords | null;
   checks: Partial<Record<string, ProviderConnection>>;
-  mcpByProvider: Partial<Record<BraveliProviderId, McpListResult>>;
-  focusedProvider: BraveliProviderId | null;
+  mcpByProvider: Partial<Record<PitwallProviderId, McpListResult>>;
+  focusedProvider: PitwallProviderId | null;
   refreshing: boolean;
   onClose: () => void;
   onGitHub: () => void;
-  onProvider: (provider: BraveliProviderId) => void;
-  onMcp: (provider: BraveliProviderId) => void;
-  onBrowseExtensions?: (provider: BraveliProviderId) => void;
+  onProvider: (provider: PitwallProviderId) => void;
+  onMcp: (provider: PitwallProviderId) => void;
+  onBrowseExtensions?: (provider: PitwallProviderId) => void;
   onRefresh: () => void;
 }) {
   useEffect(() => {

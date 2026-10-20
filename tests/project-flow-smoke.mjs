@@ -9,7 +9,7 @@ import { _electron as electron } from "playwright";
 import { openProject } from "./helpers/openProject.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), "braveli-project-flow-"));
+const tempRoot = await mkdtemp(path.join(os.tmpdir(), "pitwall-project-flow-"));
 const userDataPath = path.join(tempRoot, "user-data");
 const parentPath = path.join(tempRoot, "workspace");
 await mkdir(userDataPath, { recursive: true });
@@ -22,8 +22,8 @@ const app = await electron.launch({
   cwd: root,
   env: {
     ...process.env,
-    BRAVELI_E2E: "1",
-    BRAVELI_USER_DATA_DIR: userDataPath,
+    PITWALL_E2E: "1",
+    PITWALL_USER_DATA_DIR: userDataPath,
     ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
   },
   timeout: 30_000,
@@ -35,7 +35,7 @@ try {
   await page.waitForLoadState("domcontentloaded");
   await page.evaluate(() => {
     localStorage.clear();
-    localStorage.setItem("braveli-onboarded", "yes");
+    localStorage.setItem("pitwall-onboarded", "yes");
   });
   await page.reload();
   await page.waitForLoadState("domcontentloaded");
@@ -44,7 +44,7 @@ try {
   // ---- 1. The new IPC handler, end to end against the real filesystem ----
   const created = await page.evaluate(
     ({ parent }) =>
-      window.braveli.createProjectDirectory({
+      window.pitwall.createProjectDirectory({
         parentPath: parent,
         folderName: "my-todo-app",
         brief: "# My Todo App\n\n## Brief\n\nTrack tasks offline.\n",
@@ -68,7 +68,7 @@ try {
   // ---- 2. Rejections: traversal, collisions, bad names ----
   const traversal = await page.evaluate(
     ({ parent }) =>
-      window.braveli.createProjectDirectory({ parentPath: parent, folderName: "../escaped", brief: "" }),
+      window.pitwall.createProjectDirectory({ parentPath: parent, folderName: "../escaped", brief: "" }),
     { parent: parentPath },
   );
   assert.equal(traversal.ok, false);
@@ -77,7 +77,7 @@ try {
 
   const collision = await page.evaluate(
     ({ parent }) =>
-      window.braveli.createProjectDirectory({ parentPath: parent, folderName: "my-todo-app", brief: "x" }),
+      window.pitwall.createProjectDirectory({ parentPath: parent, folderName: "my-todo-app", brief: "x" }),
     { parent: parentPath },
   );
   assert.equal(collision.ok, false);
@@ -123,10 +123,10 @@ try {
   const screenshotPath = path.join(tempRoot, "project-flow.png");
   await page.screenshot({ path: screenshotPath });
   process.stdout.write(`  Screenshot: ${screenshotPath}\n`);
-  process.stdout.write("\nBraveli project flow smoke test passed.\n");
+  process.stdout.write("\nPitwall project flow smoke test passed.\n");
 } finally {
   await app.close();
-  if (process.env.BRAVELI_KEEP_SMOKE_ARTIFACTS !== "1") {
+  if (process.env.PITWALL_KEEP_SMOKE_ARTIFACTS !== "1") {
     await rm(tempRoot, { recursive: true, force: true });
   }
 }

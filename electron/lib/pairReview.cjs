@@ -76,7 +76,7 @@ const REVIEWER_DENIED_TOOLS = ["Bash", "Edit", "Write", "NotebookEdit", "WebFetc
 function reviewerLaunch(reviewer, { model } = {}) {
   if (reviewer === "hermes") {
     const args = ["chat", "--cli", "-t", "file,todo,clarify,memory,skills", ...(model && model !== "auto" ? ["-m", model] : [])];
-    return { agent: "Hermes", command: "hermes", args, env: { BRAVELI_HERMES_REVIEWER: "1" }, display: ["hermes", ...args].join(" ") };
+    return { agent: "Hermes", command: "hermes", args, env: { PITWALL_HERMES_REVIEWER: "1" }, display: ["hermes", ...args].join(" ") };
   }
   if (reviewer === "codex") {
     const args = ["--sandbox", "read-only", "--ask-for-approval", "never", "-c", "check_for_update_on_startup=false", "-c", "mcp_servers={}", ...(model && model !== "auto" ? ["-m", model] : [])];

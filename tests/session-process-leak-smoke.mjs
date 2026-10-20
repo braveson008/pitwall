@@ -10,7 +10,7 @@ import { _electron as electron } from "playwright";
 // PTY's process group never reached it. This starts one the same way — detached,
 // no terminal — from inside a real Pitwall PTY, and checks the stop ends it.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const tempRoot = realpathSync(await mkdtemp(path.join(os.tmpdir(), "braveli-process-leak-")));
+const tempRoot = realpathSync(await mkdtemp(path.join(os.tmpdir(), "pitwall-process-leak-")));
 const workspace = path.join(tempRoot, "workspace");
 const elsewhere = path.join(tempRoot, "elsewhere");
 await mkdir(workspace, { recursive: true });
@@ -43,13 +43,13 @@ try {
   app = await electron.launch({
     args: [root],
     cwd: root,
-    env: { ...process.env, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(tempRoot, "user-data"), ELECTRON_DISABLE_SECURITY_WARNINGS: "true" },
+    env: { ...process.env, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(tempRoot, "user-data"), ELECTRON_DISABLE_SECURITY_WARNINGS: "true" },
     timeout: 30_000,
   });
   const page = await app.firstWindow({ timeout: 20_000 });
   await page.waitForURL(/index\.html$/);
   await page.waitForLoadState("domcontentloaded");
-  const started = await page.evaluate((cwd) => window.braveli.startTerminal({
+  const started = await page.evaluate((cwd) => window.pitwall.startTerminal({
     projectId: "leak-project", projectPath: cwd, sessionId: "leak-session", sessionName: "leak",
     agent: "Leak Shell", model: "auto", command: "/bin/zsh", args: ["-f"], cols: 80, rows: 24,
   }), workspace);
@@ -57,14 +57,14 @@ try {
 
   const inside = path.join(tempRoot, "inside.pid");
   const outside = path.join(tempRoot, "outside.pid");
-  await page.evaluate(({ command }) => window.braveli.writeTerminal({ sessionId: "leak-session", data: `${command}\r` }),
+  await page.evaluate(({ command }) => window.pitwall.writeTerminal({ sessionId: "leak-session", data: `${command}\r` }),
     { command: `"${process.execPath}" "${launcher}" "${workspace}" "${inside}"; "${process.execPath}" "${launcher}" "${elsewhere}" "${outside}"` });
   const insidePid = await waitForFile(inside);
   const outsidePid = await waitForFile(outside);
   pids.push(insidePid, outsidePid);
   assert.equal(alive(insidePid), true);
 
-  const stopped = await page.evaluate(() => window.braveli.runSessionAction({ projectId: "leak-project", sessionId: "leak-session", action: "stop" }));
+  const stopped = await page.evaluate(() => window.pitwall.runSessionAction({ projectId: "leak-project", sessionId: "leak-session", action: "stop" }));
   assert.equal(stopped.ok, true, stopped.error);
   await new Promise((resolve) => setTimeout(resolve, 300));
   assert.equal(alive(insidePid), false, "the detached process in the session's workspace outlived the stop");

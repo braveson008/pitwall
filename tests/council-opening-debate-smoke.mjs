@@ -25,7 +25,7 @@ import { goTo } from "./helpers/goTo.mjs";
  */
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), "braveli-debate-"));
+const tempRoot = await mkdtemp(path.join(os.tmpdir(), "pitwall-debate-"));
 const projectPath = path.join(tempRoot, "debate-project");
 const userDataPath = path.join(tempRoot, "user-data");
 const fakeBin = path.join(tempRoot, "bin");
@@ -174,8 +174,8 @@ const app = await electron.launch({
     ...process.env,
     HOME: fakeHome,
     PATH: `${fakeBin}${path.delimiter}${hostPath}`,
-    BRAVELI_E2E: "1",
-    BRAVELI_USER_DATA_DIR: userDataPath,
+    PITWALL_E2E: "1",
+    PITWALL_USER_DATA_DIR: userDataPath,
     ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
   },
   timeout: 30_000,
@@ -191,8 +191,8 @@ try {
       localStorage.clear();
       localStorage.setItem("agent-studio-projects", JSON.stringify([projectValue]));
       localStorage.setItem("agent-studio-active-project", projectValue.id);
-      localStorage.setItem("braveli-workspace-state", JSON.stringify(workspaceValue));
-      localStorage.setItem("braveli-onboarded", "yes");
+      localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspaceValue));
+      localStorage.setItem("pitwall-onboarded", "yes");
     },
     { projectValue: project, workspaceValue: workspace },
   );
@@ -218,13 +218,13 @@ try {
   assert.equal(await debateToggle.isChecked(), true, "the opening debate should be on by default");
 
   await setup.getByRole("button", { name: /^Start council/ }).click();
-  await waitFor(async () => page.evaluate(() => Boolean(JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}").councilRuns?.[0])));
+  await waitFor(async () => page.evaluate(() => Boolean(JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}").councilRuns?.[0])));
   log("council started with the opening debate on");
 
   // The relay runs inside the task's worktree; ask the app where that is.
   const relayPath = await waitFor(async () =>
     page.evaluate(() => {
-      const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       const run = state.councilRuns?.[0];
       if (!run) return null;
       const session = state.sessions?.find((item) => item.id === run.responses?.[0]?.sessionId);
@@ -236,8 +236,8 @@ try {
   /** A member finishing its turn: the stage file is what the relay watches. */
   const writeStage = (turn, body) =>
     page.evaluate(
-      ({ dir, file, content }) => window.braveli.writeProjectFile({ projectPath: dir, filePath: file, content }),
-      { dir: stageDir, file: `.braveli/council/${relayPath.runId}/stage-${turn}.md`, content: body },
+      ({ dir, file, content }) => window.pitwall.writeProjectFile({ projectPath: dir, filePath: file, content }),
+      { dir: stageDir, file: `.pitwall/council/${relayPath.runId}/stage-${turn}.md`, content: body },
     );
 
   /** Who the route bar says the turn went to, and why. */
@@ -361,16 +361,16 @@ try {
   log(`plan accepted and the council moved on to turn ${await currentTurn()}`);
 
   const thread = await readFile(
-    path.join(stageDir, ".braveli", "council", relayPath.runId, "thread.md"),
+    path.join(stageDir, ".pitwall", "council", relayPath.runId, "thread.md"),
     "utf8",
   ).catch(() => "");
   assert.match(thread, /architect-claude/, "the thread should record the debate");
   log("the debate was written into the thread every member reads");
 
-  process.stdout.write("\nBraveli council opening debate smoke test passed.\n");
+  process.stdout.write("\nPitwall council opening debate smoke test passed.\n");
 } finally {
   await app.close();
-  if (process.env.BRAVELI_KEEP_SMOKE_ARTIFACTS !== "1") {
+  if (process.env.PITWALL_KEEP_SMOKE_ARTIFACTS !== "1") {
     await rm(tempRoot, { recursive: true, force: true });
   }
 }

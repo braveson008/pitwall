@@ -124,7 +124,7 @@ export function BranchTree({
     const ticket = ++latest.current;
     setLoading(true);
     try {
-      const result = await window.braveli?.branchTree?.({ projectPath, baseBranch, sessionBranches });
+      const result = await window.pitwall?.branchTree?.({ projectPath, baseBranch, sessionBranches });
       if (ticket !== latest.current) return;
       // Only replace what is on screen with something that is actually a
       // reading. A failed refresh leaves the last good tree where it is.

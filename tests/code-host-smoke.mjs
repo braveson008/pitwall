@@ -12,7 +12,7 @@ import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
 const root = process.cwd();
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-code-host-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-code-host-"));
 const fakeHome = path.join(temp, "home");
 const fakeBin = path.join(temp, "bin");
 await mkdir(fakeHome, { recursive: true });
@@ -96,8 +96,8 @@ async function repo(name, remote) {
   // What an agent leaves behind: real work not committed, and Pitwall's own
   // notes beside it that must stay out of the commit.
   await writeFile(path.join(dir, "folderPath.ts"), "export const folderPath = (p: string) => p.split('/').slice(0, -1).join('/');\n");
-  await mkdir(path.join(dir, ".braveli", "council"), { recursive: true });
-  await writeFile(path.join(dir, ".braveli", "council", "stage-1.md"), "notes\n");
+  await mkdir(path.join(dir, ".pitwall", "council"), { recursive: true });
+  await writeFile(path.join(dir, ".pitwall", "council", "stage-1.md"), "notes\n");
   execFileSync("git", ["config", "user.email", "dev@example.com"], { cwd: dir });
   execFileSync("git", ["config", "user.name", "A Developer"], { cwd: dir });
   return dir;
@@ -116,7 +116,7 @@ const workspace = { version: 1, projects: [], tasks, contextEntries: [], context
 const app = await electron.launch({
   args: [root],
   cwd: root,
-  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 try {
   const page = await app.firstWindow();
@@ -124,7 +124,7 @@ try {
   await page.waitForLoadState("domcontentloaded");
 
   // ---- main process ---------------------------------------------------------
-  const host = await page.evaluate((projectPath) => window.braveli.getCodeHost({ projectPath }), gitlabDir);
+  const host = await page.evaluate((projectPath) => window.pitwall.getCodeHost({ projectPath }), gitlabDir);
   assert.equal(host.kind, "gitlab");
   assert.equal(host.repository, "acme/platform/payments", "the nested group path is kept");
   assert.equal(host.requestNoun, "merge request");
@@ -132,7 +132,7 @@ try {
   assert.equal("embeddedToken" in host, false, "no credential crosses into the page");
   console.log("PASS GitLab remote is identified, nested path kept");
 
-  const found = await page.evaluate((projectPath) => window.braveli.getPullRequest({ projectPath }), gitlabDir);
+  const found = await page.evaluate((projectPath) => window.pitwall.getPullRequest({ projectPath }), gitlabDir);
   assert.equal(found.ok, true, found.error);
   assert.equal(found.found, true);
   assert.equal(found.number, 42);
@@ -140,29 +140,29 @@ try {
   assert.equal(found.url, mergeRequest.web_url);
   console.log("PASS the branch's merge request is found through glab");
 
-  const review = await page.evaluate((projectPath) => window.braveli.reviewState({ projectPath, projectId: "payments", baseBranch: "main", branches: ["pay-214", "pay-209"] }), gitlabDir);
+  const review = await page.evaluate((projectPath) => window.pitwall.reviewState({ projectPath, projectId: "payments", baseBranch: "main", branches: ["pay-214", "pay-209"] }), gitlabDir);
   assert.equal(review.ok, true, review.error);
   assert.equal(review.pullRequestsAvailable, true, review.pullRequestError);
   assert.equal(review.requestNoun, "merge request");
   console.log("PASS Review reads merge requests through glab");
 
-  const activation = await page.evaluate((projectPath) => window.braveli.activateGitHubAccount({ projectId: "payments", projectPath }), gitlabDir);
+  const activation = await page.evaluate((projectPath) => window.pitwall.activateGitHubAccount({ projectId: "payments", projectPath }), gitlabDir);
   assert.equal(activation.action, "none", "glab is signed in, so there is nothing to ask for");
   console.log("PASS a signed-in GitLab project is not asked for an account");
 
-  const other = await page.evaluate((projectPath) => window.braveli.getPullRequest({ projectPath }), otherDir);
+  const other = await page.evaluate((projectPath) => window.pitwall.getPullRequest({ projectPath }), otherDir);
   assert.equal(other.ok, true);
   assert.equal(other.unsupported, true);
-  const otherActivation = await page.evaluate((projectPath) => window.braveli.activateGitHubAccount({ projectId: "legacy", projectPath }), otherDir);
+  const otherActivation = await page.evaluate((projectPath) => window.pitwall.activateGitHubAccount({ projectId: "legacy", projectPath }), otherDir);
   assert.equal(otherActivation.action, "none");
   console.log("PASS an unknown host is answered honestly, with no account prompt");
 
   // ---- on screen ------------------------------------------------------------
   await page.evaluate(({ projects, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify(projects));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify({ ...workspace, projects: projects.map((p) => ({ id: p.id, name: p.name, path: p.path, defaultBranch: "main", providerIds: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })) }));
+    localStorage.setItem("pitwall-projects", JSON.stringify(projects));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify({ ...workspace, projects: projects.map((p) => ({ id: p.id, name: p.name, path: p.path, defaultBranch: "main", providerIds: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })) }));
   }, { projects, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "payments");
@@ -198,7 +198,7 @@ try {
   assert.match(drafted, /`folderPath\.ts`/, "the files about to be committed are listed");
   assert.match(drafted, /- \[ \] Open a dataset with nested folders and check each path/);
   assert.match(drafted, /\[PAY-300\]\(https:\/\/acme\.atlassian\.net\/browse\/PAY-300\)/);
-  assert.doesNotMatch(drafted, /claude|co-authored|generated|braveli|\.braveli/i);
+  assert.doesNotMatch(drafted, /claude|co-authored|generated|pitwall|\.pitwall/i);
   const prompt = await (await import("node:fs/promises")).readFile(writerPrompt, "utf8");
   assert.match(prompt, /folderPath/, "the writer read the uncommitted change");
   assert.doesNotMatch(prompt, /stage-1\.md/, "Pitwall's own notes are not part of the change");
@@ -217,18 +217,18 @@ try {
   assert.equal(git("log", "-1", "--format=%B"), "PAY-300: Show the folder path under file names\n\nFiles with the same name could not be told apart.");
   assert.equal(git("log", "-1", "--format=%an <%ae>"), "A Developer <dev@example.com>", "committed as the person");
   assert.equal(git("show", "--name-only", "--format=", "HEAD"), "folderPath.ts");
-  assert.match(git("status", "--porcelain", "--untracked-files=all"), /\.braveli\/council\/stage-1\.md/, "Pitwall's notes stay uncommitted");
+  assert.match(git("status", "--porcelain", "--untracked-files=all"), /\.pitwall\/council\/stage-1\.md/, "Pitwall's notes stay uncommitted");
   console.log("PASS uncommitted work is committed as the person, with no trailer and none of Pitwall's files");
 
   // ---- merged on the host, noticed without opening Review -------------------
   await goTo(page, "Tasks");
   await writeFile(listReply, JSON.stringify([...mergeRequests, { ...mergeRequest, iid: 43, title: "PAY-300: Show the full path of a file", state: "merged", source_branch: "pay-300", web_url: "https://gitlab.com/acme/platform/payments/-/merge_requests/43" }]));
-  await page.evaluate(() => window.dispatchEvent(new Event("braveli:check-reviews")));
+  await page.evaluate(() => window.dispatchEvent(new Event("pitwall:check-reviews")));
   await page.waitForFunction(() => {
-    const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+    const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
     return state.tasks?.find((task) => task.id === "t2")?.status === "completed";
   }, null, { timeout: 20000 });
-  const settled = await page.evaluate(() => JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}"));
+  const settled = await page.evaluate(() => JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}"));
   assert.equal(settled.tasks.find((task) => task.id === "t1").status, "review", "an open request stays in review");
   assert.ok(settled.activity.some((entry) => entry.message === "Done: PAY-300 Show the full path of a file — merge request !43 merged"));
   console.log("PASS a merged merge request settles its task in the background, and Activity says so");

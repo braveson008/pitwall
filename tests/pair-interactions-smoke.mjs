@@ -13,7 +13,7 @@ import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
 const root = process.cwd();
-const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "braveli-pair-ui-"));
+const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-pair-ui-"));
 const fakeHome = path.join(temp, "home");
 const fakeBin = path.join(temp, "bin");
 await mkdir(fakeHome, { recursive: true });
@@ -41,7 +41,7 @@ const project = { id: "p", name: "repo", path: dir, branch: "main", status: "act
 const task = { id: "t1", projectId: "p", identifier: "T-1", title: "Paired task", description: "x", status: "ready", priority: "medium", assignedAgent: "", relatedFiles: [], worktree: "t-1", createdAt: now, updatedAt: now };
 const workspace = { version: 1, projects: [{ id: "p", name: "repo", path: dir, defaultBranch: "main", providerIds: ["claude", "codex"], createdAt: now, updatedAt: now }], tasks: [task], contextEntries: [], contextSnapshots: [], sessions: [], activity: [], taskRuns: [], councilRuns: [], compareRuns: [] };
 
-const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") } });
+const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") } });
 try {
   const page = await app.firstWindow();
   // The real window, at the screen's own density, so terminals draw as they do for a person.
@@ -50,9 +50,9 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "repo");
@@ -76,7 +76,7 @@ try {
   await startSession({ task: /^Paired task/, reviewer: /^Codex/, instruction: "Paired work" });
   await startSession({ task: /^No task/, instruction: "Plain work" });
 
-  const stored = () => page.evaluate(() => JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}"));
+  const stored = () => page.evaluate(() => JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}"));
   const plainRecord = (await stored()).sessions.find((item) => item.taskId !== "t1");
   assert.ok(plainRecord, "the plain session has a record");
   assert.equal(plainRecord.taskId, "", "a session started with No task is given no task");

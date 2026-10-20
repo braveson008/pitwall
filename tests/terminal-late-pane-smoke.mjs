@@ -48,7 +48,7 @@ const workspace = { version: 1, projects: projects.map((item) => ({ id: item.id,
 const app = await electron.launch({
   args: [root],
   cwd: root,
-  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 try {
   const page = await app.firstWindow();
@@ -56,9 +56,9 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ projects, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify(projects));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify(projects));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { projects, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "repo");
@@ -66,11 +66,11 @@ try {
   await page.waitForFunction(() => document.querySelector(".dk-terminal.is-active .xterm-rows")?.textContent?.includes("drawn for"), null, { timeout: 30000 });
   // The size a pane here fits to, which is the size Pitwall starts a CLI at.
   await page.waitForTimeout(1200);
-  const size = await page.evaluate(() => window.braveli.getTerminalSize("first"));
+  const size = await page.evaluate(() => window.pitwall.getTerminalSize("first"));
   assert.ok(size.ok && size.cols > 80, `the first pane is wider than xterm's default (${size.cols})`);
 
   // Started in the other project — as an automation would — at the size its pane will have.
-  const started = await page.evaluate(({ dir, cols, rows }) => window.braveli.startTerminal({
+  const started = await page.evaluate(({ dir, cols, rows }) => window.pitwall.startTerminal({
     projectId: "other", projectPath: dir, projectRoot: dir, sessionId: "later", sessionName: "Later Codex", agent: "Codex", command: "codex", args: [], cols, rows,
   }), { dir, cols: size.cols, rows: size.rows });
   assert.ok(started?.ok, `the background session started: ${started?.error ?? ""}`);

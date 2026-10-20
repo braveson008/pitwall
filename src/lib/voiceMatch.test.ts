@@ -43,8 +43,8 @@ describe("voiceMatch", () => {
   });
 
   it("still resolves a tie-break when one candidate is clearly better", () => {
-    const projects = [{ name: "braveli" }, { name: "braveli-website" }];
-    expect(bestMatch("braveli", projects, (project) => project.name)?.name).toBe("braveli");
+    const projects = [{ name: "pitwall" }, { name: "pitwall-website" }];
+    expect(bestMatch("pitwall", projects, (project) => project.name)?.name).toBe("pitwall");
   });
 
   it("scores a basename hit far above an incidental word hit", () => {

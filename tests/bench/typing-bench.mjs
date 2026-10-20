@@ -9,7 +9,7 @@ import { _electron as electron } from "playwright";
 import { openProject } from "./helpers/openProject.mjs";
 
 const root = process.cwd();
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-typing-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-typing-"));
 const fakeHome = path.join(temp, "home");
 const fakeBin = path.join(temp, "bin");
 await mkdir(fakeHome, { recursive: true });
@@ -29,7 +29,7 @@ const tasks = Array.from({ length: 300 }, (_, i) => ({ id: `t${i}`, projectId: "
 const activity = Array.from({ length: 5000 }, (_, i) => ({ id: `a${i}`, projectId: "p", type: "system", message: `Activity line ${i} with some words in it`, createdAt: now }));
 const workspace = { version: 1, projects: [{ id: "p", name: "repo", path: dir, defaultBranch: "main", providerIds: ["claude"], createdAt: now, updatedAt: now }], tasks, contextEntries: [], contextSnapshots: [], sessions: [{ id: "s1", projectId: "p", taskId: "", type: "implementation", provider: "claude", status: "running", createdAt: now, updatedAt: now }], activity, taskRuns: [], councilRuns: [], compareRuns: [] };
 
-const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") } });
+const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") } });
 try {
   const page = await app.firstWindow();
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -37,9 +37,9 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "repo");
@@ -54,7 +54,7 @@ try {
     Storage.prototype.setItem = function (key, value) {
       const started = performance.now();
       original.call(this, key, value);
-      if (key === "braveli-workspace-state") { window.__writes.count += 1; window.__writes.ms += performance.now() - started; }
+      if (key === "pitwall-workspace-state") { window.__writes.count += 1; window.__writes.ms += performance.now() - started; }
     };
   });
   const started = Date.now();

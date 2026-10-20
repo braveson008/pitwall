@@ -1,12 +1,12 @@
 {
-  "name": "braveli",
-  "version": "0.1.35",
+  "name": "pitwall",
+  "version": "0.1.36",
   "private": true,
   "description": "Local-first multi-agent workspace for software engineering.",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && BRAVELI_DEV_SERVER=http://127.0.0.1:5173 electron .\"",
+    "dev": "concurrently \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && PITWALL_DEV_SERVER=http://127.0.0.1:5173 electron .\"",
     "web": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
     "build:voice": "node scripts/build-voice-sidecar.mjs",
@@ -114,10 +114,6 @@
         "to": "licence-config.json"
       },
       {
-        "from": "build/credits-config.json",
-        "to": "credits-config.json"
-      },
-      {
         "from": "LICENSE",
         "to": "LICENSE"
       },
@@ -138,8 +134,8 @@
       "entitlementsInherit": "build/entitlements.mac.inherit.plist",
       "notarize": true,
       "binaries": [
-        "Contents/Resources/voice/braveli-voice",
-        "Contents/Resources/voice/braveli-observe"
+        "Contents/Resources/voice/pitwall-voice",
+        "Contents/Resources/voice/pitwall-observe"
       ],
       "extendInfo": {
         "NSMicrophoneUsageDescription": "Pitwall listens for the wake word and your spoken requests. Speech is transcribed on this Mac and is never uploaded.",

@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { ArrowRight, CircleHelp, ShieldCheck, WifiOff } from "lucide-react";
-import type { BraveliTaskPair } from "../domain/types";
+import type { PitwallTaskPair } from "../domain/types";
 import { isTerminalReply } from "../lib/terminalReplies";
 import type { TerminalLinesStore } from "../terminal/terminalLinesStore";
 import { LiveTerminalView } from "./LiveTerminalView";
@@ -9,7 +9,7 @@ import { pairReviewerLabel } from "../domain/pairReviewer";
 type Props = {
   /** Kept mounted while another tab shows, so its terminal keeps its scrollback. */
   hidden?: boolean;
-  pair: BraveliTaskPair;
+  pair: PitwallTaskPair;
   implementerLabel: string;
   /** Whether the implementer is mid-turn, for the strip. */
   implementerWorking: boolean;
@@ -23,7 +23,7 @@ type Props = {
   onOpenReview: () => void;
 };
 
-const STATE: Record<BraveliTaskPair["state"], string> = {
+const STATE: Record<PitwallTaskPair["state"], string> = {
   implementing: "Waiting for the implementer",
   reviewing: "Reviewing",
   approved: "Approved",
@@ -128,9 +128,9 @@ export const PairReviewerPane = memo(function PairReviewerPane({
             fontSize={fontSize}
             // Only the terminal's own answers to the CLI get through; typing does not.
             onInput={(data) => {
-              if (isTerminalReply(data)) void window.braveli?.writeTerminal?.({ sessionId, data });
+              if (isTerminalReply(data)) void window.pitwall?.writeTerminal?.({ sessionId, data });
             }}
-            onResize={(cols, rows) => void window.braveli?.resizeTerminal?.({ sessionId, cols, rows })}
+            onResize={(cols, rows) => void window.pitwall?.resizeTerminal?.({ sessionId, cols, rows })}
           />
         ) : sessionId ? null : (
           <p className="dk-pair-reviewer-empty">

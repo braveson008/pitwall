@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { shouldMoveToReview } from "./taskProgression";
-import type { BraveliSessionStatus, BraveliTaskStatus } from "../domain/types";
+import type { PitwallSessionStatus, PitwallTaskStatus } from "../domain/types";
 
-const task = (status: BraveliTaskStatus = "running") => ({ id: "t1", status });
-const session = (id: string, status: BraveliSessionStatus, taskId = "t1") => ({ id, taskId, status });
+const task = (status: PitwallTaskStatus = "running") => ({ id: "t1", status });
+const session = (id: string, status: PitwallSessionStatus, taskId = "t1") => ({ id, taskId, status });
 
 describe("shouldMoveToReview", () => {
   it("moves the task when the only session finishes", () => {
@@ -36,7 +36,7 @@ describe("shouldMoveToReview", () => {
     expect(shouldMoveToReview(task(), sessions, "s1")).toBe(true);
   });
 
-  for (const status of ["backlog", "ready", "review", "completed", "cancelled"] as BraveliTaskStatus[]) {
+  for (const status of ["backlog", "ready", "review", "completed", "cancelled"] as PitwallTaskStatus[]) {
     it(`leaves a ${status} task alone`, () => {
       expect(shouldMoveToReview(task(status), [session("s1", "completed")], "s1")).toBe(false);
     });

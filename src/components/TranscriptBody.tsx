@@ -22,7 +22,7 @@ function Inlines({ inlines }: { inlines: Inline[] }) {
                 // URL — so this goes through the same bridge as everything else,
                 // which refuses anything that is not HTTP(S).
                 event.preventDefault();
-                void window.braveli?.openExternalUrl?.(inline.href);
+                void window.pitwall?.openExternalUrl?.(inline.href);
               }}
             >
               {inline.text}
@@ -38,7 +38,7 @@ function Inlines({ inlines }: { inlines: Inline[] }) {
               href={inline.href}
               onClick={(event) => {
                 event.preventDefault();
-                void window.braveli?.openExternalUrl?.(inline.href);
+                void window.pitwall?.openExternalUrl?.(inline.href);
               }}
             >
               {inline.alt || "image"}
@@ -231,7 +231,7 @@ function Entry({
               href={marker.url}
               onClick={(event) => {
                 event.preventDefault();
-                void window.braveli?.openExternalUrl?.(marker.url);
+                void window.pitwall?.openExternalUrl?.(marker.url);
               }}
             >
               <ExternalLink size={12} aria-hidden="true" />

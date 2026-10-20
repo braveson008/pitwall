@@ -87,8 +87,8 @@ describe("buildVerificationPrompt", () => {
   const base = {
     task: { title: "Add a /health endpoint", description: "It should return 200 and the build SHA." },
     member: ROSTER[1],
-    threadFile: ".braveli/council/r1/thread.md",
-    verdictFile: ".braveli/council/r1/verify-1.md",
+    threadFile: ".pitwall/council/r1/thread.md",
+    verdictFile: ".pitwall/council/r1/verify-1.md",
     attempt: 1,
   };
 

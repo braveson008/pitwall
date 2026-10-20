@@ -9,9 +9,9 @@
  *
  * That is not merely cosmetic for this app. macOS attributes TCC permissions —
  * Microphone, Speech Recognition, Accessibility — to a code signing identity.
- * An unsigned Braveli asks for the microphone as "Electron", cannot carry
+ * An unsigned Pitwall asks for the microphone as "Electron", cannot carry
  * `com.apple.security.device.audio-input`, and any grant the user makes is
- * liable to be attributed to something other than Braveli.
+ * liable to be attributed to something other than Pitwall.
  *
  * Ad-hoc signing fixes the identity and applies the entitlements. It does not
  * satisfy Gatekeeper on another Mac — that still needs a Developer ID and

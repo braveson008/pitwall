@@ -10,13 +10,13 @@
  * the strongest signal there is: they say what this team actually accepts.
  *
  * What it learns goes two places. Durable, source-backed project facts come
- * back as BRAVELI_MEMORY lines, which Pitwall files as tentative project
+ * back as PITWALL_MEMORY lines, which Pitwall files as tentative project
  * knowledge the person can see, pin or reject, and every agent is given.
  * How to review this project — what keeps going wrong, what the lead cares
  * about — stays in Hermes's own memory and skills, in the project's profile.
  */
 
-const KNOWLEDGE_LINE = 'BRAVELI_MEMORY {"title": "...", "content": "...", "kind": "area|command|convention|decision|pitfall", "sourcePaths": ["relative/path"]}';
+const KNOWLEDGE_LINE = 'PITWALL_MEMORY {"title": "...", "content": "...", "kind": "area|command|convention|decision|pitfall", "sourcePaths": ["relative/path"]}';
 
 function header(task) {
   return [String(task?.identifier || "").toUpperCase(), task?.title].filter(Boolean).join(" ") || "an untitled task";

@@ -9,7 +9,7 @@ import { _electron as electron } from "playwright";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const packageJson = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
 const dmgPath = path.join(root, "release", `Pitwall-${packageJson.version}-arm64.dmg`);
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), "braveli-packaged-smoke-"));
+const tempRoot = await mkdtemp(path.join(os.tmpdir(), "pitwall-packaged-smoke-"));
 const projectPath = path.join(tempRoot, "clean-project");
 const userDataPath = path.join(tempRoot, "clean-profile");
 let mountDevice = "";
@@ -30,8 +30,8 @@ try {
     executablePath,
     env: {
       ...process.env,
-      BRAVELI_E2E: "1",
-      BRAVELI_USER_DATA_DIR: userDataPath,
+      PITWALL_E2E: "1",
+      PITWALL_USER_DATA_DIR: userDataPath,
       ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
       PATH: "/usr/bin:/bin:/usr/sbin:/sbin",
     },
@@ -40,45 +40,45 @@ try {
   const page = await app.firstWindow({ timeout: 20_000 });
   await page.waitForURL(/index\.html$/);
   await page.waitForLoadState("domcontentloaded");
-  const identity = await page.evaluate(() => ({ title: document.title, bridge: Boolean(window.braveli) }));
+  const identity = await page.evaluate(() => ({ title: document.title, bridge: Boolean(window.pitwall) }));
   assert.equal(identity.title, "Pitwall");
   assert.equal(identity.bridge, true);
   // The packaged app has no editor of its own; what must survive packaging is
   // its ability to find the user's. Detection reads the real filesystem, so a
   // path that only resolves in dev would show up here as an empty list.
-  const editors = await page.evaluate(() => window.braveli.listEditors());
+  const editors = await page.evaluate(() => window.pitwall.listEditors());
   assert.equal(editors.ok, true);
   assert.ok(Array.isArray(editors.editors), "listEditors must always answer with a list");
   // The packaged app opens the project's server in the user's browser, which a
   // test must not launch. The refusal path is the part that still belongs to
   // Pitwall, and it exercises the same bridge.
-  const refused = await page.evaluate(() => window.braveli.openExternalUrl("file:///etc/passwd"));
+  const refused = await page.evaluate(() => window.pitwall.openExternalUrl("file:///etc/passwd"));
   assert.equal(refused.ok, false);
   // A dev-only native-addon load cannot prove the terminal survived packaging.
   await page.evaluate(() => {
     window.packageTerminalOutput = "";
     window.packageTerminalClosed = false;
-    window.braveli.onTerminalData(({ sessionId, data }) => {
+    window.pitwall.onTerminalData(({ sessionId, data }) => {
       if (sessionId === "package-terminal") window.packageTerminalOutput += data;
     });
-    window.braveli.onTerminalClosed(({ sessionId }) => {
+    window.pitwall.onTerminalClosed(({ sessionId }) => {
       if (sessionId === "package-terminal") window.packageTerminalClosed = true;
     });
   });
-  const terminal = await page.evaluate((projectPath) => window.braveli.startTerminal({
+  const terminal = await page.evaluate((projectPath) => window.pitwall.startTerminal({
     projectId: "package-project", projectPath, sessionId: "package-terminal",
     sessionName: "Package fixture", agent: "Package Shell", command: "/bin/cat", args: [],
   }), projectPath);
   assert.equal(terminal.ok, true, JSON.stringify(terminal));
-  assert.equal((await page.evaluate(() => window.braveli.writeTerminal({
-    sessionId: "package-terminal", data: "BRAVELI_PACKAGE_TERMINAL_OK\n",
+  assert.equal((await page.evaluate(() => window.pitwall.writeTerminal({
+    sessionId: "package-terminal", data: "PITWALL_PACKAGE_TERMINAL_OK\n",
   }))).ok, true);
-  await page.waitForFunction(() => window.packageTerminalOutput.includes("BRAVELI_PACKAGE_TERMINAL_OK"));
-  const stopped = await page.evaluate(() => window.braveli.runSessionAction({ sessionId: "package-terminal", action: "stop" }));
+  await page.waitForFunction(() => window.packageTerminalOutput.includes("PITWALL_PACKAGE_TERMINAL_OK"));
+  const stopped = await page.evaluate(() => window.pitwall.runSessionAction({ sessionId: "package-terminal", action: "stop" }));
   assert.equal(stopped.ok, true, JSON.stringify(stopped));
   await page.waitForFunction(() => window.packageTerminalClosed);
   console.log("  OK  mounted DMG native PTY starts, receives input, stops, and emits its closed event");
-  const updates = await page.evaluate(() => window.braveli.getUpdateState());
+  const updates = await page.evaluate(() => window.pitwall.getUpdateState());
   assert.equal(updates.status, "disabled");
   console.log("  OK  DMG app launches with a clean profile, editor detection, and a guarded external-open bridge");
 } finally {

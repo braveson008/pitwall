@@ -1,4 +1,4 @@
-import type { BraveliPairDecision, BraveliTask } from "../domain/types";
+import type { PitwallPairDecision, PitwallTask } from "../domain/types";
 
 export type ScoreLine = { model: string; decided: number; agreed: number; missed: number; stricter: number };
 
@@ -12,7 +12,7 @@ export type ReviewerScorecard = ScoreLine & {
 
 const empty = (model: string): ScoreLine => ({ model, decided: 0, agreed: 0, missed: 0, stricter: 0 });
 
-function count(line: ScoreLine, decision: BraveliPairDecision) {
+function count(line: ScoreLine, decision: PitwallPairDecision) {
   line.decided += 1;
   if (decision.reviewer === "approved" && decision.lead === "sent-back") line.missed += 1;
   else if (decision.reviewer === "open-points" && decision.lead === "approved") line.stricter += 1;
@@ -27,7 +27,7 @@ function count(line: ScoreLine, decision: BraveliPairDecision) {
  * person decided as it had. Its catches are the rounds it sent back to the
  * agent, which the person never had to see.
  */
-export function reviewerScorecard(tasks: readonly BraveliTask[], reviewer: string, projectId?: string): ReviewerScorecard {
+export function reviewerScorecard(tasks: readonly PitwallTask[], reviewer: string, projectId?: string): ReviewerScorecard {
   const total: ReviewerScorecard = { ...empty("all"), reviewed: 0, caught: 0, byModel: [] };
   const byModel = new Map<string, ScoreLine>();
   for (const task of tasks) {

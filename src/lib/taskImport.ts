@@ -1,4 +1,4 @@
-import type { BraveliTask, BraveliTaskStatus } from "../domain/types";
+import type { PitwallTask, PitwallTaskStatus } from "../domain/types";
 import { normalizeTaskIdentifier, validateTaskIdentifier } from "./taskIdentity";
 import { trackerHtmlToMarkdown } from "./markdown";
 
@@ -15,7 +15,7 @@ export function mcpTaskIdentity(
   return `${mcpTaskSourceKey(provider, source)}::${String(remoteIdentity || "").trim().toLowerCase()}`;
 }
 
-export function importedTaskIdentity(task: BraveliTask) {
+export function importedTaskIdentity(task: PitwallTask) {
   if (task.source?.kind !== "mcp" || !task.source.name) return "";
   return mcpTaskIdentity(task.source.provider || "claude", task.source.name, {
     id: task.source.externalId,
@@ -47,7 +47,7 @@ export function allocateImportedTaskIdentifier(candidate: McpTaskCandidate, used
   return identifier;
 }
 
-const EXTERNAL_STATUS_MAP: Array<[RegExp, BraveliTaskStatus]> = [
+const EXTERNAL_STATUS_MAP: Array<[RegExp, PitwallTaskStatus]> = [
   [/\b(?:cancelled|canceled|rejected|duplicate)\b/i, "cancelled"],
   [/\b(?:done|completed|closed|resolved|shipped)\b/i, "completed"],
   [/\b(?:review|qa|verify|verification|testing)\b/i, "review"],
@@ -57,7 +57,7 @@ const EXTERNAL_STATUS_MAP: Array<[RegExp, BraveliTaskStatus]> = [
 ];
 
 /** Preserve a tracker's workflow meaning without coupling Pitwall to one vendor. */
-export function mapExternalTaskStatus(status?: string): BraveliTaskStatus {
+export function mapExternalTaskStatus(status?: string): PitwallTaskStatus {
   const normalized = status?.trim();
   if (!normalized) return "ready";
   return EXTERNAL_STATUS_MAP.find(([pattern]) => pattern.test(normalized))?.[1] ?? "ready";
@@ -267,7 +267,7 @@ export function taskPreviewLine(description: string | undefined, limit = 150): s
 
 export type TrackerSyncPlan = {
   added: McpTaskCandidate[];
-  updates: Array<{ taskId: string; patch: Partial<BraveliTask> }>;
+  updates: Array<{ taskId: string; patch: Partial<PitwallTask> }>;
 };
 
 /**
@@ -288,11 +288,11 @@ export function planTrackerSync({
   candidates,
   source,
 }: {
-  tasks: readonly BraveliTask[];
+  tasks: readonly PitwallTask[];
   candidates: readonly McpTaskCandidate[];
   source: { provider: string; name: string; target?: string };
 }): TrackerSyncPlan {
-  const byIdentity = new Map<string, BraveliTask>();
+  const byIdentity = new Map<string, PitwallTask>();
   for (const task of tasks) {
     const identity = importedTaskIdentity(task);
     if (identity) byIdentity.set(identity, task);
@@ -309,7 +309,7 @@ export function planTrackerSync({
       continue;
     }
 
-    const patch: Partial<BraveliTask> = {};
+    const patch: Partial<PitwallTask> = {};
     const title = candidate.title?.trim();
     if (title && title !== task.title) patch.title = title;
     const description = trackerHtmlToMarkdown(candidate.description ?? "").trim();
@@ -326,7 +326,7 @@ export function planTrackerSync({
       nextSource.url !== task.source?.url ||
       nextSource.status !== task.source?.status
     ) {
-      patch.source = nextSource as BraveliTask["source"];
+      patch.source = nextSource as PitwallTask["source"];
     }
 
     if (Object.keys(patch).length) updates.push({ taskId: task.id, patch });

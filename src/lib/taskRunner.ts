@@ -6,7 +6,7 @@ import type {
   TaskRun,
   ValidationResult,
 } from "../domain/contracts";
-import type { BraveliProviderId } from "../domain/types";
+import type { PitwallProviderId } from "../domain/types";
 import { nextStage, isTerminal, MAX_QA_ROUNDS_BEFORE_ESCALATION } from "./taskLoop";
 import {
   implementerContext,
@@ -44,8 +44,8 @@ export interface RunnerInputs {
   records: ModelRecord[];
   policy: ImplementerPolicy;
   /** The strongest model available, used for judgement work. */
-  reviewer: { provider: BraveliProviderId | ""; model: string };
-  architect: { provider: BraveliProviderId | ""; model: string };
+  reviewer: { provider: PitwallProviderId | ""; model: string };
+  architect: { provider: PitwallProviderId | ""; model: string };
   /** The diff the reviewer judges. Empty until there is an implementation. */
   diff?: string;
 }
@@ -55,7 +55,7 @@ export type RunnerAction =
       kind: "start-session";
       stage: "architect" | "implement" | "review" | "fix";
       prompt: string;
-      provider: BraveliProviderId | "";
+      provider: PitwallProviderId | "";
       model: string;
       /** Where the stage must leave its answer, when it writes one. */
       outputFile?: string;

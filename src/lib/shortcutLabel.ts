@@ -7,7 +7,7 @@
  * browser's own idea when the renderer runs on its own (npm run web).
  */
 export function isMacPlatform(): boolean {
-  const fromBridge = typeof window !== "undefined" ? (window as { braveli?: { platform?: string } }).braveli?.platform : undefined;
+  const fromBridge = typeof window !== "undefined" ? (window as { pitwall?: { platform?: string } }).pitwall?.platform : undefined;
   if (fromBridge) return fromBridge === "darwin";
   if (typeof document !== "undefined" && document.documentElement?.dataset.platform) {
     return document.documentElement.dataset.platform === "darwin";

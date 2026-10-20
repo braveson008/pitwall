@@ -396,7 +396,7 @@ test("a ticket identifier with shell metacharacters is refused", async () => {
 
 test("normalizes what the transcriber hands over", () => {
   assert.equal(normalizeTranscript("  Pitwall, run the tests.  "), "run the tests.");
-  assert.equal(normalizeTranscript("braveli run the tests"), "run the tests");
+  assert.equal(normalizeTranscript("pitwall run the tests"), "run the tests");
   assert.equal(normalizeTranscript("Bravely, open VS Code"), "open VS Code");
   assert.equal(normalizeTranscript("hey Pitwall — what's changed?"), "what's changed?");
   assert.equal(normalizeTranscript("run the tests"), "run the tests");
@@ -406,10 +406,10 @@ test("the router prompt carries the tools and the context", () => {
   const prompt = buildRouterPrompt({
     transcript: "run the tests",
     tools: [{ name: "tests.run", description: "Run the tests", input_schema: { type: "object", properties: {} } }],
-    context: { projectName: "braveli", branch: "main" },
+    context: { projectName: "pitwall", branch: "main" },
   });
   assert.match(prompt, /tests\.run/);
-  assert.match(prompt, /braveli/);
+  assert.match(prompt, /pitwall/);
   assert.match(prompt, /main/);
   assert.match(prompt, /run the tests/);
 });
@@ -445,7 +445,7 @@ test("remembers, recalls and resumes", async (t) => {
   const fs = require("node:fs");
   const os = require("node:os");
   const path = require("node:path");
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-memory-"));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-memory-"));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
 
   const file = path.join(directory, "memory.json");
@@ -461,8 +461,8 @@ test("remembers, recalls and resumes", async (t) => {
 
   store.recordSnapshot({
     projectId: "p1",
-    projectName: "braveli",
-    projectPath: "/tmp/braveli",
+    projectName: "pitwall",
+    projectPath: "/tmp/pitwall",
     branch: "voice",
     openFiles: ["src/App.tsx"],
     sessions: [{ id: "s1", agent: "claude", name: "voice work" }],
@@ -472,7 +472,7 @@ test("remembers, recalls and resumes", async (t) => {
   // accident; reopen from disk so persistence is what is actually asserted.
   const reopened = createMemoryStore(file, { now: () => clock });
   const latest = reopened.latestSnapshot();
-  assert.equal(latest.projectName, "braveli");
+  assert.equal(latest.projectName, "pitwall");
   assert.equal(latest.branch, "voice");
   assert.deepEqual(latest.openFiles, ["src/App.tsx"]);
   assert.equal(reopened.recall("postgres").length, 1);
@@ -480,14 +480,14 @@ test("remembers, recalls and resumes", async (t) => {
   clock += 26 * 60 * 60 * 1000;
   reopened.recordSnapshot({ projectId: "p2", projectName: "other", projectPath: "/tmp/other", branch: "main" });
   const yesterday = reopened.snapshotFor("yesterday");
-  assert.equal(yesterday.projectName, "braveli", "'yesterday' must not resolve to today's snapshot");
+  assert.equal(yesterday.projectName, "pitwall", "'yesterday' must not resolve to today's snapshot");
 });
 
 test("memory survives a corrupt file instead of taking the app down", () => {
   const fs = require("node:fs");
   const os = require("node:os");
   const path = require("node:path");
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-memory-bad-"));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-memory-bad-"));
   const file = path.join(directory, "memory.json");
   fs.writeFileSync(file, "{ not json at all");
   const store = createMemoryStore(file);

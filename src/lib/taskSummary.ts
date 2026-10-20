@@ -1,18 +1,20 @@
-import type { BraveliTaskSummary } from "../domain/types";
+import type { PitwallTaskSummary } from "../domain/types";
+import { markerPattern } from "./legacyNames";
 
-export const TASK_SUMMARY_MARKER = "BRAVELI_TASK_SUMMARY";
+export const TASK_SUMMARY_MARKER = "PITWALL_TASK_SUMMARY";
+export const TASK_SUMMARY_PATTERN = new RegExp(markerPattern(TASK_SUMMARY_MARKER));
 
 const clean = (value: unknown, limit: number) => {
   const text = String(value ?? "").replace(/\s+/g, " ").trim();
   return text.length > limit ? `${text.slice(0, limit - 1)}…` : text;
 };
 
-export function parseTaskSummary(output: string): Omit<BraveliTaskSummary, "reportedAt"> | null {
+export function parseTaskSummary(output: string): Omit<PitwallTaskSummary, "reportedAt"> | null {
   const normalized = String(output || "").replace(/\u001b\[[0-9;?]*[ -/]*[@-~]/g, "");
   const lines = normalized.split(/\r?\n/).reverse();
-  const line = lines.find((candidate) => candidate.includes(TASK_SUMMARY_MARKER));
-  if (!line) return null;
-  const raw = line.slice(line.indexOf(TASK_SUMMARY_MARKER) + TASK_SUMMARY_MARKER.length).trim();
+  const marker = lines.map((candidate) => TASK_SUMMARY_PATTERN.exec(candidate)).find(Boolean);
+  if (!marker) return null;
+  const raw = marker.input.slice(marker.index + marker[0].length).trim();
   let value;
   try {
     value = JSON.parse(raw);
@@ -30,7 +32,7 @@ export function parseTaskSummary(output: string): Omit<BraveliTaskSummary, "repo
 }
 
 export function mergeTaskSummaryComponents(
-  summary: Omit<BraveliTaskSummary, "reportedAt">,
+  summary: Omit<PitwallTaskSummary, "reportedAt">,
   changedFiles: string[],
 ) {
   return {

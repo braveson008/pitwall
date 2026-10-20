@@ -123,16 +123,16 @@ try {
   assert.equal(field.borderWidth, "0px", "The search input must not draw a second border inside the field");
   assert.equal(field.placeholder, "Search knowledge or source paths", "The field keeps its placeholder");
 
-  await page.screenshot({ path: "/tmp/braveli-project-knowledge-light.png", fullPage: true });
+  await page.screenshot({ path: "/tmp/pitwall-project-knowledge-light.png", fullPage: true });
   await page.evaluate(() => (document.documentElement.dataset.theme = "dark"));
-  await page.screenshot({ path: "/tmp/braveli-project-knowledge-dark.png", fullPage: true });
+  await page.screenshot({ path: "/tmp/pitwall-project-knowledge-dark.png", fullPage: true });
   await page.setViewportSize({ width: 540, height: 800 });
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     true,
     "Knowledge panel must fit a narrow window",
   );
-  await page.screenshot({ path: "/tmp/braveli-project-knowledge-narrow.png", fullPage: true });
+  await page.screenshot({ path: "/tmp/pitwall-project-knowledge-narrow.png", fullPage: true });
   await page.getByRole("button", { name: "Overview", exact: true }).click();
   await page.getByRole("button", { name: "Forget Build and test commands", exact: true }).click();
   await page.getByText("Record forgotten. It will no longer be included in new agent context.").waitFor();
@@ -265,7 +265,7 @@ try {
   await page.goto(`${origin}/__knowledge-ui?mode=council`);
   // Thread first: the council opens on its conversation, laid over the panes,
   // which keep their full width underneath so switching never refits them.
-  await page.evaluate(() => localStorage.removeItem("braveli-council-view"));
+  await page.evaluate(() => localStorage.removeItem("pitwall-council-view"));
   await page.reload();
   await page.locator(".dk-council-thread").waitFor();
   const viewToggle = page.getByRole("group", { name: "View", exact: true });
@@ -401,7 +401,7 @@ try {
     gridBefore,
     "Opening the thread must not narrow the panes",
   );
-  assert.equal(await page.evaluate(() => localStorage.getItem("braveli-council-view")), "thread");
+  assert.equal(await page.evaluate(() => localStorage.getItem("pitwall-council-view")), "thread");
   await page.locator(".dk-council-thread-log").focus();
   await page.keyboard.press("Escape");
   assert.equal(await page.locator(".dk-council-thread").count(), 0, "Escape closes the thread");
@@ -447,9 +447,9 @@ try {
       .evaluate((element) => element === document.activeElement),
     true,
   );
-  await page.screenshot({ path: "/tmp/braveli-council-summary-light.png", fullPage: true });
+  await page.screenshot({ path: "/tmp/pitwall-council-summary-light.png", fullPage: true });
   await page.evaluate(() => (document.documentElement.dataset.theme = "dark"));
-  await page.screenshot({ path: "/tmp/braveli-council-summary-dark.png", fullPage: true });
+  await page.screenshot({ path: "/tmp/pitwall-council-summary-dark.png", fullPage: true });
   await page.setViewportSize({ width: 700, height: 850 });
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
@@ -466,7 +466,7 @@ try {
       "Primary and overflow controls must stay inside the visible toolbar",
     );
   }
-  await page.screenshot({ path: "/tmp/braveli-council-summary-narrow.png", fullPage: true });
+  await page.screenshot({ path: "/tmp/pitwall-council-summary-narrow.png", fullPage: true });
   assert.deepEqual(errors, [], "The UI must not raise browser exceptions");
   console.log(
     "Pitwall project knowledge UI smoke test passed (learning, errors, version conflicts, pin, forget, scope promotion, receipts, themes, narrow layout, council summary, keyboard overflow, long-thread scrolling, and keyboard-only session creation).",
@@ -475,7 +475,7 @@ try {
   if (page) {
     console.error("Browser exceptions:", errors);
     console.error((await page.locator("body").innerText()).slice(0, 6000));
-    await page.screenshot({ path: "/tmp/braveli-knowledge-ui-failure.png", fullPage: true });
+    await page.screenshot({ path: "/tmp/pitwall-knowledge-ui-failure.png", fullPage: true });
   }
   throw error;
 } finally {

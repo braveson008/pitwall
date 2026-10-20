@@ -43,7 +43,7 @@ const stored = (id) => ({ id, name: id, path: dirs[id], defaultBranch: "main", p
 const workspace = { version: 1, projects: [stored("web"), stored("api")], tasks: [], contextEntries: [], contextSnapshots: [], sessions: [], activity: [], taskRuns: [], compareRuns: [],
   councilRuns: [{ id: "cr1", name: "Pricing debate", projectId: "api", taskId: "", prompt: "Raise prices?", providerIds: ["claude", "codex"], synthesizer: "claude", status: "running", responses: [{ provider: "claude", sessionId: "c1", status: "running" }, { provider: "codex", sessionId: "c2", status: "running" }], createdAt: now }] };
 
-const app = await electron.launch({ args: [root], cwd: launchDir, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") } });
+const app = await electron.launch({ args: [root], cwd: launchDir, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") } });
 let passed = false;
 try {
   const page = await app.firstWindow();
@@ -54,9 +54,9 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ projects, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify(projects));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify(projects));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { projects, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   const sidebar = page.locator(".dk-tsb");
@@ -122,7 +122,7 @@ try {
   console.log("PASS the MCP servers dialog closes on Escape");
 
   // Rows from every project carry a delete; it acts on the row's own project.
-  const storedSessions = (id) => page.evaluate((id) => JSON.parse(localStorage.getItem("braveli-projects")).find((item) => item.id === id).sessions.map((item) => item.id), id);
+  const storedSessions = (id) => page.evaluate((id) => JSON.parse(localStorage.getItem("pitwall-projects")).find((item) => item.id === id).sessions.map((item) => item.id), id);
   await page.locator("[data-sidebar-row]", { hasText: "Web work" }).click();
   await page.locator(".dk-header-titles").getByText("Web work").waitFor();
   await page.locator("[data-sidebar-row='session:a2']").hover();
@@ -153,18 +153,18 @@ try {
   page.on("dialog", (dialog) => void dialog.accept());
   await sidebar.getByRole("button", { name: "Project", exact: true }).click();
   await sidebar.getByRole("option", { name: /^Remove/ }).click();
-  await page.waitForFunction(() => !JSON.parse(localStorage.getItem("braveli-projects") || "[]").some((item) => item.id === "api"));
+  await page.waitForFunction(() => !JSON.parse(localStorage.getItem("pitwall-projects") || "[]").some((item) => item.id === "api"));
   await page.waitForTimeout(500);
   assert.equal((await trigger.innerText()).trim(), "All projects");
   await page.locator("[data-sidebar-row]", { hasText: "Web work" }).waitFor({ timeout: 3000 });
-  assert.equal(await page.evaluate(() => localStorage.getItem("braveli-sidebar-project")), "");
+  assert.equal(await page.evaluate(() => localStorage.getItem("pitwall-sidebar-project")), "");
   console.log("PASS removing the filtered project shows every project again");
 
   // With no project left, New work asks for one instead of starting anywhere.
   await openProject(page, "web");
   await sidebar.getByRole("button", { name: "Project", exact: true }).click();
   await sidebar.getByRole("option", { name: /^Remove/ }).click();
-  await page.waitForFunction(() => JSON.parse(localStorage.getItem("braveli-projects") || "[]").length === 0);
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem("pitwall-projects") || "[]").length === 0);
   await sidebar.getByRole("button", { name: "New work" }).click();
   await newWork.getByRole("textbox", { name: "Instruction" }).fill("anything");
   await page.keyboard.press("Enter");

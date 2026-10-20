@@ -1,6 +1,6 @@
 import { Boxes, ChevronRight, GitBranch, Plus, Terminal, X } from "lucide-react";
 import type { AgentSession } from "../data";
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import { useModalFocus } from "../hooks/useModalFocus";
 
 export type TaskStartDestination = "council" | "staged" | "new-session" | `session:${string}`;
@@ -14,7 +14,7 @@ export function TaskStartModal({
   onStart,
 }: {
   open: boolean;
-  task?: BraveliTask;
+  task?: PitwallTask;
   sessions: AgentSession[];
   starting: boolean;
   onClose: () => void;

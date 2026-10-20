@@ -9,7 +9,7 @@ function markPlatform() {
 markPlatform();
 window.addEventListener("DOMContentLoaded", markPlatform);
 
-contextBridge.exposeInMainWorld("braveli", {
+contextBridge.exposeInMainWorld("pitwall", {
   platform: process.platform,
   setWindowChrome: (payload) => ipcRenderer.invoke("window:chrome", payload),
   chooseProjectDirectory: () => ipcRenderer.invoke("project:choose-directory"),
@@ -157,80 +157,6 @@ contextBridge.exposeInMainWorld("braveli", {
     const listener = (_event, payload) => callback(payload);
     ipcRenderer.on("hermes:sign-in-state", listener);
     return () => ipcRenderer.removeListener("hermes:sign-in-state", listener);
-  },
-  creditsState: () => ipcRenderer.invoke("credits:state"),
-  creditsSignInStart: (payload) => ipcRenderer.invoke("credits:sign-in-start", payload),
-  creditsSignInVerify: (payload) => ipcRenderer.invoke("credits:sign-in-verify", payload),
-  creditsSignOut: () => ipcRenderer.invoke("credits:sign-out"),
-  cloudStatus: () => ipcRenderer.invoke("cloud:status"),
-  cloudSetUp: () => ipcRenderer.invoke("cloud:set-up"),
-  cloudJoinWithRecovery: (payload) => ipcRenderer.invoke("cloud:join-recovery", payload),
-  cloudReset: () => ipcRenderer.invoke("cloud:reset"),
-  cloudTurnOff: () => ipcRenderer.invoke("cloud:turn-off"),
-  cloudSyncNow: () => ipcRenderer.invoke("cloud:sync-now"),
-  cloudHeldDeletions: (payload) => ipcRenderer.invoke("cloud:held-deletions", payload),
-  cloudDevices: () => ipcRenderer.invoke("cloud:devices"),
-  cloudRemoveDevice: (payload) => ipcRenderer.invoke("cloud:remove-device", payload),
-  cloudPushSnapshot: (snapshot) => ipcRenderer.send("cloud:push-snapshot", snapshot),
-  cloudRequestJoin: () => ipcRenderer.invoke("cloud:join-request"),
-  cloudCancelJoin: () => ipcRenderer.invoke("cloud:join-cancel"),
-  cloudConfirmJoinHere: () => ipcRenderer.invoke("cloud:join-confirm"),
-  cloudCheckJoinRequests: () => ipcRenderer.invoke("cloud:join-requests"),
-  cloudApproveJoin: (payload) => ipcRenderer.invoke("cloud:approve-join", payload),
-  cloudConfirmJoin: (payload) => ipcRenderer.invoke("cloud:confirm-join", payload),
-  cloudDenyJoin: (payload) => ipcRenderer.invoke("cloud:deny-join", payload),
-  cloudRetryCheckout: (payload) => ipcRenderer.invoke("cloud:retry-checkout", payload),
-  cloudContinueHere: (payload) => ipcRenderer.invoke("cloud:continue-here", payload),
-  cloudRefreshLeases: () => ipcRenderer.invoke("cloud:leases"),
-  onCloudRenameProject: (callback) => {
-    const listener = (_event, rename) => callback(rename);
-    ipcRenderer.on("cloud:rename-project", listener);
-    return () => ipcRenderer.removeListener("cloud:rename-project", listener);
-  },
-  onCloudLeases: (callback) => {
-    const listener = (_event, leases) => callback(leases);
-    ipcRenderer.on("cloud:leases", listener);
-    return () => ipcRenderer.removeListener("cloud:leases", listener);
-  },
-  onCloudNotice: (callback) => {
-    const listener = (_event, notice) => callback(notice);
-    ipcRenderer.on("cloud:notice", listener);
-    return () => ipcRenderer.removeListener("cloud:notice", listener);
-  },
-  onCloudProjectReady: (callback) => {
-    const listener = (_event, event) => callback(event);
-    ipcRenderer.on("cloud:project-ready", listener);
-    return () => ipcRenderer.removeListener("cloud:project-ready", listener);
-  },
-  onCloudJoinState: (callback) => {
-    const listener = (_event, state) => callback(state);
-    ipcRenderer.on("cloud:join-state", listener);
-    return () => ipcRenderer.removeListener("cloud:join-state", listener);
-  },
-  onCloudJoinRequests: (callback) => {
-    const listener = (_event, requests) => callback(requests);
-    ipcRenderer.on("cloud:join-requests", listener);
-    return () => ipcRenderer.removeListener("cloud:join-requests", listener);
-  },
-  onCloudApply: (callback) => {
-    const listener = (_event, batch) => callback(batch);
-    ipcRenderer.on("cloud:apply", listener);
-    return () => ipcRenderer.removeListener("cloud:apply", listener);
-  },
-  onCloudStatus: (callback) => {
-    const listener = (_event, status) => callback(status);
-    ipcRenderer.on("cloud:status", listener);
-    return () => ipcRenderer.removeListener("cloud:status", listener);
-  },
-  creditsAccount: () => ipcRenderer.invoke("credits:account"),
-  creditsPlans: () => ipcRenderer.invoke("credits:plans"),
-  creditsModels: () => ipcRenderer.invoke("credits:models"),
-  creditsSetCap: (payload) => ipcRenderer.invoke("credits:set-cap", payload),
-  creditsDevActivate: (payload) => ipcRenderer.invoke("credits:dev-activate", payload),
-  onCreditsRefused: (callback) => {
-    const listener = (_event, payload) => callback(payload);
-    ipcRenderer.on("credits:refused", listener);
-    return () => ipcRenderer.removeListener("credits:refused", listener);
   },
   captureEvent: (event, properties) => ipcRenderer.invoke("analytics:capture", { event, properties }),
   analyticsState: (payload) => ipcRenderer.invoke("analytics:state", payload),

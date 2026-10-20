@@ -18,7 +18,7 @@ import { goTo } from "./helpers/goTo.mjs";
 
 const { hermesProfileName } = createRequire(import.meta.url)("../electron/lib/hermesProfiles.cjs");
 const root = process.cwd();
-const temp = await mkdtemp(path.join(os.tmpdir(), "braveli-overseer-"));
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-overseer-"));
 const fakeHome = path.join(temp, "home");
 const fakeBin = path.join(temp, "bin");
 const state = path.join(temp, "state");
@@ -75,7 +75,7 @@ case "$1" in
   config)
     if [ "$2" = "get" ]; then
       case "$3" in
-        plugins.enabled) echo '["braveli-reviewer"]' ;;
+        plugins.enabled) echo '["pitwall-reviewer"]' ;;
         plugins.disabled) echo '[]' ;;
         mcp_servers) echo '{}' ;;
         model) printf 'default: auto\\nprovider: nous\\n' ;;
@@ -92,13 +92,13 @@ esac
 if printf '%s\\n' "$@" | grep -qx -- "--oneshot"; then
   n=$(( $(ls '${state}' | grep -c '^learn-.*[.]txt$') + 1 ))
   cat > "${state}/learn-$n.txt"
-  printf 'profile=%s reviewer=%s args=%s\\n' "$PROFILE" "$BRAVELI_HERMES_REVIEWER" "$*" > "${state}/learn-$n.meta"
-  echo 'BRAVELI_MEMORY {"title":"Step helpers","content":"work.ts holds the numbered step helpers.","kind":"area","sourcePaths":["work.ts"]}'
+  printf 'profile=%s reviewer=%s args=%s\\n' "$PROFILE" "$PITWALL_HERMES_REVIEWER" "$*" > "${state}/learn-$n.meta"
+  echo 'PITWALL_MEMORY {"title":"Step helpers","content":"work.ts holds the numbered step helpers.","kind":"area","sourcePaths":["work.ts"]}'
   echo
   echo "session_id: 20261007_020202_bbbbbb"
   exit 0
 fi
-printf 'profile=%s reviewer=%s args=%s\\n' "$PROFILE" "$BRAVELI_HERMES_REVIEWER" "$*" >> '${state}/reviewer-args.txt'
+printf 'profile=%s reviewer=%s args=%s\\n' "$PROFILE" "$PITWALL_HERMES_REVIEWER" "$*" >> '${state}/reviewer-args.txt'
 stty raw -echo 2>/dev/null
 echo "Session: 20261007_010101_abcdef"
 echo "Welcome to Hermes Agent! Type your message or /help for commands."
@@ -143,9 +143,9 @@ const workspace = {
 const app = await electron.launch({
   args: [root],
   cwd: root,
-  env: { ...process.env, HOME: fakeHome, HERMES_HOME: path.join(fakeHome, ".hermes"), PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HOME: fakeHome, HERMES_HOME: path.join(fakeHome, ".hermes"), PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
-const workspaceState = () => app.firstWindow().then((page) => page.evaluate(() => JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}")));
+const workspaceState = () => app.firstWindow().then((page) => page.evaluate(() => JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}")));
 const until = async (what, check, ms = 120_000) => {
   const deadline = Date.now() + ms;
   while (Date.now() < deadline) {
@@ -163,9 +163,9 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "payments");
@@ -213,7 +213,7 @@ try {
   console.log("PASS Hermes learned from the finished task in the background, guarded and in the project's profile");
 
   const fact = await until("Hermes's fact in project knowledge", async () => {
-    const knowledge = await page.evaluate((projectPath) => window.braveli.inspectProjectKnowledge({ projectPath }), dir);
+    const knowledge = await page.evaluate((projectPath) => window.pitwall.inspectProjectKnowledge({ projectPath }), dir);
     return knowledge.records?.find((record) => record.title === "Step helpers");
   });
   assert.equal(fact.author, "hermes");

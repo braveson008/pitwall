@@ -1,7 +1,7 @@
 import { ArrowUp } from "lucide-react";
 import { useState } from "react";
 import type { AgentSession, Project } from "../data";
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import { Dropdown } from "./Dropdown";
 import { shortcutLabel } from "../lib/shortcutLabel";
 
@@ -16,7 +16,7 @@ export interface HomeAttention {
 
 interface HomePageProps {
   projects: Project[];
-  tasks: BraveliTask[];
+  tasks: PitwallTask[];
   defaultProjectId: string;
   onStart: (projectId: string, instruction: string) => void;
   onOpenSession: (project: Project, session: AgentSession) => void;

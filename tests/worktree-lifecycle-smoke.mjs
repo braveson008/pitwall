@@ -11,7 +11,7 @@ import { _electron as electron } from "playwright";
 // dependencies cloned, kept while a terminal runs in it or while it holds
 // work, removed once finished, and recreated when its session resumes.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const tempRoot = realpathSync(await mkdtemp(path.join(os.tmpdir(), "braveli-worktree-lifecycle-")));
+const tempRoot = realpathSync(await mkdtemp(path.join(os.tmpdir(), "pitwall-worktree-lifecycle-")));
 const remote = path.join(tempRoot, "remote.git");
 const project = path.join(tempRoot, "project");
 const env = {
@@ -50,13 +50,13 @@ try {
   app = await electron.launch({
     args: [root],
     cwd: root,
-    env: { ...env, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(tempRoot, "user-data"), ELECTRON_DISABLE_SECURITY_WARNINGS: "true" },
+    env: { ...env, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(tempRoot, "user-data"), ELECTRON_DISABLE_SECURITY_WARNINGS: "true" },
     timeout: 30_000,
   });
   const page = await app.firstWindow({ timeout: 20_000 });
   await page.waitForURL(/index\.html$/);
   await page.waitForLoadState("domcontentloaded");
-  const call = (method, payload) => page.evaluate(([name, value]) => window.braveli[name](value), [method, payload]);
+  const call = (method, payload) => page.evaluate(([name, value]) => window.pitwall[name](value), [method, payload]);
 
   const created = await call("ensureWorktree", { projectPath: project, branch: "feature/done", baseBranch: "main" });
   assert.equal(created.ok, true, created.error);
@@ -130,7 +130,7 @@ try {
   await dirtyRow.getByText("1 uncommitted file").waitFor({ timeout: 10_000 });
   await unpushedRow.getByText("1 unpushed commit").waitFor();
   assert.equal(await dirtyRow.getByRole("button", { name: "Remove" }).count(), 0);
-  await page.screenshot({ path: path.join(os.tmpdir(), "braveli-unfinished-worktrees.png") });
+  await page.screenshot({ path: path.join(os.tmpdir(), "pitwall-unfinished-worktrees.png") });
   await unpushedRow.getByRole("button", { name: "Remove", exact: true }).click();
   await unpushedRow.getByText("1 commit stay on feature/unpushed, and on no remote").waitFor();
   await unpushedRow.getByRole("button", { name: "Remove anyway", exact: true }).click();
@@ -170,7 +170,7 @@ try {
   assert.equal(existsSync(path.join(kept.path, "own.txt")), true);
   console.log("  OK  a branch holding work the agent's lacks is restored as itself");
 
-  console.log("\nBraveli worktree lifecycle smoke test passed.");
+  console.log("\nPitwall worktree lifecycle smoke test passed.");
 } finally {
   if (app) await app.close().catch(() => undefined);
   await rm(tempRoot, { recursive: true, force: true });

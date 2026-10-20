@@ -1,4 +1,4 @@
-// Braveli's ears and mouth.
+// Pitwall's ears and mouth.
 //
 // A small stdio daemon: newline-delimited JSON commands on stdin, newline-
 // delimited JSON events on stdout. It owns the microphone, the speech
@@ -10,7 +10,7 @@
 //
 // Chromium's renderer can reach `getUserMedia`, but not Apple's on-device
 // speech stack, and an always-on recogniser inside the renderer would die with
-// every reload. A sidecar also means a crash here degrades Braveli to a normal
+// every reload. A sidecar also means a crash here degrades Pitwall to a normal
 // GUI app instead of taking the window down with it.
 //
 // ## Speech recognition backend
@@ -28,7 +28,7 @@
 //
 // ## Half duplex
 //
-// While Braveli is speaking, incoming audio is discarded rather than
+// While Pitwall is speaking, incoming audio is discarded rather than
 // transcribed. Without that the assistant transcribes its own voice and
 // answers itself. Barge-in is preserved by still measuring input energy during
 // playback: sustained speech-level input stops the utterance and hands the
@@ -44,7 +44,7 @@ import Speech
 /// complete line is not a message, which makes the stream trivially resyncable
 /// if a write is ever interrupted.
 final class EventWriter {
-    private let queue = DispatchQueue(label: "app.braveli.voice.out")
+    private let queue = DispatchQueue(label: "app.pitwall.voice.out")
 
     func emit(_ type: String, _ payload: [String: Any] = [:]) {
         var object = payload
@@ -70,10 +70,10 @@ let events = EventWriter()
 
 struct Config {
     /// Matched against the transcript to open the microphone. Kept as a list so
-    /// homophones the recogniser reliably produces ("bravely", "bravelli") are
+    /// homophones the recogniser reliably produces ("pit wall") are
     /// treated as the wake word rather than as failures the user has to work
     /// around by changing how they speak.
-    var wakeWords: [String] = ["braveli", "bravely", "bravelli", "brave lee", "brave li"]
+    var wakeWords: [String] = ["pitwall", "pit wall"]
     /// How long the user must actually stop speaking before the command is
     /// treated as finished and run.
     ///
@@ -87,7 +87,7 @@ struct Config {
     var speechThreshold: Float = 0.018
     /// Ceiling on a single command, so a stuck recogniser cannot listen forever.
     var maxCommandDuration: TimeInterval = 25.0
-    /// How long to keep listening after Braveli finishes speaking, so a reply
+    /// How long to keep listening after Pitwall finishes speaking, so a reply
     /// can be answered without saying the wake word again.
     ///
     /// Requiring the wake word on every turn is correct for the first request
@@ -115,7 +115,7 @@ struct Config {
 final class VoiceDaemon: NSObject, AVSpeechSynthesizerDelegate {
     private let engine = AVAudioEngine()
     private let synthesizer = AVSpeechSynthesizer()
-    private let state = DispatchQueue(label: "app.braveli.voice.state")
+    private let state = DispatchQueue(label: "app.pitwall.voice.state")
 
     private var recognizer: SFSpeechRecognizer?
     private var request: SFSpeechAudioBufferRecognitionRequest?
@@ -199,7 +199,7 @@ final class VoiceDaemon: NSObject, AVSpeechSynthesizerDelegate {
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0 else {
-            throw NSError(domain: "app.braveli.voice", code: 1,
+            throw NSError(domain: "app.pitwall.voice", code: 1,
                           userInfo: [NSLocalizedDescriptionKey: "No usable audio input device."])
         }
 
@@ -347,7 +347,7 @@ final class VoiceDaemon: NSObject, AVSpeechSynthesizerDelegate {
 
     /// Safety net for an always-listening assistant: if the recogniser has been
     /// absent while we are supposed to be listening, bring it back. Without
-    /// this, any unforeseen path that loses the task leaves Braveli looking
+    /// this, any unforeseen path that loses the task leaves Pitwall looking
     /// awake — the HUD still says "listening" — while hearing nothing at all.
     private func startWatchdog() {
         watchdog?.cancel()
@@ -393,7 +393,7 @@ final class VoiceDaemon: NSObject, AVSpeechSynthesizerDelegate {
                 return
             }
             // Everything after the wake word is already part of the command —
-            // people say "Braveli run the tests" in one breath far more often
+            // people say "Pitwall run the tests" in one breath far more often
             // than they pause and wait.
             let remainder = String(transcript[range.upperBound...])
             mode = .command
@@ -506,7 +506,7 @@ final class VoiceDaemon: NSObject, AVSpeechSynthesizerDelegate {
         followUpTimer = nil
     }
 
-    /// Reopen the microphone after Braveli has finished answering, so the next
+    /// Reopen the microphone after Pitwall has finished answering, so the next
     /// thing the user says is treated as the next turn rather than ignored for
     /// missing a wake word.
     private func openFollowUpWindow() {
@@ -520,7 +520,7 @@ final class VoiceDaemon: NSObject, AVSpeechSynthesizerDelegate {
         lastTranscriptChangeAt = lastVoiceAt
 
         // The HUD reads this the same way it reads a wake word, because from
-        // the user's side it is the same state: Braveli is listening to them.
+        // the user's side it is the same state: Pitwall is listening to them.
         events.emit("wake", ["tail": "", "followUp": true])
         events.emit("state", ["mode": mode.rawValue, "listening": true])
         armCommandTimers()
@@ -556,7 +556,7 @@ final class VoiceDaemon: NSObject, AVSpeechSynthesizerDelegate {
             expectFollowUp = false
             events.emit("cancelled", ["reason": reason])
         } else {
-            // A real request was made, so whatever Braveli says back is part of
+            // A real request was made, so whatever Pitwall says back is part of
             // a conversation and deserves a chance to be answered.
             expectFollowUp = true
             events.emit("transcript", ["text": text, "final": true, "reason": reason])
@@ -795,7 +795,7 @@ final class VoiceDaemon: NSObject, AVSpeechSynthesizerDelegate {
             // Only replace it when there isn't already a fresh one.
             if self.mode != .idle && self.task == nil { self.startRecognition() }
 
-            // Braveli has just answered a request. Keep listening for a beat so
+            // Pitwall has just answered a request. Keep listening for a beat so
             // the user can reply without re-announcing themselves.
             if self.expectFollowUp && !cancelled && self.mode == .wake {
                 self.expectFollowUp = false

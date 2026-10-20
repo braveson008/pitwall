@@ -8,7 +8,7 @@ const { removeWorktreeIfSafe, shareDependencies } = require("../electron/lib/wor
 const { managedWorktreePath } = require("../electron/lib/worktrees.cjs");
 
 // Real repositories in a temp directory, isolated from the machine's git config.
-const tempRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "braveli-worktree-cleanup-")));
+const tempRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-worktree-cleanup-")));
 const env = {
   ...process.env,
   GIT_CONFIG_GLOBAL: "/dev/null",

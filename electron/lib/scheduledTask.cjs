@@ -31,7 +31,7 @@ const os = require("node:os");
 const path = require("node:path");
 
 const TASK_NAME = "Pitwall\\Scheduler";
-const FIRE_FLAG = "--braveli-scheduler-fire";
+const FIRE_FLAG = "--pitwall-scheduler-fire";
 
 /** launchd's weekday numbering, which is what the schedule store already speaks. */
 const WEEKDAY_ELEMENTS = [
@@ -118,7 +118,7 @@ ${triggers}
 
 /** Where the definition is staged before `schtasks` reads it back. */
 function taskXmlPath(directory = os.tmpdir()) {
-  return path.join(directory, "braveli-scheduler.xml");
+  return path.join(directory, "pitwall-scheduler.xml");
 }
 
 /**

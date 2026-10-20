@@ -23,7 +23,7 @@ try {
 
   await page.evaluate(() => {
     window.diffCalls = [];
-    window.braveli = {
+    window.pitwall = {
       branchChanges: async ({ branch }) => ({ ok: true, base: `base-${branch}`, files: [{ path: "shared.ts", status: "modified", additions: 1, deletions: 1 }] }),
       branchFileDiff: async ({ branch }) => {
         window.diffCalls.push(branch);
@@ -51,11 +51,11 @@ try {
   await page.evaluate(() => {
     window.changesetCalls = 0;
     window.patchCalls = 0;
-    window.braveli.getTaskChangeset = async () => {
+    window.pitwall.getTaskChangeset = async () => {
       if (++window.changesetCalls === 1) throw new Error("Temporary Git failure");
       return { ok: true, base: "base", files: [{ path: "file.ts", status: "modified", additions: 1, deletions: 1 }], additions: 1, deletions: 1 };
     };
-    window.braveli.getTaskFileDiff = async () => ++window.patchCalls === 1
+    window.pitwall.getTaskFileDiff = async () => ++window.patchCalls === 1
       ? { ok: false, error: "Temporary patch failure" }
       : { ok: true, diff: `@@ -1 +1 @@\n-old\n+VERSION-${window.patchCalls}` };
     window.reviewTest.render("TaskChangeset", { projectPath: "/tmp/test", branch: "a", baseBranch: "main" });
@@ -87,7 +87,7 @@ try {
       projectName: "admin",
       providerLabel: "Claude",
       server: { name: "atlassian", target: "https://mcp.atlassian.com/v2/mcp", transport: "http", status: "needs-auth" },
-      profile: { name: "atlassian", alias: "braveli-admin-atlassian", authenticatedAt: "2026-10-05T10:00:00Z" },
+      profile: { name: "atlassian", alias: "pitwall-admin-atlassian", authenticatedAt: "2026-10-05T10:00:00Z" },
       busy: true,
       notice: "",
       noticeTone: "neutral",
@@ -103,7 +103,7 @@ try {
   await signIn.waitFor();
   // Every fact is readable, not squeezed to nothing by another component's grid.
   const facts = await signIn.locator(".dk-facts dd").evaluateAll((items) => items.map((item) => ({ text: item.textContent, width: item.getBoundingClientRect().width })));
-  assert.deepEqual(facts.map((fact) => fact.text), ["https://mcp.atlassian.com/v2/mcp", "braveli-admin-atlassian", "Claude secure OAuth store"]);
+  assert.deepEqual(facts.map((fact) => fact.text), ["https://mcp.atlassian.com/v2/mcp", "pitwall-admin-atlassian", "Claude secure OAuth store"]);
   assert.ok(facts.every((fact) => fact.width > 80), `facts are wide enough to read: ${JSON.stringify(facts)}`);
   assert.match(await signIn.innerText(), /https:\/\/auth\.atlassian\.com\/authorize/);
   await signIn.getByRole("button", { name: "Open", exact: true }).click();
@@ -652,13 +652,13 @@ try {
   assert.equal(await dialog.getByRole("button", { name: "Complete with override" }).isDisabled(), true);
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.evaluate(() => {
-    window.braveli.runValidation = async () => ({ ok: true, result: { ok: true, ranAt: "2026-09-06T10:00:00Z", revision: "abc123abc123abc123", checks: [{ name: "tests", command: "npm test", ok: true, skipped: true, output: "", durationMs: 0 }] } });
+    window.pitwall.runValidation = async () => ({ ok: true, result: { ok: true, ranAt: "2026-09-06T10:00:00Z", revision: "abc123abc123abc123", checks: [{ name: "tests", command: "npm test", ok: true, skipped: true, output: "", durationMs: 0 }] } });
   });
   await page.getByRole("button", { name: "Run checks", exact: true }).first().click();
   await page.getByText("No checks ran", { exact: true }).waitFor();
   assert.equal(await page.getByText("0/0 checks pass").count(), 0);
   await page.evaluate(() => {
-    window.braveli.runValidation = async () => ({ ok: true, result: { ok: false, ranAt: "2026-09-06T10:01:00Z", revision: "abc123abc123abc123", checks: [{ name: "tests", command: "npm test", ok: false, skipped: false, output: "Expected total: 12; received: 11", durationMs: 10 }] } });
+    window.pitwall.runValidation = async () => ({ ok: true, result: { ok: false, ranAt: "2026-09-06T10:01:00Z", revision: "abc123abc123abc123", checks: [{ name: "tests", command: "npm test", ok: false, skipped: false, output: "Expected total: 12; received: 11", durationMs: 10 }] } });
   });
   await page.getByRole("button", { name: "Run checks again" }).first().click();
   await page.getByText("tests failing", { exact: true }).waitFor();

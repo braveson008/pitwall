@@ -7,18 +7,18 @@ import { fileURLToPath } from "node:url";
 import { _electron as electron } from "playwright";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), "braveli-crash-recovery-"));
+const tempRoot = await mkdtemp(path.join(os.tmpdir(), "pitwall-crash-recovery-"));
 const userDataPath = path.join(tempRoot, "user-data");
 const projectPath = path.join(tempRoot, "project");
-const screenshotPath = path.join(tempRoot, "braveli-restored-transcript.png");
-const projectActionScreenshotPath = path.join(tempRoot, "braveli-project-remove.png");
+const screenshotPath = path.join(tempRoot, "pitwall-restored-transcript.png");
+const projectActionScreenshotPath = path.join(tempRoot, "pitwall-project-remove.png");
 await mkdir(projectPath, { recursive: true });
 await writeFile(path.join(projectPath, "README.md"), "# Recovery test\n");
 
 const env = {
   ...process.env,
-  BRAVELI_E2E: "1",
-  BRAVELI_USER_DATA_DIR: userDataPath,
+  PITWALL_E2E: "1",
+  PITWALL_USER_DATA_DIR: userDataPath,
   ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
 };
 
@@ -64,11 +64,11 @@ try {
       timeline: [],
     };
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-active-project", project.id);
-    localStorage.setItem("braveli-selected-session", sessions[0].id);
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-custom-agents", JSON.stringify([{
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-active-project", project.id);
+    localStorage.setItem("pitwall-selected-session", sessions[0].id);
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-custom-agents", JSON.stringify([{
       id: "recovery-shell",
       name: "Recovery Shell",
       command: "/bin/zsh",
@@ -77,7 +77,7 @@ try {
       models: [],
       createdAt: timestamp,
     }]));
-    localStorage.setItem("braveli-workspace-state", JSON.stringify({
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify({
       version: 1,
       projects: [{
         id: project.id,
@@ -108,7 +108,7 @@ try {
       councilRuns: [],
       compareRuns: [],
     }));
-    localStorage.setItem("braveli-terminal-history", JSON.stringify({
+    localStorage.setItem("pitwall-terminal-history", JSON.stringify({
       version: 1,
       sessions: {
         "recovery-a": [
@@ -123,7 +123,7 @@ try {
     await session.defaultSession.flushStorageData();
   });
   const started = await firstPage.evaluate(async (cwd) => {
-    const terminals = await Promise.all(["recovery-a", "recovery-b"].map((sessionId) => window.braveli.startTerminal({
+    const terminals = await Promise.all(["recovery-a", "recovery-b"].map((sessionId) => window.pitwall.startTerminal({
       projectId: "recovery-project",
       projectPath: cwd,
       sessionId,
@@ -148,7 +148,7 @@ try {
   const secondPage = await secondApp.firstWindow({ timeout: 20_000 });
   await secondPage.waitForURL(/index\.html$/);
   await secondPage.waitForLoadState("domcontentloaded");
-  const recovery = await secondPage.evaluate(() => window.braveli.getRuntimeRecovery());
+  const recovery = await secondPage.evaluate(() => window.pitwall.getRuntimeRecovery());
   assert.equal(recovery.recovered, true);
   assert.deepEqual(recovery.terminals.map((item) => item.sessionId).sort(), ["recovery-a", "recovery-b"]);
   await secondPage.getByText("Saved sessions recovered", { exact: true }).waitFor({ timeout: 15_000 });
@@ -178,12 +178,12 @@ try {
   await sidebar.getByRole("option", { name: "Remove “Recovery Project” from Pitwall…" }).waitFor({ state: "visible" });
   await secondPage.screenshot({ path: projectActionScreenshotPath, fullPage: false });
   console.log(`  Project action screenshot: ${projectActionScreenshotPath}`);
-  await secondPage.evaluate(() => window.braveli.acknowledgeRuntimeRecovery({ sessionIds: ["recovery-a", "recovery-b"] }));
+  await secondPage.evaluate(() => window.pitwall.acknowledgeRuntimeRecovery({ sessionIds: ["recovery-a", "recovery-b"] }));
   console.log("  OK  hard-crash recovery relaunches CLIs and exposes the saved transcript");
 } finally {
   if (firstApp) await firstApp.close().catch(() => undefined);
   if (secondApp) await secondApp.close().catch(() => undefined);
-  if (process.env.BRAVELI_KEEP_SMOKE_ARTIFACTS !== "1") {
+  if (process.env.PITWALL_KEEP_SMOKE_ARTIFACTS !== "1") {
     await rm(tempRoot, { recursive: true, force: true });
   }
 }

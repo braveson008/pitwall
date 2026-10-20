@@ -23,6 +23,6 @@ describe("terminal palettes for the Pitlane themes", () => {
   });
 
   it("the Pitwall theme keeps its dark terminal", () => {
-    expect(terminalThemeForColorTheme("braveli").background).toBe("#0d1016");
+    expect(terminalThemeForColorTheme("pitwall").background).toBe("#0d1016");
   });
 });

@@ -19,7 +19,7 @@ import { goTo } from "./helpers/goTo.mjs";
  */
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), "braveli-relay-"));
+const tempRoot = await mkdtemp(path.join(os.tmpdir(), "pitwall-relay-"));
 const projectPath = path.join(tempRoot, "relay-project");
 const userDataPath = path.join(tempRoot, "user-data");
 const fakeBin = path.join(tempRoot, "bin");
@@ -212,8 +212,8 @@ const app = await electron.launch({
     ...process.env,
     HOME: fakeHome, // keep project:trust away from the real ~/.claude.json
     PATH: `${fakeBin}${path.delimiter}${hostPath}`,
-    BRAVELI_E2E: "1",
-    BRAVELI_USER_DATA_DIR: userDataPath,
+    PITWALL_E2E: "1",
+    PITWALL_USER_DATA_DIR: userDataPath,
     ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
   },
   timeout: 30_000,
@@ -242,8 +242,8 @@ try {
       localStorage.clear();
       localStorage.setItem("agent-studio-projects", JSON.stringify([projectValue]));
       localStorage.setItem("agent-studio-active-project", projectValue.id);
-      localStorage.setItem("braveli-workspace-state", JSON.stringify(workspaceValue));
-      localStorage.setItem("braveli-onboarded", "yes");
+      localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspaceValue));
+      localStorage.setItem("pitwall-onboarded", "yes");
     },
     { projectValue: project, workspaceValue: workspace },
   );
@@ -356,9 +356,9 @@ try {
   await page.locator(".dk-council-grid .dk-council-pane").first().waitFor();
   const ptySizes = await waitFor(async () => {
     const sizes = await page.evaluate(() => {
-      const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       const ids = (state.councilRuns?.[0]?.responses || []).map((response) => response.sessionId);
-      return Promise.all(ids.map((id) => window.braveli.getTerminalSize(id)));
+      return Promise.all(ids.map((id) => window.pitwall.getTerminalSize(id)));
     });
     return sizes.length && sizes.every((size) => size?.ok && size.cols) ? sizes : null;
   });
@@ -374,7 +374,7 @@ try {
   // The relay runs inside the task's worktree; ask the app where that is.
   const relayPath = await waitFor(async () =>
     page.evaluate(() => {
-      const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       const run = state.councilRuns?.[0];
       if (!run) return null;
       const session = state.sessions?.find((item) => item.id === run.responses?.[0]?.sessionId);
@@ -386,10 +386,10 @@ try {
   // A panel member writes its own suffixed file; a solo turn writes the plain one.
   const writeStage = (turn, body, memberId) =>
     page.evaluate(
-      ({ dir, file, content }) => window.braveli.writeProjectFile({ projectPath: dir, filePath: file, content }),
+      ({ dir, file, content }) => window.pitwall.writeProjectFile({ projectPath: dir, filePath: file, content }),
       {
         dir: stageDir,
-        file: `.braveli/council/${relayPath.runId}/stage-${turn}${memberId ? `-${memberId}` : ""}.md`,
+        file: `.pitwall/council/${relayPath.runId}/stage-${turn}${memberId ? `-${memberId}` : ""}.md`,
         content: body,
       },
     );
@@ -429,7 +429,7 @@ try {
   // Real code landing in the worktree must show up as evidence on the next hop.
   await page.evaluate(
     ({ dir }) =>
-      window.braveli.writeProjectFile({
+      window.pitwall.writeProjectFile({
         projectPath: dir,
         filePath: "src/rejoin.ts",
         content: "export const rejoin = () => true;\n",
@@ -518,14 +518,14 @@ try {
   await page.locator(".dk-council-config input[type=checkbox]").first().uncheck();
   await waitFor(async () =>
     page.evaluate(() => {
-      const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       return state.councilRuns?.[0]?.relay?.conductor?.enabled === false ? true : null;
     }),
   );
   await page.locator(".dk-council-config input[type=checkbox]").first().check();
   await waitFor(async () =>
     page.evaluate(() => {
-      const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+      const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
       return state.councilRuns?.[0]?.relay?.conductor?.enabled === true ? true : null;
     }),
   );
@@ -552,7 +552,7 @@ try {
   log("half-answered panel correctly did not advance");
 
   const savedPanel = await waitFor(() => page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+    const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
     return state.councilRuns?.[0]?.relay?.currentPanelMemberIds;
   }));
   assert.deepEqual(savedPanel, PANEL, "the entire panel must survive persistence");
@@ -580,7 +580,7 @@ try {
   // failing suite must be stated to the conductor as a blocker.
   await page.evaluate(
     ({ dir }) =>
-      window.braveli.writeProjectFile({
+      window.pitwall.writeProjectFile({
         projectPath: dir,
         filePath: "src/broken.ts",
         content: "export const broken = 1;\n",
@@ -633,7 +633,7 @@ try {
   // that exact verification stage, rather than rotate into an implementation
   // turn whose answer would still be parsed as a verification verdict.
   const pendingVerification = await waitFor(() => page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+    const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
     const relay = state.councilRuns?.[0]?.relay;
     const member = relay?.members.find((item) => item.memberId === relay.currentMemberId);
     const session = state.sessions?.find((item) => item.id === member?.sessionId);
@@ -653,7 +653,7 @@ try {
   assert.match(resumedVerificationPrompt, /stage-9\.md/, "the resumed verifier must write the original pending stage");
   assert.doesNotMatch(resumedVerificationPrompt, /stage-10\.md/, "resuming verification must not advance the turn");
   const resumedVerification = await page.evaluate(({ sessionId }) => {
-    const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+    const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
     return { relay: state.councilRuns?.[0]?.relay, session: state.sessions?.find((item) => item.id === sessionId) };
   }, pendingVerification);
   assert.equal(resumedVerification.relay.currentMemberId, pendingVerification.memberId);
@@ -712,7 +712,7 @@ try {
   // Everything above happened in one window; the point of persisting the relay
   // is that the conversation is still there after the process that held it dies.
   const storedRelay = await page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("braveli-workspace-state") || "{}");
+    const state = JSON.parse(localStorage.getItem("pitwall-workspace-state") || "{}");
     const run = state.councilRuns?.[0];
     return run?.relay ? { turn: run.relay.turn, messages: run.relay.messages?.length, members: run.relay.members?.length } : null;
   });
@@ -736,10 +736,10 @@ try {
   );
   log("council restored after a restart, with its thread intact and resumable");
 
-  process.stdout.write("\nBraveli council relay smoke test passed.\n");
+  process.stdout.write("\nPitwall council relay smoke test passed.\n");
 } finally {
   await app.close();
-  if (process.env.BRAVELI_KEEP_SMOKE_ARTIFACTS !== "1") {
+  if (process.env.PITWALL_KEEP_SMOKE_ARTIFACTS !== "1") {
     await rm(tempRoot, { recursive: true, force: true });
   }
 }

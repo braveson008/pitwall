@@ -1,5 +1,5 @@
 import type { RiskLevel } from "../domain/contracts";
-import type { BraveliProviderId } from "../domain/types";
+import type { PitwallProviderId } from "../domain/types";
 import { firstTimeRate, recordFor, type ModelRecord } from "./modelHistory";
 
 /**
@@ -27,7 +27,7 @@ export type ImplementerPolicy =
 
 /** One model Pitwall could hand an implementation to. */
 export interface Candidate {
-  provider: BraveliProviderId | "";
+  provider: PitwallProviderId | "";
   model: string;
   /** Rough cost per implementation, relative — 0 for anything local. */
   relativeCost: number;

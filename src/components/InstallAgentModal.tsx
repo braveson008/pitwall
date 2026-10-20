@@ -42,7 +42,7 @@ export function InstallAgentModal({
     if (!provider) { setPlan(null); setStarted(false); setResult(null); return; }
     let live = true;
     void (async () => {
-      const next = await window.braveli?.planAgentInstall?.({
+      const next = await window.pitwall?.planAgentInstall?.({
         installCommand: provider.installCommand ?? "",
         installDocs: provider.installDocs ?? "",
       });
@@ -54,7 +54,7 @@ export function InstallAgentModal({
   /** Handed to the terminal so it can subscribe for itself. */
   const subscribe = useCallback(
     (handler: (chunk: string) => void) =>
-      window.braveli?.onAgentInstallOutput?.((data) => {
+      window.pitwall?.onAgentInstallOutput?.((data) => {
         if (data.providerId !== provider?.id) return;
         handler(data.chunk);
       }),
@@ -68,7 +68,7 @@ export function InstallAgentModal({
     setResult(null);
     setStarted(true);
     try {
-      const outcome = await window.braveli?.installAgent?.({
+      const outcome = await window.pitwall?.installAgent?.({
         providerId: provider.id,
         installCommand: provider.installCommand ?? "",
         installDocs: provider.installDocs ?? "",

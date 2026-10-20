@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AddMcpInput } from "../components/AddMcpModal";
 import { getProviderById } from "../domain/providers";
-import type { BraveliProviderId } from "../domain/types";
+import type { PitwallProviderId } from "../domain/types";
 import { splitArgs, splitLines } from "../lib/format";
 import { actionableError } from "../lib/actionableErrors";
 
-function providerLabel(id: BraveliProviderId) {
+function providerLabel(id: PitwallProviderId) {
   return getProviderById(id)?.displayName ?? String(id);
 }
 
@@ -23,15 +23,15 @@ export function useMcp({
   projectId: string;
   onActivity: (message: string) => void;
 }) {
-  const [mcpProvider, setMcpProvider] = useState<BraveliProviderId>("claude");
+  const [mcpProvider, setMcpProvider] = useState<PitwallProviderId>("claude");
   // Cache keyed by project so switching projects keeps each one's servers.
-  const [mcpCache, setMcpCache] = useState<Record<string, Partial<Record<BraveliProviderId, McpListResult>>>>({});
+  const [mcpCache, setMcpCache] = useState<Record<string, Partial<Record<PitwallProviderId, McpListResult>>>>({});
   const [mcpLoading, setMcpLoading] = useState(false);
   const [mcpBusy, setMcpBusy] = useState("");
   const [mcpAuthBusy, setMcpAuthBusy] = useState("");
   /** The sign-in page the running sign-in printed, to open in any browser. */
   const [mcpAuthUrl, setMcpAuthUrl] = useState("");
-  useEffect(() => window.braveli?.onMcpAuthUrl?.((event) => {
+  useEffect(() => window.pitwall?.onMcpAuthUrl?.((event) => {
     if (event.name === mcpAuthBusyRef.current) setMcpAuthUrl(event.url);
   }), []);
   const mcpAuthBusyRef = useRef("");
@@ -47,11 +47,11 @@ export function useMcp({
   const mcpByProvider = mcpCache[projectId] ?? {};
 
   const refreshMcp = useCallback(
-    async (provider: BraveliProviderId) => {
-      if (!projectPath || !window.braveli?.listMcpServers) return;
+    async (provider: PitwallProviderId) => {
+      if (!projectPath || !window.pitwall?.listMcpServers) return;
       setMcpLoading(true);
       try {
-        const result = await window.braveli.listMcpServers({ provider, projectId, projectPath });
+        const result = await window.pitwall.listMcpServers({ provider, projectId, projectPath });
         setMcpCache((current) => ({ ...current, [projectId]: { ...(current[projectId] ?? {}), [provider]: result } }));
       } catch (error) {
         setMcpCache((current) => ({
@@ -84,12 +84,12 @@ export function useMcp({
   }, [projectPath, projectId, mcpProvider, refreshMcp]);
 
   async function addMcp(input: AddMcpInput): Promise<{ ok: boolean; message?: string }> {
-    if (!projectPath || !window.braveli?.addMcpServer) {
+    if (!projectPath || !window.pitwall?.addMcpServer) {
       return { ok: false, message: "Open a project first." };
     }
     const name = input.name.trim();
     try {
-      const result = await window.braveli.addMcpServer({
+      const result = await window.pitwall.addMcpServer({
         provider: mcpProvider,
         projectPath,
         projectId,
@@ -125,11 +125,11 @@ export function useMcp({
   }
 
   async function removeMcp(server: McpServerInfo) {
-    if (!projectPath || !window.braveli?.removeMcpServer) return;
+    if (!projectPath || !window.pitwall?.removeMcpServer) return;
     setMcpBusy(server.name);
     clearMcpNotice();
     try {
-      const result = await window.braveli.removeMcpServer({
+      const result = await window.pitwall.removeMcpServer({
         provider: mcpProvider,
         projectPath,
         projectId,
@@ -153,7 +153,7 @@ export function useMcp({
   }
 
   async function connectMcpAuth(server: McpServerInfo) {
-    if (!projectPath || !window.braveli?.connectMcpAuth) {
+    if (!projectPath || !window.pitwall?.connectMcpAuth) {
       return { ok: false, message: "Open a project first." };
     }
     setMcpAuthBusy(server.name);
@@ -161,7 +161,7 @@ export function useMcp({
     setMcpAuthUrl("");
     clearMcpNotice();
     try {
-      const result = await window.braveli.connectMcpAuth({
+      const result = await window.pitwall.connectMcpAuth({
         projectId,
         projectPath,
         provider: mcpProvider,
@@ -197,15 +197,15 @@ export function useMcp({
   /** Stops a sign-in that is waiting on the browser. */
   async function cancelMcpAuth(server: McpServerInfo) {
     if (!projectPath) return;
-    await window.braveli?.cancelMcpAuth?.({ projectPath, provider: mcpProvider, name: server.name });
+    await window.pitwall?.cancelMcpAuth?.({ projectPath, provider: mcpProvider, name: server.name });
   }
 
   async function forgetMcpAuth(server: McpServerInfo) {
-    if (!projectPath || !window.braveli?.forgetMcpAuth) return { ok: false, message: "Open a project first." };
+    if (!projectPath || !window.pitwall?.forgetMcpAuth) return { ok: false, message: "Open a project first." };
     setMcpAuthBusy(server.name);
     clearMcpNotice();
     try {
-      const result = await window.braveli.forgetMcpAuth({
+      const result = await window.pitwall.forgetMcpAuth({
         projectId,
         projectPath,
         provider: mcpProvider,

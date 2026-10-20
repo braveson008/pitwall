@@ -1,5 +1,9 @@
-export const DEV_PREVIEW_MARKER = "BRAVELI_DEV_PREVIEW";
-export const MOBILE_PREVIEW_MARKER = "BRAVELI_MOBILE_PREVIEW";
+import { markerPattern } from "./legacyNames";
+
+export const DEV_PREVIEW_MARKER = "PITWALL_DEV_PREVIEW";
+export const MOBILE_PREVIEW_MARKER = "PITWALL_MOBILE_PREVIEW";
+export const DEV_PREVIEW_PATTERN = new RegExp(markerPattern(DEV_PREVIEW_MARKER));
+export const MOBILE_PREVIEW_PATTERN = new RegExp(markerPattern(MOBILE_PREVIEW_MARKER));
 
 export interface DevPreview {
   url: string;
@@ -24,9 +28,9 @@ export function findLatestDevPreview(lines: string[]): DevPreview | null {
   const marked = output
     .split(/\r?\n/)
     .flatMap((line) => {
-      const target = line.includes(MOBILE_PREVIEW_MARKER)
+      const target = MOBILE_PREVIEW_PATTERN.test(line)
         ? "mobile" as const
-        : line.includes(DEV_PREVIEW_MARKER)
+        : DEV_PREVIEW_PATTERN.test(line)
           ? "web" as const
           : null;
       if (!target) return [];

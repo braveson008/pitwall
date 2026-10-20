@@ -58,7 +58,6 @@ interface TaskSidebarProps {
   settingsOpen: boolean;
   agentsNeedingSetup: number;
   /** One quiet line: the plan and what is left, or the free plan. */
-  statusLine: string;
   theme: "light" | "dark";
   updateState: UpdateState | null;
   onProjectFilter: (projectId: string) => void;
@@ -77,7 +76,6 @@ interface TaskSidebarProps {
   onOpenExtensions: () => void;
   onOpenSettings: () => void;
   onOpenAgents: () => void;
-  onOpenPlans: () => void;
   onToggleTheme: () => void;
 }
 
@@ -95,7 +93,6 @@ export function TaskSidebar({
   extensionsOpen,
   settingsOpen,
   agentsNeedingSetup,
-  statusLine,
   theme,
   updateState,
   onProjectFilter,
@@ -113,7 +110,6 @@ export function TaskSidebar({
   onOpenExtensions,
   onOpenSettings,
   onOpenAgents,
-  onOpenPlans,
   onToggleTheme,
 }: TaskSidebarProps) {
   const [collapsed, setCollapsed] = useState<string[]>(readCollapsed);
@@ -339,7 +335,6 @@ export function TaskSidebar({
             {agentsNeedingSetup} {agentsNeedingSetup === 1 ? "agent needs" : "agents need"} setup
           </button>
         ) : null}
-        <button type="button" className="dk-status-item dk-tsb-plan" onClick={onOpenPlans}>{statusLine}</button>
         <VersionFooter updateState={updateState} />
         <button
           type="button"

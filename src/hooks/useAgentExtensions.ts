@@ -33,10 +33,10 @@ export function useAgentExtensions(
   const [busyServer, setBusyServer] = useState("");
 
   const refresh = useCallback(async (which: string) => {
-    if (!window.braveli?.listAgentExtensions) return;
+    if (!window.pitwall?.listAgentExtensions) return;
     setLoading(true);
     try {
-      const result = await window.braveli.listAgentExtensions({ provider: which });
+      const result = await window.pitwall.listAgentExtensions({ provider: which });
       setCache((current) => ({ ...current, [which]: result }));
     } catch (error) {
       setCache((current) => ({
@@ -73,7 +73,7 @@ export function useAgentExtensions(
    * a keystroke.
    */
   useEffect(() => {
-    const search = window.braveli?.searchMcpRegistry;
+    const search = window.pitwall?.searchMcpRegistry;
     if (tab !== "mcp" || !search) return;
     let cancelled = false;
     // Set before the debounce, not after it: the point of the indicator is to
@@ -103,11 +103,11 @@ export function useAgentExtensions(
   /** Installs one registry server into the agent currently shown. */
   const installServer = useCallback(
     async (entry: RegistryMcpServer) => {
-      if (!window.braveli?.installMcpServer) return;
+      if (!window.pitwall?.installMcpServer) return;
       setBusyServer(entry.id);
       setNotice(null);
       try {
-        const result = await window.braveli.installMcpServer({ provider, entry });
+        const result = await window.pitwall.installMcpServer({ provider, entry });
         if (result?.ok) track?.("mcp_server_added", { provider });
         setNotice(
           result?.ok
@@ -128,11 +128,11 @@ export function useAgentExtensions(
 
   const change = useCallback(
     async (pluginId: string, action: "install" | "remove") => {
-      if (!window.braveli?.changeAgentExtension) return;
+      if (!window.pitwall?.changeAgentExtension) return;
       setBusyPlugin(pluginId);
       setNotice(null);
       try {
-        const result = await window.braveli.changeAgentExtension({ provider, pluginId, action });
+        const result = await window.pitwall.changeAgentExtension({ provider, pluginId, action });
         if (result?.ok) {
           if (action === "install") track?.("extension_installed", { kind: "plugin", provider });
           setNotice({

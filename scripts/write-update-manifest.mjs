@@ -19,7 +19,7 @@ const metadata = await stat(artifactPath);
 const sha512 = createHash("sha512").update(artifact).digest("base64");
 const manifest = [
   `version: ${packageJson.version}`,
-  `braveliSigned: ${!unsigned}`,
+  `pitwallSigned: ${!unsigned}`,
   "files:",
   `  - url: ${artifactUrl}`,
   `    sha512: ${sha512}`,

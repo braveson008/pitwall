@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import { _electron as electron } from "playwright";
 
 const root = process.cwd();
-const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "braveli-settings-"));
+const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-settings-"));
 const fakeHome = path.join(temp, "home");
 const fakeBin = path.join(temp, "bin");
 await mkdir(fakeHome, { recursive: true });
@@ -45,7 +45,7 @@ const workspace = { version: 1, projects: [{ id: "alpha", name: "alpha", path: d
 const app = await electron.launch({
   args: [root],
   cwd: root,
-  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
 });
 let passed = false;
 try {
@@ -57,9 +57,9 @@ try {
   await page.waitForTimeout(1000);
   await page.evaluate(({ projectRecord, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([projectRecord]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([projectRecord]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { projectRecord, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.locator(".dk-statusbar").getByRole("button", { name: /^Automations/ }).waitFor({ timeout: 15000 });

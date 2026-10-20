@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import type { BraveliTask } from "../domain/types";
+import type { PitwallTask } from "../domain/types";
 import type { ValidationResult } from "../domain/contracts";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { validationSummary } from "../lib/validationSummary";
 import { ValidationEvidence } from "./ValidationEvidence";
 
 export function CompleteTaskModal({ task, result, running, onRun, onClose, onConfirm }: {
-  task: BraveliTask;
+  task: PitwallTask;
   result?: ValidationResult;
   running: boolean;
   onRun: () => void;

@@ -5,7 +5,7 @@ describe("findLatestDevPreviewUrl", () => {
   it("prefers the structured preview handoff over incidental local URLs", () => {
     expect(findLatestDevPreviewUrl([
       "Tests used http://localhost:4173",
-      "BRAVELI_DEV_PREVIEW http://localhost:8090/task",
+      "PITWALL_DEV_PREVIEW http://localhost:8090/task",
       "Coverage report: http://127.0.0.1:9000",
     ])).toBe("http://localhost:8090/task");
   });
@@ -19,13 +19,13 @@ describe("findLatestDevPreviewUrl", () => {
 
   it("accepts private-network Expo previews", () => {
     expect(findLatestDevPreview([
-      "BRAVELI_MOBILE_PREVIEW exp://192.168.1.24:8081/--/task",
+      "PITWALL_MOBILE_PREVIEW exp://192.168.1.24:8081/--/task",
     ])).toEqual({ url: "exp://192.168.1.24:8081/--/task", target: "mobile" });
   });
 
   it("does not return public or unsafe URLs", () => {
     expect(findLatestDevPreviewUrl([
-      "BRAVELI_DEV_PREVIEW https://example.com/task",
+      "PITWALL_DEV_PREVIEW https://example.com/task",
       "file:///tmp/project",
       "javascript:alert(1)",
     ])).toBe("");

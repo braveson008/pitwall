@@ -12,7 +12,7 @@ describe("task runtime allocation", () => {
     expect(same).toEqual(first);
     expect(second.previewPort).not.toBe(first.previewPort);
     expect(first.mobileDeviceName).toMatch(/^Pitwall WEB-101-[a-f0-9]{12}$/);
-    expect(second.mobileRuntimeId).toMatch(/^braveli-web-102-[a-f0-9]{12}$/);
+    expect(second.mobileRuntimeId).toMatch(/^pitwall-web-102-[a-f0-9]{12}$/);
   });
 
   it("skips ports that another process is already using", async () => {
@@ -92,12 +92,12 @@ describe("task runtime allocation", () => {
   });
 
   it("provides the common web and mobile bundler environment", () => {
-    expect(taskRuntimeEnvironment({ previewPort: 8312, mobileRuntimeId: "braveli-web-1", mobileDeviceName: "Pitwall WEB-1" })).toMatchObject({
-      BRAVELI_PREVIEW_PORT: "8312",
+    expect(taskRuntimeEnvironment({ previewPort: 8312, mobileRuntimeId: "pitwall-web-1", mobileDeviceName: "Pitwall WEB-1" })).toMatchObject({
+      PITWALL_PREVIEW_PORT: "8312",
       PORT: "8312",
       RCT_METRO_PORT: "8312",
       EXPO_PACKAGER_PORT: "8312",
-      BRAVELI_MOBILE_DEVICE_NAME: "Pitwall WEB-1",
+      PITWALL_MOBILE_DEVICE_NAME: "Pitwall WEB-1",
     });
     expect(runtimeSlug(" [WEB 1] Login / Fix ")).toBe("web-1-login-fix");
   });

@@ -13,9 +13,18 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
 const { execFile } = require("node:child_process");
+const { LEGACY_COUNCIL_DIR } = require("./legacyNames.cjs");
 
 const MAX_FILES = 50_000;
 const MAX_READ_BYTES = 2 * 1024 * 1024;
+/** Pitwall's council and contract files in a worktree, under the current name and the one older versions wrote. */
+const OWN_DIRS = [".pitwall", LEGACY_COUNCIL_DIR];
+const OWN_DIR_EXCLUDES = OWN_DIRS.map((dir) => `:(exclude)${dir}`);
+
+function isOwnArtefactPath(filePath) {
+  return OWN_DIRS.some((dir) => filePath === dir || String(filePath).startsWith(`${dir}/`));
+}
+
 const SKIP_DIRS = new Set([".git", "node_modules", ".next", "dist", "build", ".turbo", ".cache", "coverage", ".venv", "__pycache__"]);
 
 function hashOf(buffer) {
@@ -122,7 +131,7 @@ async function writeWorktreeFile(root, relative, content, expectedHash) {
     return { ok: false, conflict: true, error: "The file changed on disk since you opened it" };
   }
   const next = Buffer.from(String(content), "utf8");
-  const temp = path.join(path.dirname(target), `.${path.basename(target)}.braveli-${process.pid}-${Date.now()}`);
+  const temp = path.join(path.dirname(target), `.${path.basename(target)}.pitwall-${process.pid}-${Date.now()}`);
   try {
     await fs.promises.writeFile(temp, next, { mode });
     await fs.promises.rename(temp, target);
@@ -160,11 +169,11 @@ function parseStatusZ(stdout) {
     const filePath = entry.slice(3);
     // A rename names its old path in the next field.
     if (code.includes("R") || code.includes("C")) index += 1;
-    if (/^\.braveli(?:\/|$)/.test(filePath)) continue;
+    if (isOwnArtefactPath(filePath)) continue;
     const kind = code === "??" ? "untracked" : code.includes("D") ? "deleted" : code.includes("R") ? "renamed" : code.includes("A") ? "added" : "modified";
     changes.push({ path: filePath, kind });
   }
   return changes;
 }
 
-module.exports = { listWorktreeFiles, parseStatusZ, readWorktreeFile, resolveInside, worktreeChanges, writeWorktreeFile };
+module.exports = { OWN_DIRS, OWN_DIR_EXCLUDES, isOwnArtefactPath, listWorktreeFiles, parseStatusZ, readWorktreeFile, resolveInside, worktreeChanges, writeWorktreeFile };

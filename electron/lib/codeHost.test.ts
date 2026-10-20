@@ -148,7 +148,7 @@ describe("newRequestUrl", () => {
 describe("tokenEnvironment", () => {
   it("gives glab its token and git a GitLab-shaped credential", () => {
     const environment = tokenEnvironment({ kind: "gitlab", host: "gitlab.example.com", token: "glpat-secret" });
-    expect(environment).toMatchObject({ GITLAB_TOKEN: "glpat-secret", GITLAB_HOST: "gitlab.example.com", BRAVELI_GIT_TOKEN: "glpat-secret" });
+    expect(environment).toMatchObject({ GITLAB_TOKEN: "glpat-secret", GITLAB_HOST: "gitlab.example.com", PITWALL_GIT_TOKEN: "glpat-secret" });
     expect(environment.GH_TOKEN).toBeUndefined();
     expect(environment.GIT_CONFIG_KEY_1).toBe("credential.https://gitlab.example.com.helper");
     expect(environment.GIT_CONFIG_VALUE_1).toContain("username=oauth2");

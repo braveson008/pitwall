@@ -15,9 +15,9 @@
 /** Dropped, in this order, to make room for something that matters more. */
 const EVICTABLE = [
   // Pure convenience. Costs the most and is worth the least.
-  "braveli-terminal-history",
+  "pitwall-terminal-history",
   // Rediscovered the next time a dev server is noticed.
-  "braveli-preview-urls",
+  "pitwall-preview-urls",
 ];
 
 function isQuotaError(error: unknown): boolean {

@@ -135,7 +135,7 @@ export function AgentMarketplace({
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const result = await window.braveli?.catalogueLive?.({
+      const result = await window.pitwall?.catalogueLive?.({
         entries: agentCatalogue.map((entry) => ({
           id: entry.id,
           installCommand: entry.installCommand,

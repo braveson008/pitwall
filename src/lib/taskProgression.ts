@@ -1,4 +1,4 @@
-import type { BraveliSessionStatus, BraveliTaskStatus } from "../domain/types";
+import type { PitwallSessionStatus, PitwallTaskStatus } from "../domain/types";
 
 /**
  * When a finished agent means the task is finished.
@@ -16,11 +16,11 @@ import type { BraveliSessionStatus, BraveliTaskStatus } from "../domain/types";
  */
 
 /** Statuses where a session may still do more work on its task. */
-const STILL_WORKING = new Set<BraveliSessionStatus>(["starting", "running", "waiting"]);
+const STILL_WORKING = new Set<PitwallSessionStatus>(["starting", "running", "waiting"]);
 
 export function shouldMoveToReview(
-  task: { id: string; status: BraveliTaskStatus },
-  sessions: readonly { id: string; taskId: string; status: BraveliSessionStatus }[],
+  task: { id: string; status: PitwallTaskStatus },
+  sessions: readonly { id: string; taskId: string; status: PitwallSessionStatus }[],
   finishedSessionId: string,
 ): boolean {
   // Only work that was actually underway. A task already in Review, completed,

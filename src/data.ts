@@ -36,8 +36,6 @@ export interface AgentSession {
    * started in, or the relay quietly stops on the one pane that reverted.
    */
   autoApprove?: boolean;
-  /** Paid from the person's Pitwall credits rather than their own CLI login; kept so a restart cannot quietly switch it. */
-  billing?: "credits";
   task: string;
   progress: number;
   tokens: string;

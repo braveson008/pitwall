@@ -16,13 +16,13 @@ import type { AttemptOutcome } from "../lib/modelHistory";
  * answered, and gets "No record here yet" forever.
  */
 
-const RUNS_KEY = "braveli-task-runs";
-const OUTCOMES_KEY = "braveli-model-outcomes";
+const RUNS_KEY = "pitwall-task-runs";
+const OUTCOMES_KEY = "pitwall-model-outcomes";
 
 /**
  * How many settled runs are kept.
  *
- * The transcripts and contracts live in the repository under `.braveli`; this
+ * The transcripts and contracts live in the repository under `.pitwall`; this
  * is the index over them, and an index that grows without bound in local
  * storage eventually costs more than it explains.
  */

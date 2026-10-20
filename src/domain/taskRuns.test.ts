@@ -66,7 +66,7 @@ describe("storing runs", () => {
   });
 
   it("ignores entries that are not runs", () => {
-    window.localStorage.setItem("braveli-task-runs", JSON.stringify([{ nonsense: true }, run()]));
+    window.localStorage.setItem("pitwall-task-runs", JSON.stringify([{ nonsense: true }, run()]));
     expect(readTaskRuns()).toHaveLength(1);
   });
 

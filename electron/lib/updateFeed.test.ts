@@ -5,7 +5,7 @@ const { feedFromConfig, updaterYaml } = require("./updateFeed.cjs");
 describe("update feed", () => {
   it("reads a generic feed, and an environment override wins", () => {
     expect(feedFromConfig({ enabled: true, url: "https://downloads.example/pitwall" }, {})).toEqual({ provider: "generic", url: "https://downloads.example/pitwall" });
-    expect(feedFromConfig({ enabled: true, provider: "github", owner: "o", repo: "r" }, { BRAVELI_UPDATE_URL: "http://127.0.0.1:9/" })).toEqual({ provider: "generic", url: "http://127.0.0.1:9/" });
+    expect(feedFromConfig({ enabled: true, provider: "github", owner: "o", repo: "r" }, { PITWALL_UPDATE_URL: "http://127.0.0.1:9/" })).toEqual({ provider: "generic", url: "http://127.0.0.1:9/" });
   });
 
   it("reads a GitHub releases feed", () => {

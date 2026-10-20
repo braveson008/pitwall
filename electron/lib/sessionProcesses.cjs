@@ -9,7 +9,7 @@
  * no tty, group leader gone.
  *
  * Their ancestry is lost but their environment is not: each still carried the
- * BRAVELI_SESSION_ID its PTY was given. That marker selects a session's
+ * PITWALL_SESSION_ID its PTY was given. That marker selects a session's
  * processes, and only together with a working directory inside the session's
  * workspace — a Claude daemon started from a session carries the marker too,
  * is shared, and runs from the home directory.
@@ -19,8 +19,11 @@ const { execFile } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const { LEGACY_SESSION_ENV } = require("./legacyNames.cjs");
 
-const SESSION_MARKER = /(?:^|\s)BRAVELI_SESSION_ID=(\S+)/;
+// Processes left by sessions of older versions carry the marker under its old name.
+const SESSION_ENVS = ["PITWALL_SESSION_ID", LEGACY_SESSION_ENV];
+const SESSION_MARKER = new RegExp(`(?:^|\\s)(?:${SESSION_ENVS.join("|")})=(\\S+)`);
 
 function run(file, args) {
   return new Promise((resolve) => {
@@ -106,10 +109,10 @@ async function listMarkedProcessesLinux() {
     if (!/^\d+$/.test(entry)) continue;
     try {
       const environment = (await fs.promises.readFile(`/proc/${entry}/environ`, "utf8")).split("\0");
-      const marker = environment.find((item) => item.startsWith("BRAVELI_SESSION_ID="));
+      const marker = environment.find((item) => SESSION_ENVS.some((name) => item.startsWith(`${name}=`)));
       if (!marker) continue;
       const cwd = await fs.promises.readlink(`/proc/${entry}/cwd`);
-      processes.push({ pid: Number(entry), sessionId: marker.slice("BRAVELI_SESSION_ID=".length), cwd });
+      processes.push({ pid: Number(entry), sessionId: marker.slice(marker.indexOf("=") + 1), cwd });
     } catch {
       // Gone, or not ours to read.
     }

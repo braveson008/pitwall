@@ -254,7 +254,7 @@ button.dk-flow-agent:disabled:hover { background: transparent; }
 
 .dk-voice-line { margin: 0; padding: 7px 10px; border-radius: var(--r-md); color: var(--text); line-height: 1.45; overflow-wrap: anywhere; }
 .dk-voice-line.is-user { align-self: flex-end; max-width: 88%; background: var(--blue-soft); }
-.dk-voice-line.is-braveli { align-self: flex-start; max-width: 92%; background: var(--chip); }
+.dk-voice-line.is-pitwall { align-self: flex-start; max-width: 92%; background: var(--chip); }
 .dk-voice-line.is-partial { color: var(--muted); font-style: italic; }
 .dk-voice-line.is-error { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 
@@ -293,66 +293,3 @@ button.dk-flow-agent:disabled:hover { background: transparent; }
 @media (prefers-reduced-motion: reduce) {
   .dk-voice-meter > span { transition: none; }
 }
-
-/* ---- Plans & usage ----------------------------------------------------------- */
-
-.dk-plans { display: flex; flex-direction: column; gap: 24px; width: 100%; max-width: 640px; margin: 0 auto; padding: 28px 24px 32px; }
-.dk-plans-intro h3 { margin: 0 0 6px; color: var(--text); font-size: 17px; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
-.dk-plans-intro p { margin: 0; max-width: 56ch; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
-.dk-plans-form { display: flex; flex-direction: column; gap: 8px; }
-.dk-plans-form label, .dk-plans-cap label { color: var(--text); font-size: 13px; font-weight: 500; }
-.dk-plans-row { display: flex; align-items: center; gap: 8px; }
-.dk-plans-row .dk-input { flex: 1; min-width: 0; }
-.dk-plans-code { max-width: 160px; font-family: var(--font-mono); font-size: 16px; letter-spacing: 0.2em; }
-.dk-plans-message { margin: 0; color: var(--muted); font-size: 13px; }
-.dk-plans-account { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
-.dk-plans-account > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.dk-plans-label { color: var(--muted); font-size: 12px; }
-.dk-plans-month { display: flex; flex-direction: column; gap: 10px; }
-.dk-plans-month-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.dk-plans-month-head strong { font-size: 15px; }
-.dk-plans-month-head span { color: var(--muted); font-size: 12.5px; }
-.dk-plans-meter { height: 6px; overflow: hidden; border-radius: 3px; background: var(--pressed); }
-.dk-plans-meter > span { display: block; height: 100%; border-radius: 3px; background: var(--blue); }
-.dk-plans-figures { margin: 0; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
-.dk-plans-figures strong { color: var(--text); font-weight: 600; }
-.dk-plans-cap { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-.dk-plans-currency { color: var(--muted); }
-.dk-plans-cap-input { max-width: 96px; font-variant-numeric: tabular-nums; }
-.dk-plans-models { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
-.dk-plans-models th { padding: 6px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-weight: 500; text-align: left; }
-.dk-plans-models td { padding: 6px 0; border-bottom: 1px solid var(--line); color: var(--text); }
-.dk-plans-models th:not(:first-child), .dk-plans-models td:not(:first-child) { text-align: right; }
-.dk-plans-list { display: flex; flex-direction: column; gap: 8px; }
-.dk-plans-plan { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; }
-.dk-plans-plan > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.dk-plans-plan span { color: var(--muted); font-size: 12.5px; }
-.dk-plans-plan.is-current { border-color: color-mix(in srgb, var(--blue) 45%, var(--line)); }
-.dk-plans-current { color: var(--blue) !important; font-weight: 500; }
-
-/* Pitwall Cloud, under the account */
-.dk-cloud { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
-.dk-cloud h3 { margin-bottom: 0; }
-.dk-cloud .dk-plans-form, .dk-cloud > .dk-plans-row { margin-top: 2px; }
-.dk-cloud-key { display: flex; flex-direction: column; gap: 10px; }
-.dk-cloud-key h3 { margin: 0; color: var(--text); font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
-.dk-cloud-key p { margin: 0; max-width: 56ch; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
-.dk-cloud-key-value { padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--pressed); color: var(--text); font-family: var(--font-mono); font-size: 15px; letter-spacing: 0.06em; user-select: all; overflow-wrap: anywhere; }
-.dk-cloud-key-input { font-family: var(--font-mono); letter-spacing: 0.04em; }
-.dk-cloud-check { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 13px; }
-.dk-cloud-danger { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; }
-.dk-cloud-danger p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
-.dk-cloud-reset { align-self: flex-start; color: var(--muted); font-size: 12.5px; }
-.dk-cloud-code { align-self: flex-start; padding: 10px 16px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-family: var(--font-mono); font-size: 22px; letter-spacing: 0.12em; }
-.dk-cloud-devices { display: flex; flex-direction: column; margin: 4px 0 0; padding: 0; list-style: none; }
-.dk-cloud-devices li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
-.dk-cloud-devices li > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.dk-cloud-devices strong { font-size: 13px; font-weight: 500; }
-.dk-cloud-devices span { color: var(--muted); font-size: 12px; }
-.dk-cloud-banner { top: 12px; bottom: auto; left: 50%; right: auto; transform: translateX(-50%); z-index: 1200; }
-.dk-cloud-banner-actions { display: flex; gap: 8px; margin-top: 8px; }
-.dk-cloud-history { display: flex; flex-direction: column; gap: 4px; padding-top: 8px; border-top: 1px solid var(--line); }
-.dk-cloud-history strong { font-size: 13px; font-weight: 500; }
-.dk-cloud-history > span { color: var(--muted); font-size: 12px; line-height: 1.45; }
-.dk-cloud-history ul { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; }
-.dk-cloud-history label { display: flex; align-items: center; gap: 8px; font-size: 13px; }

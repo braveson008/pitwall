@@ -9,7 +9,7 @@ type PatchState =
   | { status: "error"; message: string }
   | { status: "ready"; hunks: DiffHunk[]; tokens: Token[][][]; truncated: boolean };
 
-const STATUS_LABEL: Record<BraveliChangedFile["status"], string> = {
+const STATUS_LABEL: Record<PitwallChangedFile["status"], string> = {
   added: "added",
   modified: "modified",
   deleted: "deleted",
@@ -45,7 +45,7 @@ function TaskChangesetContent({ projectPath, branch, baseBranch, requests = [], 
   const [draft, setDraft] = useState("");
   const [sendingRequest, setSendingRequest] = useState(false);
   const [open, setOpen] = useState(false);
-  const [changeset, setChangeset] = useState<BraveliChangeset | null>(null);
+  const [changeset, setChangeset] = useState<PitwallChangeset | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [patches, setPatches] = useState<Record<string, PatchState>>({});
@@ -59,7 +59,7 @@ function TaskChangesetContent({ projectPath, branch, baseBranch, requests = [], 
     setPatches({});
     setExpanded(new Set());
     try {
-      const result = await window.braveli?.getTaskChangeset?.({ projectPath, branch, baseBranch });
+      const result = await window.pitwall?.getTaskChangeset?.({ projectPath, branch, baseBranch });
       if (request === generation.current) setChangeset(result ?? { ok: false, error: "Unavailable", files: [], additions: 0, deletions: 0 });
     } catch (error) {
       if (request === generation.current) setChangeset({ ok: false, error: error instanceof Error ? error.message : "Could not read changes.", files: [], additions: 0, deletions: 0 });
@@ -75,7 +75,7 @@ function TaskChangesetContent({ projectPath, branch, baseBranch, requests = [], 
   }, [open, changeset, loading, load]);
 
   const openFile = useCallback(
-    async (file: BraveliChangedFile, retry = false) => {
+    async (file: PitwallChangedFile, retry = false) => {
       const next = new Set(expanded);
       if (next.has(file.path) && !retry) {
         next.delete(file.path);
@@ -89,7 +89,7 @@ function TaskChangesetContent({ projectPath, branch, baseBranch, requests = [], 
       const request = generation.current;
       setPatches((current) => ({ ...current, [file.path]: { status: "loading" } }));
       try {
-        const result = await window.braveli?.getTaskFileDiff?.({
+        const result = await window.pitwall?.getTaskFileDiff?.({
           projectPath,
           branch,
           base: changeset?.base ?? "",
@@ -226,7 +226,7 @@ function TaskChangesetContent({ projectPath, branch, baseBranch, requests = [], 
                         title={`Open ${file.path} in your editor`}
                         onClick={(event) => {
                           event.stopPropagation();
-                          void window.braveli?.openFileInEditor?.({
+                          void window.pitwall?.openFileInEditor?.({
                             projectPath,
                             branch,
                             filePath: file.path,
@@ -375,7 +375,7 @@ function firstChangedLine(patch: PatchState | undefined): number | undefined {
  *
  * The previous approach was `direction: rtl`, which truncates from the left as
  * wanted but hands the string to the bidi algorithm — and a leading dot is a
- * neutral character, so `.braveli/x.md` renders as `braveli/x.md.` with the dot
+ * neutral character, so `.pitwall/x.md` renders as `pitwall/x.md.` with the dot
  * moved to the far end. A hidden leading dot on a path is not a cosmetic
  * problem: it is the difference between a dotfile and an ordinary directory.
  */

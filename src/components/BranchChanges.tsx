@@ -22,7 +22,7 @@ interface Changes {
   base?: string;
   /** What it was actually measured against, which is often not the trunk. */
   forkedFrom?: string;
-  files: BraveliChangedFile[];
+  files: PitwallChangedFile[];
   additions: number;
   deletions: number;
 }
@@ -81,7 +81,7 @@ function BranchChangesContent({
    * server. Pitwall does not need to be a worse version of that.
    */
   const openAtLine = (filePath: string, line?: number) => {
-    void window.braveli?.openFileInEditor?.({ projectPath, branch, filePath, line });
+    void window.pitwall?.openFileInEditor?.({ projectPath, branch, filePath, line });
   };
   const [changes, setChanges] = useState<Changes | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,7 +95,7 @@ function BranchChangesContent({
     void (async () => {
       setLoading(true);
       try {
-        if (typeof window.braveli?.branchChanges !== "function") {
+        if (typeof window.pitwall?.branchChanges !== "function") {
           // The preload is loaded once when a window is created, so a window
           // older than this feature has no such method. Saying that beats an
           // empty pane, which looks like a branch with nothing in it.
@@ -104,7 +104,7 @@ function BranchChangesContent({
           }
           return;
         }
-        const result = (await window.braveli.branchChanges({ projectPath, branch, trunk })) as Changes | undefined;
+        const result = (await window.pitwall.branchChanges({ projectPath, branch, trunk })) as Changes | undefined;
         if (cancelled) return;
         setChanges(result ?? { ok: false, error: "No answer from git.", files: [], additions: 0, deletions: 0 });
         // Open something worth reading straight away — but not a lockfile,
@@ -133,7 +133,7 @@ function BranchChangesContent({
     setPatchError("");
     void (async () => {
       try {
-        const result = await window.braveli?.branchFileDiff?.({
+        const result = await window.pitwall?.branchFileDiff?.({
           projectPath,
           branch,
           base: changes.base as string,

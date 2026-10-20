@@ -1,10 +1,10 @@
 import { roleOrder, roles } from "../domain/roles";
-import type { BraveliSessionType } from "../domain/types";
+import type { PitwallSessionType } from "../domain/types";
 import type { AgentSession } from "../data";
 
 /** One role working a task, and how its run is going. */
 export interface RoleRun {
-  role: BraveliSessionType;
+  role: PitwallSessionType;
   status: AgentSession["status"];
   progress: number;
   /** The run this role is doing, so the inspector can select it. */
@@ -23,7 +23,7 @@ export interface RoleRun {
  * running is information.
  */
 export function rolesOnTask(runs: RoleRun[]): RoleRun[] {
-  const latest = new Map<BraveliSessionType, RoleRun>();
+  const latest = new Map<PitwallSessionType, RoleRun>();
   for (const run of runs) {
     if (!run || !(run.role in roles)) continue;
     // Later runs win: the most recent attempt at a role is the one that
@@ -55,6 +55,6 @@ export function roleStateLabel(run?: RoleRun): string {
 }
 
 /** The human name of a role. */
-export function roleLabel(role: BraveliSessionType): string {
+export function roleLabel(role: PitwallSessionType): string {
   return roles[role]?.label ?? role;
 }

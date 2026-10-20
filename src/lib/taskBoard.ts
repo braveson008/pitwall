@@ -1,4 +1,4 @@
-import type { BraveliTask, BraveliTaskStatus } from "../domain/types";
+import type { PitwallTask, PitwallTaskStatus } from "../domain/types";
 
 /**
  * The board's columns, taken from wherever each task came from.
@@ -15,7 +15,7 @@ import type { BraveliTask, BraveliTaskStatus } from "../domain/types";
  */
 
 /** Pitwall's own states, for a task that came from nowhere else. */
-const LOCAL_COLUMNS: Record<BraveliTaskStatus, string> = {
+const LOCAL_COLUMNS: Record<PitwallTaskStatus, string> = {
   backlog: "Backlog",
   ready: "Ready",
   running: "In progress",
@@ -53,7 +53,7 @@ export function columnRank(name: string) {
 }
 
 /** The column a task belongs in: its own, else the tracker's, else Pitwall's. */
-export function columnFor(task: BraveliTask) {
+export function columnFor(task: PitwallTask) {
   const moved = task.boardColumn?.trim();
   if (moved) return moved;
   const source = task.source?.status?.trim();
@@ -79,7 +79,7 @@ export function normaliseStatus(value: string) {
     .replace(/^\w/, (letter) => letter.toUpperCase());
 }
 
-export type BoardColumn = { name: string; tasks: BraveliTask[] };
+export type BoardColumn = { name: string; tasks: PitwallTask[] };
 
 /**
  * Columns in pipeline order, with the tasks in each.
@@ -87,7 +87,7 @@ export type BoardColumn = { name: string; tasks: BraveliTask[] };
  * `always` keeps a column on the board once it exists even when it empties out,
  * so a card dragged out of the last slot does not take its destination with it.
  */
-export function buildBoard(tasks: BraveliTask[], always: string[] = []): BoardColumn[] {
+export function buildBoard(tasks: PitwallTask[], always: string[] = []): BoardColumn[] {
   /*
    * The tracker's columns are the board, and Pitwall's own only fill what the
    * tracker does not cover.
@@ -128,7 +128,7 @@ export function buildBoard(tasks: BraveliTask[], always: string[] = []): BoardCo
 }
 
 /** Pitwall's own state, said plainly, for the badge on a card. */
-export function localStateLabel(status: BraveliTaskStatus) {
+export function localStateLabel(status: PitwallTaskStatus) {
   return LOCAL_COLUMNS[status] ?? status;
 }
 
@@ -139,7 +139,7 @@ export function localStateLabel(status: BraveliTaskStatus) {
  * badge that says "in progress"; one sitting in Jira's "Backlog" while Pitwall
  * has a run going very much does.
  */
-export function showsLocalState(task: BraveliTask) {
+export function showsLocalState(task: PitwallTask) {
   if (task.status === "backlog" || task.status === "ready") return false;
   return columnFor(task).toLowerCase() !== localStateLabel(task.status).toLowerCase();
 }

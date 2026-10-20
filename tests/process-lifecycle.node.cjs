@@ -23,7 +23,7 @@ test("stopping a process that ignores HUP waits for forced termination", async (
 });
 
 test("a timed-out shell cannot leave a child writing after its result", async (t) => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-timeout-test-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-timeout-test-"));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const script = path.join(dir, "child.cjs");
   const marker = path.join(dir, "late-write");

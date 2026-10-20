@@ -1,16 +1,16 @@
 import type { Project } from "../data";
 import { providerIdFromAgent } from "../domain/providers";
 import type {
-  BraveliActivityEvent,
-  BraveliContextEntry,
-  BraveliProjectRecord,
-  BraveliSessionStatus,
-  BraveliTask,
-  BraveliWorkspaceState,
+  PitwallActivityEvent,
+  PitwallContextEntry,
+  PitwallProjectRecord,
+  PitwallSessionStatus,
+  PitwallTask,
+  PitwallWorkspaceState,
 } from "../domain/types";
 import { writeStoredJson } from "../lib/storage";
 
-const STORE_KEY = "braveli-workspace-state";
+const STORE_KEY = "pitwall-workspace-state";
 const LEGACY_STORE_KEY = "bravely-workspace-state";
 
 function now() {
@@ -21,17 +21,17 @@ function makeId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function normalizeSessionStatus(status: unknown): BraveliSessionStatus {
+export function normalizeSessionStatus(status: unknown): PitwallSessionStatus {
   if (status === "paused") return "waiting";
   if (status === "idle") return "completed";
   if (status === "blocked") return "failed";
   if (["starting", "running", "waiting", "completed", "failed", "disconnected"].includes(String(status))) {
-    return status as BraveliSessionStatus;
+    return status as PitwallSessionStatus;
   }
   return "disconnected";
 }
 
-function projectRecordFromProject(project: Project): BraveliProjectRecord {
+function projectRecordFromProject(project: Project): PitwallProjectRecord {
   const timestamp = now();
   return {
     id: project.id,
@@ -44,7 +44,7 @@ function projectRecordFromProject(project: Project): BraveliProjectRecord {
   };
 }
 
-function seedTasks(projects: Project[]): BraveliTask[] {
+function seedTasks(projects: Project[]): PitwallTask[] {
   const timestamp = now();
   return projects.flatMap((project) =>
     project.sessions.map((session, index) => ({
@@ -64,7 +64,7 @@ function seedTasks(projects: Project[]): BraveliTask[] {
   );
 }
 
-function seedContext(projects: Project[]): BraveliContextEntry[] {
+function seedContext(projects: Project[]): PitwallContextEntry[] {
   const timestamp = now();
   return projects.flatMap((project) => [
     {
@@ -106,7 +106,7 @@ function seedContext(projects: Project[]): BraveliContextEntry[] {
   ]);
 }
 
-function seedActivity(projects: Project[]): BraveliActivityEvent[] {
+function seedActivity(projects: Project[]): PitwallActivityEvent[] {
   const timestamp = now();
   return projects.flatMap((project) => [
     {
@@ -120,7 +120,7 @@ function seedActivity(projects: Project[]): BraveliActivityEvent[] {
 }
 
 export function createEmptyProjectState(project: Project): Pick<
-  BraveliWorkspaceState,
+  PitwallWorkspaceState,
   "projects" | "tasks" | "contextEntries" | "activity"
 > {
   return {
@@ -131,7 +131,7 @@ export function createEmptyProjectState(project: Project): Pick<
   };
 }
 
-export function createInitialBraveliState(projects: Project[]): BraveliWorkspaceState {
+export function createInitialPitwallState(projects: Project[]): PitwallWorkspaceState {
   return {
     version: 1,
     projects: projects.map(projectRecordFromProject),
@@ -146,16 +146,16 @@ export function createInitialBraveliState(projects: Project[]): BraveliWorkspace
 }
 
 /** Tasks saved by an older build or synced from another computer can lack fields every screen reads. */
-export function normalizeTask(task: BraveliTask): BraveliTask {
+export function normalizeTask(task: PitwallTask): PitwallTask {
   return Array.isArray(task.relatedFiles) ? task : { ...task, relatedFiles: [] };
 }
 
-export function readBraveliState(projects: Project[]): BraveliWorkspaceState {
+export function readPitwallState(projects: Project[]): PitwallWorkspaceState {
   try {
     const stored = window.localStorage.getItem(STORE_KEY) ?? window.localStorage.getItem(LEGACY_STORE_KEY);
-    if (!stored) return createInitialBraveliState(projects);
-    const parsed = JSON.parse(stored) as BraveliWorkspaceState;
-    if (parsed?.version !== 1 || !Array.isArray(parsed.projects)) return createInitialBraveliState(projects);
+    if (!stored) return createInitialPitwallState(projects);
+    const parsed = JSON.parse(stored) as PitwallWorkspaceState;
+    if (parsed?.version !== 1 || !Array.isArray(parsed.projects)) return createInitialPitwallState(projects);
     if (Array.isArray(parsed.activity) && parsed.activity.length > MAX_STORED_ACTIVITY) {
       parsed.activity = parsed.activity.slice(0, MAX_STORED_ACTIVITY);
     }
@@ -168,7 +168,7 @@ export function readBraveliState(projects: Project[]): BraveliWorkspaceState {
     const missingProjects = projects.filter((project) => !parsed.projects.some((item) => item.id === project.id));
     if (missingProjects.length === 0) return parsed;
 
-    const migrated = createInitialBraveliState(missingProjects);
+    const migrated = createInitialPitwallState(missingProjects);
     return {
       ...parsed,
       projects: [...parsed.projects, ...migrated.projects],
@@ -177,14 +177,14 @@ export function readBraveliState(projects: Project[]): BraveliWorkspaceState {
       activity: [...migrated.activity, ...parsed.activity],
     };
   } catch {
-    return createInitialBraveliState(projects);
+    return createInitialPitwallState(projects);
   }
 }
 
 /** How much history is kept. The log is newest first and only ever grew. */
 export const MAX_STORED_ACTIVITY = 1000;
 
-export function writeBraveliState(state: BraveliWorkspaceState) {
+export function writePitwallState(state: PitwallWorkspaceState) {
   const capped = state.activity.length > MAX_STORED_ACTIVITY
     ? { ...state, activity: state.activity.slice(0, MAX_STORED_ACTIVITY) }
     : state;

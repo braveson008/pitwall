@@ -11,13 +11,13 @@ describe("formatTaskLaunchPrompt", () => {
     // Not asked for by default: only a scheduled run and a council read the
     // marker, and printing a paragraph of JSON into a terminal somebody is
     // reading costs more than it is worth anywhere else.
-    expect(prompt).not.toContain("BRAVELI_TASK_SUMMARY");
+    expect(prompt).not.toContain("PITWALL_TASK_SUMMARY");
   });
 
   it("asks for the closing summary only where something reads it", () => {
     const task = { identifier: "web-427", title: "Fix login", description: "Reproduce first." };
-    expect(formatTaskLaunchPrompt(task, { wantsSummary: true })).toContain("BRAVELI_TASK_SUMMARY");
-    expect(formatTaskLaunchPrompt(task, { wantsSummary: false })).not.toContain("BRAVELI_TASK_SUMMARY");
+    expect(formatTaskLaunchPrompt(task, { wantsSummary: true })).toContain("PITWALL_TASK_SUMMARY");
+    expect(formatTaskLaunchPrompt(task, { wantsSummary: false })).not.toContain("PITWALL_TASK_SUMMARY");
   });
 
   it("does not add placeholder text for an empty description", () => {
@@ -65,7 +65,7 @@ describe("formatTaskLaunchPrompt", () => {
     );
     expect(prompt).toContain("start the documented development environment from this task worktree");
     expect(prompt).toContain("launch its documented simulator or emulator");
-    expect(prompt).toContain("BRAVELI_DEV_PREVIEW <local-url>");
+    expect(prompt).toContain("PITWALL_DEV_PREVIEW <local-url>");
   });
 
   it("isolates web ports and mobile devices for each task runtime", () => {
@@ -75,7 +75,7 @@ describe("formatTaskLaunchPrompt", () => {
         startDevServer: true,
         runtime: {
           previewPort: 8429,
-          mobileRuntimeId: "braveli-web-429",
+          mobileRuntimeId: "pitwall-web-429",
           mobileDeviceName: "Pitwall WEB-429",
         },
       },
@@ -83,7 +83,7 @@ describe("formatTaskLaunchPrompt", () => {
     expect(prompt).toContain("owns local preview port 8429");
     expect(prompt).toContain('dedicated device named "Pitwall WEB-429"');
     expect(prompt).toContain("never use a device belonging to another task");
-    expect(prompt).toContain("BRAVELI_MOBILE_PREVIEW <local-or-exp-url>");
+    expect(prompt).toContain("PITWALL_MOBILE_PREVIEW <local-or-exp-url>");
   });
 });
 
@@ -115,11 +115,11 @@ describe("attached images", () => {
   it("names every attached image as a file to open", () => {
     const prompt = formatTaskLaunchPrompt({
       ...base,
-      images: ["/Users/x/Library/braveli/attachments/a-1/shot.png", "/Users/x/Library/braveli/attachments/a-1/two.jpg"],
+      images: ["/Users/x/Library/pitwall/attachments/a-1/shot.png", "/Users/x/Library/pitwall/attachments/a-1/two.jpg"],
     });
     expect(prompt).toContain("2 images are attached");
-    expect(prompt).toContain("- /Users/x/Library/braveli/attachments/a-1/shot.png");
-    expect(prompt).toContain("- /Users/x/Library/braveli/attachments/a-1/two.jpg");
+    expect(prompt).toContain("- /Users/x/Library/pitwall/attachments/a-1/shot.png");
+    expect(prompt).toContain("- /Users/x/Library/pitwall/attachments/a-1/two.jpg");
   });
 
   it("counts one image in the singular", () => {

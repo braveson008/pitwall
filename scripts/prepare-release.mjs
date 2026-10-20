@@ -15,15 +15,15 @@ const windows = process.argv.includes("--windows");
 // The open-source build: GitHub releases for updates, and none of the private services (.env would otherwise supply them).
 const publicBuild = process.env.PITWALL_PUBLIC_BUILD === "1";
 const updateUrl = unsigned || publicBuild ? "" : feedUrl();
-const freeRelease = process.env.BRAVELI_FREE_RELEASE === "1";
-const licenceEndpoint = publicBuild ? "" : String(process.env.BRAVELI_LICENCE_ENDPOINT || "").trim();
+const freeRelease = process.env.PITWALL_FREE_RELEASE === "1";
+const licenceEndpoint = publicBuild ? "" : String(process.env.PITWALL_LICENCE_ENDPOINT || "").trim();
 if (!unsigned && !freeRelease && !publicBuild && !licenceEndpoint) {
-  throw new Error("BRAVELI_LICENCE_ENDPOINT is required for a paid release; set BRAVELI_FREE_RELEASE=1 only for an intentional free release");
+  throw new Error("PITWALL_LICENCE_ENDPOINT is required for a paid release; set PITWALL_FREE_RELEASE=1 only for an intentional free release");
 }
 if (licenceEndpoint) {
   const endpoint = new URL(licenceEndpoint);
   if (endpoint.protocol !== "https:" || endpoint.username || endpoint.password) {
-    throw new Error("BRAVELI_LICENCE_ENDPOINT must be an HTTPS URL without embedded credentials");
+    throw new Error("PITWALL_LICENCE_ENDPOINT must be an HTTPS URL without embedded credentials");
   }
 }
 
@@ -96,8 +96,8 @@ console.log(updateUrl ? `Configured updates from ${updateUrl}` : unsigned ? "Bui
 // at build time, written into a file that ships in Resources. `electron/**` is
 // copied into the app rather than bundled, so a process.env read there runs on
 // the user's machine — where nothing set it. Baking is the only way it arrives.
-const posthogKey = publicBuild ? "" : process.env.BRAVELI_POSTHOG_KEY || "";
-const posthogHost = process.env.BRAVELI_POSTHOG_HOST || "https://eu.i.posthog.com";
+const posthogKey = publicBuild ? "" : process.env.PITWALL_POSTHOG_KEY || "";
+const posthogHost = process.env.PITWALL_POSTHOG_HOST || "https://eu.i.posthog.com";
 await writeFile(
   path.join(root, "build", "analytics-config.json"),
   `${JSON.stringify({ key: posthogKey, host: posthogHost }, null, 2)}\n`,
@@ -105,18 +105,11 @@ await writeFile(
 );
 console.log(posthogKey ? `Analytics enabled via ${posthogHost}` : "Built without analytics");
 
-// The credits gateway, baked the same way; the open-source build has none, so it never offers credits.
-const gateway = publicBuild ? "" : String(process.env.PITWALL_GATEWAY_URL || "").trim();
-// The owner's builds sell credits and sync through the gateway; one built without it would quietly lose both.
-if (updateUrl && !gateway) throw new Error("PITWALL_GATEWAY_URL is required for a build on your own update feed (PITWALL_PUBLIC_BUILD=1 builds the open-source one)");
-await writeFile(path.join(root, "build", "credits-config.json"), `${JSON.stringify({ gateway }, null, 2)}\n`, "utf8");
-console.log(gateway ? `Credits via ${gateway}` : "Built without a credits gateway");
-
 // The licence service, baked for the same reason as everything above it. An
 // explicitly free or unsigned build may omit the endpoint: `verifyWithMerchant`
 // answers "not-configured" and licence enforcement stays disabled. Paid signed
 // releases must configure the service before any build files are written.
-const checkoutUrl = process.env.BRAVELI_CHECKOUT_URL || "https://braveli.app/#pricing";
+const checkoutUrl = process.env.PITWALL_CHECKOUT_URL || "https://braveli.app/#pricing";
 await writeFile(
   path.join(root, "build", "licence-config.json"),
   `${JSON.stringify({ endpoint: licenceEndpoint, checkoutUrl }, null, 2)}\n`,

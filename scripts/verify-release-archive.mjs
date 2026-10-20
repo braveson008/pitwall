@@ -6,7 +6,7 @@ import path from "node:path";
 
 /** The updater installs this ZIP; a signed sibling DMG cannot vouch for it. */
 export function verifyReleaseArchive(zipPath, product = PRODUCT) {
-  const dir = mkdtempSync(path.join(tmpdir(), "braveli-release-archive-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "pitwall-release-archive-"));
   try {
     execFileSync("ditto", ["-x", "-k", zipPath, dir], { stdio: "pipe" });
     const app = path.join(dir, `${product}.app`);

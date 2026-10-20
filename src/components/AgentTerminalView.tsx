@@ -145,7 +145,7 @@ export const AgentTerminalView = forwardRef<AgentTerminalHandle, {
     const images = files.filter(isImageFile);
     if (images.length === 0) return;
 
-    const api = window.braveli;
+    const api = window.pitwall;
     if (!api?.stageTerminalImages || !api.stageTerminalImageData || !api.getPathForFile) {
       showAttachmentStatus("Image attachments are unavailable.", "error");
       return;
@@ -180,7 +180,7 @@ export const AgentTerminalView = forwardRef<AgentTerminalHandle, {
   };
 
   const chooseImages = async () => {
-    const api = window.braveli;
+    const api = window.pitwall;
     if (!api?.chooseTerminalImages) return;
     showAttachmentStatus("Preparing images...", "working", false);
     try {
@@ -327,7 +327,7 @@ export const AgentTerminalView = forwardRef<AgentTerminalHandle, {
       // bare line feed means "down one row", not "back to column one".
       cursorBlink: true,
       // ConPTY repaints wrapped lines itself; xterm must not reflow them too.
-      ...(isMacPlatform() || window.braveli?.platform !== "win32" ? {} : { windowsPty: { backend: "conpty" as const } }),
+      ...(isMacPlatform() || window.pitwall?.platform !== "win32" ? {} : { windowsPty: { backend: "conpty" as const } }),
       fontFamily,
       fontSize,
       fontWeight: 400,
@@ -352,7 +352,7 @@ export const AgentTerminalView = forwardRef<AgentTerminalHandle, {
     terminal.loadAddon(
       new WebLinksAddon((event, uri) => {
         event.preventDefault();
-        void window.braveli?.openExternalUrl?.(uri);
+        void window.pitwall?.openExternalUrl?.(uri);
       }),
     );
 
@@ -436,7 +436,7 @@ export const AgentTerminalView = forwardRef<AgentTerminalHandle, {
       onResizeRef.current(cols, rows);
     });
     setGeometryReady(false);
-    void Promise.resolve(window.braveli?.getTerminalSize?.(sessionId)).catch(() => null).then((size) => {
+    void Promise.resolve(window.pitwall?.getTerminalSize?.(sessionId)).catch(() => null).then((size) => {
       if (disposed) return;
       if (!fitted && size?.ok && size.cols && size.rows && (size.cols !== terminal.cols || size.rows !== terminal.rows)) {
         adopting = true;

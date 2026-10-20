@@ -1,4 +1,4 @@
-import type { BraveliProviderId, BraveliSessionType } from "../domain/types";
+import type { PitwallProviderId, PitwallSessionType } from "../domain/types";
 
 /**
  * Greenfield project scaffolding. Turns a free-text name + description into a
@@ -12,13 +12,13 @@ import type { BraveliProviderId, BraveliSessionType } from "../domain/types";
 
 /** Same shape as `CouncilMember`, declared structurally to avoid a lib -> component cycle. */
 export interface ScopingPipelineMember {
-  providerId: BraveliProviderId;
-  role: BraveliSessionType;
+  providerId: PitwallProviderId;
+  role: PitwallSessionType;
 }
 
 /** Stage 1 designs and scopes; stage 2 builds from the handoff file it writes. */
-export const SCOPING_ROLE: BraveliSessionType = "architecture";
-export const IMPLEMENTER_ROLE: BraveliSessionType = "implementation";
+export const SCOPING_ROLE: PitwallSessionType = "architecture";
+export const IMPLEMENTER_ROLE: PitwallSessionType = "implementation";
 
 const FOLDER_SEGMENT = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 
@@ -79,8 +79,8 @@ export function buildScopingPipeline({
   scopingProviderId,
   implementerProviderId,
 }: {
-  scopingProviderId: BraveliProviderId;
-  implementerProviderId: BraveliProviderId;
+  scopingProviderId: PitwallProviderId;
+  implementerProviderId: PitwallProviderId;
 }): ScopingPipelineMember[] {
   return [
     { providerId: scopingProviderId, role: SCOPING_ROLE },

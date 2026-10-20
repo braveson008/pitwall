@@ -50,6 +50,7 @@ import {
   extractLessons,
   formatLessonsPrompt,
   getCouncilLessonsPath,
+  getCouncilLessonsPaths,
   mergeLessons,
   parseLessonsFile,
 } from "./lib/councilMemory";
@@ -166,12 +167,8 @@ import { TaskSidebar } from "./components/TaskSidebar";
 import { buildSidebarGroups, type SidebarRow, type StartingSession } from "./lib/sidebarGroups";
 import { WorkspaceHeader } from "./components/WorkspaceHeader";
 import { Sheet } from "./components/Sheet";
-import { PlansPanel } from "./components/PlansPanel";
-import { CloudPanel } from "./components/CloudPanel";
-import { CloudBanner } from "./components/CloudBanner";
 import { HermesPanel, hermesStatusLine, type HermesState } from "./components/HermesPanel";
 import { reviewerScorecard } from "./lib/reviewerScorecard";
-import { creditsCanRun, creditsStatusLine, useCredits } from "./hooks/useCredits";
 import { HomePage } from "./components/HomePage";
 import { InstallAgentModal } from "./components/InstallAgentModal";
 import { localCatalogue as agentCatalogue, type CatalogueEntry } from "./domain/agentCatalogue";
@@ -330,22 +327,22 @@ import {
   initialTerminalFontFamily,
 } from "./lib/terminalOptions";
 import type {
-  BraveliActivityEvent,
-  BraveliContextEntry,
-  BraveliContextSnapshot,
-  BraveliCouncilRun,
-  BraveliProviderId,
-  BraveliSession,
-  BraveliSessionType,
-  BraveliTask,
-  BraveliTaskPair,
-  BraveliProjectOverseer,
-  BraveliProjectRecord,
-  BraveliTaskPriority,
-  BraveliWorkspaceState,
+  PitwallActivityEvent,
+  PitwallContextEntry,
+  PitwallContextSnapshot,
+  PitwallCouncilRun,
+  PitwallProviderId,
+  PitwallSession,
+  PitwallSessionType,
+  PitwallTask,
+  PitwallTaskPair,
+  PitwallProjectOverseer,
+  PitwallProjectRecord,
+  PitwallTaskPriority,
+  PitwallWorkspaceState,
 } from "./domain/types";
 import { DEFAULT_OVERSEER } from "./domain/types";
-import { createEmptyProjectState, makeId, normalizeSessionStatus, readBraveliState, writeBraveliState } from "./storage/braveliStore";
+import { createEmptyProjectState, makeId, normalizeSessionStatus, readPitwallState, writePitwallState } from "./storage/pitwallStore";
 import { licenceChipLabel } from "./lib/licence";
 import { currentStep, pushStep, type MemberWork } from "./lib/councilActivity";
 import { readSessionAttention } from "./lib/sessionAttention";
@@ -363,8 +360,6 @@ import { writeStored, writeStoredJson } from "./lib/storage";
 import { createKeyedThrottle } from "./lib/keyedThrottle";
 import { trackerHtmlToMarkdown } from "./lib/markdown";
 import { shortcutLabel, filesShortcutLabel, isFilesShortcut } from "./lib/shortcutLabel";
-import { applyRemote, renameProject } from "./lib/cloudApply";
-import { buildCloudSnapshot, readCloudPrefs } from "./lib/cloudSnapshot";
 
 const statusLabel: Record<SessionStatus, string> = {
   starting: "Starting",
@@ -376,7 +371,7 @@ const statusLabel: Record<SessionStatus, string> = {
 };
 
 type CreatableAgentProvider = Extract<AgentProvider, "Claude" | "Grok" | "Codex" | "Gemini" | "Kimi" | "Hermes">;
-type AgentCheck = Awaited<ReturnType<NonNullable<Window["braveli"]>["checkAgent"]>>;
+type AgentCheck = Awaited<ReturnType<NonNullable<Window["pitwall"]>["checkAgent"]>>;
 type WorkbenchTab = "terminal" | "changes" | "editor" | "council";
 type PaletteMode = "files" | "commands";
 
@@ -471,19 +466,18 @@ const fallbackProviderOptions: AgentOption[] = providerRegistry.map((provider) =
   models: provider.supportedModels,
 }));
 
-const PROJECTS_STORAGE_KEY = "braveli-projects";
-const ACTIVE_PROJECT_STORAGE_KEY = "braveli-active-project";
-const SELECTED_SESSION_STORAGE_KEY = "braveli-selected-session";
-const PREVIEW_URLS_STORAGE_KEY = "braveli-preview-urls";
-const TERMINAL_FONT_SIZE_STORAGE_KEY = "braveli-terminal-font-size";
-const REVIEW_REPAIR_STORAGE_KEY = "braveli-review-repair-v1";
-const TERMINAL_FONT_SIZE_MIGRATION_KEY = "braveli-terminal-font-size-migration";
-const TERMINAL_FONT_FAMILY_STORAGE_KEY = "braveli-terminal-font-family";
-const TERMINAL_FONT_FAMILY_MIGRATION_KEY = "braveli-terminal-font-family-migration";
-const PROJECT_NOTIFICATIONS_STORAGE_KEY = "braveli-project-notifications";
-const NOTIFICATION_SOUND_STORAGE_KEY = "braveli-notification-sound";
-const SESSION_ORDER_STORAGE_KEY = "braveli-session-order";
-const CLOUD_GENERATION_KEY = "pitwall-cloud-generation";
+const PROJECTS_STORAGE_KEY = "pitwall-projects";
+const ACTIVE_PROJECT_STORAGE_KEY = "pitwall-active-project";
+const SELECTED_SESSION_STORAGE_KEY = "pitwall-selected-session";
+const PREVIEW_URLS_STORAGE_KEY = "pitwall-preview-urls";
+const TERMINAL_FONT_SIZE_STORAGE_KEY = "pitwall-terminal-font-size";
+const REVIEW_REPAIR_STORAGE_KEY = "pitwall-review-repair-v1";
+const TERMINAL_FONT_SIZE_MIGRATION_KEY = "pitwall-terminal-font-size-migration";
+const TERMINAL_FONT_FAMILY_STORAGE_KEY = "pitwall-terminal-font-family";
+const TERMINAL_FONT_FAMILY_MIGRATION_KEY = "pitwall-terminal-font-family-migration";
+const PROJECT_NOTIFICATIONS_STORAGE_KEY = "pitwall-project-notifications";
+const NOTIFICATION_SOUND_STORAGE_KEY = "pitwall-notification-sound";
+const SESSION_ORDER_STORAGE_KEY = "pitwall-session-order";
 /** Shared so an unarranged project does not hand the rail a new array each render. */
 const EMPTY_ORDER: string[] = [];
 
@@ -612,7 +606,7 @@ function readStoredProjects() {
  * is a real one.
  */
 const THEME_OPTIONS = [
-  { value: "braveli", label: "Pitwall", hint: "light, dark or system", swatch: ["#171b22", "#88c0d0", "#eceff4"] },
+  { value: "pitwall", label: "Pitwall", hint: "light, dark or system", swatch: ["#171b22", "#88c0d0", "#eceff4"] },
   { value: "vt220", label: "VT220", hint: "amber phosphor", swatch: ["#0a0a08", "#e8a33c", "#6fd3e8"] },
   { value: "acme", label: "Acme", hint: "Plan 9 paper", swatch: ["#ffffea", "#1a1a1a", "#1d3fa0"] },
   { value: "night-city", label: "Night City", hint: "neon", swatch: ["#07080b", "#fcee0a", "#05d9e8"] },
@@ -668,7 +662,7 @@ function readStoredValue(key: string, fallback: string, legacyKeys: string[] = [
   }
 }
 
-function getProviderLabel(providerId: BraveliProviderId | "") {
+function getProviderLabel(providerId: PitwallProviderId | "") {
   if (!providerId) return "Unassigned";
   return getProviderById(providerId)?.displayName ?? providerId;
 }
@@ -716,7 +710,7 @@ const RELAY_IDLE_NUDGE_MS = 10 * 60 * 1000;
 
 const KNOWLEDGE_TAIL = 128_000;
 
-function createDefaultTask(projectId: string, title = "Implement next task"): BraveliTask {
+function createDefaultTask(projectId: string, title = "Implement next task"): PitwallTask {
   const timestamp = nowIso();
   return {
     id: makeId("task"),
@@ -733,7 +727,7 @@ function createDefaultTask(projectId: string, title = "Implement next task"): Br
   };
 }
 
-function contextForProvider(entries: BraveliContextEntry[], providerId: BraveliProviderId) {
+function contextForProvider(entries: PitwallContextEntry[], providerId: PitwallProviderId) {
   return entries
     .filter((entry) => entry.visibility === "all-agents" || (entry.visibility === "selected-agents" && entry.providerIds.includes(providerId)))
     .sort((a, b) => b.priority - a.priority);
@@ -741,12 +735,12 @@ function contextForProvider(entries: BraveliContextEntry[], providerId: BraveliP
 
 function makeContextSnapshot(payload: {
   projectId: string;
-  task: BraveliTask;
+  task: PitwallTask;
   sessionId: string;
-  provider: BraveliProviderId;
+  provider: PitwallProviderId;
   model: string;
-  contextEntries: BraveliContextEntry[];
-}): BraveliContextSnapshot {
+  contextEntries: PitwallContextEntry[];
+}): PitwallContextSnapshot {
   return {
     id: makeId("snapshot"),
     projectId: payload.projectId,
@@ -1053,7 +1047,7 @@ function makeProjectFromPath(path: string, count: number): Project {
 }
 
 /** Views that slide over the work rather than replace it. */
-const SHEET_SECTIONS = new Set<WorkspaceSection>(["context", "schedule", "watch", "extensions", "connections", "plans", "hermes"]);
+const SHEET_SECTIONS = new Set<WorkspaceSection>(["context", "schedule", "watch", "extensions", "connections", "hermes"]);
 
 export function App() {
   const [storedProjects] = useState(readStoredProjects);
@@ -1084,7 +1078,7 @@ export function App() {
   const projectPathsKey = projects.map((project) => project.path).join("\n");
   // Main repairs these projects' worktree links when it maintains worktrees; it has no project list of its own.
   useEffect(() => {
-    void window.braveli?.setKnownProjects?.({ projectPaths: projectPathsKey.split("\n").filter(Boolean) }).catch(() => undefined);
+    void window.pitwall?.setKnownProjects?.({ projectPaths: projectPathsKey.split("\n").filter(Boolean) }).catch(() => undefined);
   }, [projectPathsKey]);
   useEffect(() => {
     try { localStorage.setItem("pitwall-notifications", JSON.stringify(notifications)); } catch { /* the list is a convenience */ }
@@ -1092,8 +1086,8 @@ export function App() {
   /** What is on screen, for deciding whether news is news. Kept current every render. */
   const viewRef = useRef({ projectId: "", section: "", sessionId: "" });
   const completionAudioContextRef = useRef<AudioContext | null>(null);
-  const [braveli, setBraveli] = useState<BraveliWorkspaceState>(() => readBraveliState(initialProjectsRef.current));
-  const braveliRef = useRef(braveli);
+  const [pitwall, setPitwall] = useState<PitwallWorkspaceState>(() => readPitwallState(initialProjectsRef.current));
+  const pitwallRef = useRef(pitwall);
   const [activeProjectId, setActiveProjectId] = useState(() =>
     readStoredValue(ACTIVE_PROJECT_STORAGE_KEY, initialProjectsRef.current[0]?.id ?? "", [
       "agent-studio-active-project",
@@ -1105,7 +1099,7 @@ export function App() {
   // what is actually stored rather than a copy that can drift from it.
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   useEffect(() => {
-    void window.braveli?.analyticsState?.().then((state) => {
+    void window.pitwall?.analyticsState?.().then((state) => {
       if (state?.ok) setAnalyticsEnabled(state.enabled);
     });
   }, []);
@@ -1125,8 +1119,8 @@ export function App() {
   const [mcpTaskImportOpen, setMcpTaskImportOpen] = useState(false);
   const [startTaskOpen, setStartTaskOpen] = useState(false);
   const [startingTaskId, setStartingTaskId] = useState("");
-  const [taskDetail, setTaskDetail] = useState<BraveliTask | null>(null);
-  const [bulkStartTasks, setBulkStartTasks] = useState<BraveliTask[]>([]);
+  const [taskDetail, setTaskDetail] = useState<PitwallTask | null>(null);
+  const [bulkStartTasks, setBulkStartTasks] = useState<PitwallTask[]>([]);
   const [bulkStartingCount, setBulkStartingCount] = useState(0);
   const [bulkStarting, setBulkStarting] = useState(false);
   /** Asked to stop. A ref because the loop in flight reads it, not a render. */
@@ -1141,7 +1135,7 @@ export function App() {
   const [draftModel, setDraftModel] = useState(
     () => fallbackProviderOptions.find((option) => option.agent === "Codex")?.models[0].label ?? "Auto",
   );
-  const [draftSessionType, setDraftSessionType] = useState<BraveliSessionType>("implementation");
+  const [draftSessionType, setDraftSessionType] = useState<PitwallSessionType>("implementation");
   /**
    * Whether the next session is launched in its CLI's no-prompts mode.
    *
@@ -1150,19 +1144,11 @@ export function App() {
    * the switching this replaces.
    */
   const [draftAutoApprove, setDraftAutoApprove] = useState(false);
-  const [draftBilling, setDraftBilling] = useState<"login" | "credits">("login");
-  const credits = useCredits();
   /** Hermes's background learning runs in flight, so the sidebar can say so while it happens. */
   const [hermesLearning, setHermesLearning] = useState<Array<{ id: string; key: string }>>([]);
   /** Hermes reported it is signed out; cleared when a sign-in completes. */
   const [hermesSignedOut, setHermesSignedOut] = useState(false);
   const hermesReadyRef = useRef(false);
-  // Credits run only the gateway's models, and its list can land after Credits was picked.
-  useEffect(() => {
-    if (draftBilling !== "credits" || !credits.models.length || credits.models.includes(draftModel)) return;
-    setDraftModel(credits.models[0]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftBilling, credits.models]);
   const [draftTaskId, setDraftTaskId] = useState("");
   /** Empty means "use the generated default", which the field shows as its placeholder. */
   const [draftInstruction, setDraftInstruction] = useState("");
@@ -1173,10 +1159,10 @@ export function App() {
   /** Stable for the life of one draft, so its images stage into one directory. */
   const draftTaskAttachmentId = useRef(makeId("task-draft"));
   const [taskFormError, setTaskFormError] = useState("");
-  const [draftTaskPriority, setDraftTaskPriority] = useState<BraveliTaskPriority>("medium");
-  const [draftTaskAgent, setDraftTaskAgent] = useState<BraveliProviderId | "council">("codex");
+  const [draftTaskPriority, setDraftTaskPriority] = useState<PitwallTaskPriority>("medium");
+  const [draftTaskAgent, setDraftTaskAgent] = useState<PitwallProviderId | "council">("codex");
   const [draftContextTitle, setDraftContextTitle] = useState("Architecture note");
-  const [draftContextCategory, setDraftContextCategory] = useState<BraveliContextEntry["category"]>("decision");
+  const [draftContextCategory, setDraftContextCategory] = useState<PitwallContextEntry["category"]>("decision");
   const [draftContextContent, setDraftContextContent] = useState("");
   const [selectedContextIds, setSelectedContextIds] = useState<string[]>([]);
   const pendingTaskStartRef = useRef<string | null>(null);
@@ -1200,9 +1186,9 @@ export function App() {
     ]),
   );
   const [missionOpen, setMissionOpen] = useState(
-    () => !window.matchMedia("(max-width: 1180px)").matches && readStoredValue("braveli-mission-open", "true", ["bravely-mission-open"]) !== "false",
+    () => !window.matchMedia("(max-width: 1180px)").matches && readStoredValue("pitwall-mission-open", "true", ["bravely-mission-open"]) !== "false",
   );
-  const [storedMissionOpen] = useState(() => readStoredValue("braveli-mission-open", "true", ["bravely-mission-open"]) !== "false");
+  const [storedMissionOpen] = useState(() => readStoredValue("pitwall-mission-open", "true", ["bravely-mission-open"]) !== "false");
   const wideMissionOpen = useRef(storedMissionOpen);
   useEffect(() => {
     const compactWindow = window.matchMedia("(max-width: 1180px)");
@@ -1218,7 +1204,7 @@ export function App() {
   }, []);
   // Light, dark, or whatever macOS is set to.
   const [themePreference, setThemePreference] = useState<"light" | "dark" | "system">(() => {
-    const stored = readStoredValue("braveli-theme", "light", ["bravely-theme"]);
+    const stored = readStoredValue("pitwall-theme", "light", ["bravely-theme"]);
     return stored === "dark" || stored === "system" ? stored : "light";
   });
   const [systemDark, setSystemDark] = useState(() => window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false);
@@ -1232,14 +1218,14 @@ export function App() {
   /* Whatever anyone had chosen before — dracula, gruvbox, indigo — lands on
      the default theme, rather than on a name nothing answers to. */
   const [colorTheme, setColorTheme] = useState<ColorTheme>(() => {
-    const stored = readStoredValue("braveli-color-theme", "braveli");
-    return (COLOR_THEMES as readonly string[]).includes(stored) ? (stored as ColorTheme) : "braveli";
+    const stored = readStoredValue("pitwall-color-theme", "pitwall");
+    return (COLOR_THEMES as readonly string[]).includes(stored) ? (stored as ColorTheme) : "pitwall";
   });
   const theme: "light" | "dark" = THEME_BASE[colorTheme] ?? (themePreference === "system" ? (systemDark ? "dark" : "light") : themePreference);
   const [appFont, setAppFont] = useState<AppFont>(() => {
     // Every launch wrote the font back, so a stored "system" from before Zed's face was the default is not a choice.
-    const stored = readStoredValue("braveli-app-font", "plex");
-    if (stored === "system" && readStoredValue("braveli-app-font-migration", "") !== "zed") return "plex";
+    const stored = readStoredValue("pitwall-app-font", "plex");
+    if (stored === "system" && readStoredValue("pitwall-app-font-migration", "") !== "zed") return "plex";
     return (APP_FONTS as readonly string[]).includes(stored) ? (stored as AppFont) : "plex";
   });
   const [terminalFontSize, setTerminalFontSize] = useState(() =>
@@ -1269,7 +1255,7 @@ export function App() {
   const [taskChecks, setTaskChecks] = useState<Record<string, ValidationResult>>({});
   const [checkingTasks, setCheckingTasks] = useState<Record<string, boolean>>({});
   const taskCheckInFlight = useRef(new Set<string>());
-  const [taskPendingCompletion, setTaskPendingCompletion] = useState<BraveliTask | null>(null);
+  const [taskPendingCompletion, setTaskPendingCompletion] = useState<PitwallTask | null>(null);
   /**
    * The agent list and their checks, readable from an event handler.
    *
@@ -1284,7 +1270,7 @@ export function App() {
   const [sessionUsage, setSessionUsage] = useState<Record<string, SessionUsage>>({});
   /** The sidebar's project filter; "" shows every project. Remembered across launches. */
   const [sidebarProjectFilter, setSidebarProjectFilter] = useState(() => {
-    try { return localStorage.getItem("braveli-sidebar-project") ?? ""; } catch { return ""; }
+    try { return localStorage.getItem("pitwall-sidebar-project") ?? ""; } catch { return ""; }
   });
   const [sidebarSelection, setSidebarSelection] = useState("");
   /** The models automations run on, and how often the board re-reads its tracker. */
@@ -1292,7 +1278,7 @@ export function App() {
   const boardSyncMsRef = useRef(15 * 60_000);
   boardSyncMsRef.current = (automationSettings?.boardSyncMinutes ?? 15) * 60_000;
   useEffect(() => {
-    void window.braveli?.getAutomationSettings?.().then((result) => { if (result?.settings) setAutomationSettings(result.settings); });
+    void window.pitwall?.getAutomationSettings?.().then((result) => { if (result?.settings) setAutomationSettings(result.settings); });
   }, []);
   /** A Watches card to bring into view, when a notification asked for it. */
   const [focusFindingId, setFocusFindingId] = useState("");
@@ -1342,10 +1328,10 @@ export function App() {
   const [installedEditors, setInstalledEditors] = useState<InstalledEditor[]>([]);
   const [editorChoice, setEditorChoice] = useState(() => localStorage.getItem(EDITOR_CHOICE_KEY) ?? "");
   // The session's files, in the column task details otherwise use. Off in
-  // releases while it is finished; `braveli-files-panel` = "on" turns it on.
-  const [filesPanelEnabled] = useState(() => readStoredValue("braveli-files-panel", "off") === "on");
-  const [filesOpen, setFilesOpen] = useState(() => readStoredValue("braveli-files-open", "false") === "true");
-  const [filesWidth, setFilesWidth] = useState(() => Math.min(900, Math.max(300, Number(readStoredValue("braveli-files-width", "440")) || 440)));
+  // releases while it is finished; `pitwall-files-panel` = "on" turns it on.
+  const [filesPanelEnabled] = useState(() => readStoredValue("pitwall-files-panel", "off") === "on");
+  const [filesOpen, setFilesOpen] = useState(() => readStoredValue("pitwall-files-open", "false") === "true");
+  const [filesWidth, setFilesWidth] = useState(() => Math.min(900, Math.max(300, Number(readStoredValue("pitwall-files-width", "440")) || 440)));
   const [filesRequest, setFilesRequest] = useState<FilesOpenRequest | null>(null);
   const [editorStatus, setEditorStatus] = useState("");
   const [openingEditor, setOpeningEditor] = useState(false);
@@ -1357,12 +1343,12 @@ export function App() {
   const [editingSessionId, setEditingSessionId] = useState("");
   const [sessionPendingDelete, setSessionPendingDelete] = useState<AgentSession | null>(null);
   const [deletingSessionId, setDeletingSessionId] = useState("");
-  const [councilPendingDelete, setCouncilPendingDelete] = useState<BraveliCouncilRun | null>(null);
+  const [councilPendingDelete, setCouncilPendingDelete] = useState<PitwallCouncilRun | null>(null);
   const [deletingCouncilRunId, setDeletingCouncilRunId] = useState("");
   // One confirmation at a time: the dialog describes a single task's sessions.
-  const [tasksPendingDelete, setTasksPendingDelete] = useState<BraveliTask[]>([]);
+  const [tasksPendingDelete, setTasksPendingDelete] = useState<PitwallTask[]>([]);
   const taskPendingDelete = tasksPendingDelete[0] ?? null;
-  const [columnPendingClear, setColumnPendingClear] = useState<{ column: string; tasks: BraveliTask[] } | null>(null);
+  const [columnPendingClear, setColumnPendingClear] = useState<{ column: string; tasks: PitwallTask[] } | null>(null);
   const clearColumnDialogRef = useModalFocus<HTMLElement>(Boolean(columnPendingClear), () => setColumnPendingClear(null));
   const [deletingTaskId, setDeletingTaskId] = useState("");
   const [restoredTerminalLinesBySession] = useState<Record<string, string[]>>(readTerminalHistory);
@@ -1376,7 +1362,7 @@ export function App() {
   const taskRuntimeBySessionRef = useRef<Record<string, TaskRuntimePlan>>({});
   // Why a session's worktree could not be made here, for the start error to say.
   const workspaceProblemRef = useRef<Record<string, string>>({});
-  const taskBySessionRef = useRef<Record<string, BraveliTask>>({});
+  const taskBySessionRef = useRef<Record<string, PitwallTask>>({});
   const terminalLinesRef = useRef<Record<string, string[]>>(restoredTerminalLinesBySession);
   /**
    * Dev-server URLs, kept up to date as output arrives.
@@ -1674,14 +1660,14 @@ export function App() {
   const [onboardingOpen, setOnboardingOpen] = useState(
     () =>
       initialProjectsRef.current.length === 0 &&
-      readStoredValue("braveli-onboarded", "", ["bravely-onboarded"]) !== "yes",
+      readStoredValue("pitwall-onboarded", "", ["bravely-onboarded"]) !== "yes",
   );
   const [updateState, setUpdateState] = useState<UpdateState | null>(null);
   const [githubAuthOpen, setGitHubAuthOpen] = useState(false);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
   const [licenceOpen, setLicenceOpen] = useState(false);
   const { licence, checkoutUrl, hasKey, activate: activateLicence, clear: clearLicence } = useLicence();
-  const [connectionsProvider, setConnectionsProvider] = useState<BraveliProviderId | null>(null);
+  const [connectionsProvider, setConnectionsProvider] = useState<PitwallProviderId | null>(null);
   const [githubAuthStatus, setGitHubAuthStatus] = useState<GitHubAuthResult | null>(null);
   const [githubAuthBusy, setGitHubAuthBusy] = useState(false);
   const [githubAccountsLoading, setGitHubAccountsLoading] = useState(false);
@@ -1694,12 +1680,12 @@ export function App() {
   /** What Pitwall watches for on each project's host, and what it found. */
   const [watchState, setWatchState] = useState<WatchState>({ watches: [], findings: [] });
   useEffect(() => {
-    void window.braveli?.listWatches?.().then((state) => { if (state?.ok) setWatchState({ watches: state.watches, findings: state.findings }); });
-    return window.braveli?.onWatchChanged?.((state) => setWatchState(state));
+    void window.pitwall?.listWatches?.().then((state) => { if (state?.ok) setWatchState({ watches: state.watches, findings: state.findings }); });
+    return window.pitwall?.onWatchChanged?.((state) => setWatchState(state));
   }, []);
   /** A request being written for a task, before it is sent. */
   const [requestDraft, setRequestDraft] = useState<(CreateRequestDraft & {
-    task: BraveliTask;
+    task: PitwallTask;
     worktreePath: string;
     commits: string[];
     files: string[];
@@ -1745,10 +1731,10 @@ export function App() {
   }, [runtimeProviderProfiles]);
 
   const refreshProviderModels = useCallback(async (refresh = true) => {
-    if (!window.braveli?.listProviders) return;
+    if (!window.pitwall?.listProviders) return;
     setRefreshingProviderModels(true);
     try {
-      const result = await window.braveli.listProviders({ refresh });
+      const result = await window.pitwall.listProviders({ refresh });
       if (result.ok) setRuntimeProviderProfiles(result.providers);
     } finally {
       setRefreshingProviderModels(false);
@@ -1756,11 +1742,11 @@ export function App() {
   }, []);
 
   const refreshAgentChecks = useCallback(async () => {
-    if (!window.braveli?.checkAgent) return;
+    if (!window.pitwall?.checkAgent) return;
     setCheckingAgents(true);
     try {
       const entries = await Promise.all(
-        providerRegistry.map(async (provider) => [provider.agent, await window.braveli?.checkAgent(provider.agent)] as const),
+        providerRegistry.map(async (provider) => [provider.agent, await window.pitwall?.checkAgent(provider.agent)] as const),
       );
       setAgentChecks(
         Object.fromEntries(entries.filter((entry): entry is [CreatableAgentProvider, AgentCheck] => Boolean(entry[1]))),
@@ -1771,7 +1757,7 @@ export function App() {
   }, []);
 
   const refreshCustomAgentModels = useCallback(async () => {
-    const discoverModels = window.braveli?.discoverCustomAgentModels;
+    const discoverModels = window.pitwall?.discoverCustomAgentModels;
     if (!discoverModels || !customAgents.length) return;
     const entries = await Promise.all(
       customAgents.map(async (agent) => {
@@ -1804,7 +1790,7 @@ export function App() {
   useEffect(() => {
     let cancelled = false;
     const ask = async () => {
-      const result = await window.braveli?.ollamaLocalAgent?.();
+      const result = await window.pitwall?.ollamaLocalAgent?.();
       if (cancelled) return;
       // The same answer as last time is not a reason to render the app.
       const next = result?.option ?? null;
@@ -1847,11 +1833,11 @@ export function App() {
 
   const activeProject = projects.find((project) => project.id === activeProjectId) ?? projects[0] ?? emptyProject;
   const sidebarGroups = useMemo(
-    () => buildSidebarGroups({ tasks: braveli.tasks, projects, projectFilter: sidebarProjectFilter, now: activityNow, links: braveli.sessions, councilRuns: braveli.councilRuns, sessionOrder: sessionOrderByProject, starting: startingSessions }),
-    [braveli.tasks, braveli.sessions, braveli.councilRuns, projects, sidebarProjectFilter, activityNow, sessionOrderByProject, startingSessions],
+    () => buildSidebarGroups({ tasks: pitwall.tasks, projects, projectFilter: sidebarProjectFilter, now: activityNow, links: pitwall.sessions, councilRuns: pitwall.councilRuns, sessionOrder: sessionOrderByProject, starting: startingSessions }),
+    [pitwall.tasks, pitwall.sessions, pitwall.councilRuns, projects, sidebarProjectFilter, activityNow, sessionOrderByProject, startingSessions],
   );
   useEffect(() => {
-    try { localStorage.setItem("braveli-sidebar-project", sidebarProjectFilter); } catch { /* A preference, not state. */ }
+    try { localStorage.setItem("pitwall-sidebar-project", sidebarProjectFilter); } catch { /* A preference, not state. */ }
   }, [sidebarProjectFilter]);
   // A filter on a project that was removed would hide every row behind a blank menu.
   useEffect(() => {
@@ -1883,7 +1869,7 @@ export function App() {
   }, [workspaceSection]);
 
   const refreshSchedule = useCallback(async () => {
-    const result = await window.braveli?.listSchedule?.();
+    const result = await window.pitwall?.listSchedule?.();
     if (result?.ok) setScheduleJobs(result.jobs);
   }, []);
 
@@ -1894,7 +1880,7 @@ export function App() {
    * reads live state.
    *
    * Registered with the closure itself, every fire for the rest of the run used
-   * the function built on the first render — where `braveli.sessions` is
+   * the function built on the first render — where `pitwall.sessions` is
    * whatever was restored at startup and nothing created since exists. The
    * lookup that finds the last run's session to carry on in therefore never
    * matched, and an hourly booking made a new session, branch and worktree
@@ -1906,8 +1892,8 @@ export function App() {
   // A fire that arrives before this runs is held by the main process, not
   // dropped — a cold start from launchd races its own window otherwise.
   useEffect(() => {
-    const stop = window.braveli?.onScheduleFire?.(({ job }) => { void runScheduledJobRef.current(job); });
-    void window.braveli?.scheduleReady?.();
+    const stop = window.pitwall?.onScheduleFire?.(({ job }) => { void runScheduledJobRef.current(job); });
+    void window.pitwall?.scheduleReady?.();
     return () => stop?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1920,12 +1906,12 @@ export function App() {
     lastReviewRefresh.current = Date.now();
     setReviewRefreshing(true);
     try {
-      const projectTasks = braveliRef.current.tasks.filter((task) => task.projectId === activeProject.id && task.worktree);
+      const projectTasks = pitwallRef.current.tasks.filter((task) => task.projectId === activeProject.id && task.worktree);
       const repairing = readStoredValue(`${REVIEW_REPAIR_STORAGE_KEY}:${activeProject.id}`, "") !== "done";
       const branches = projectTasks
         .filter((task) => task.status === "review" || (repairing && task.status === "completed"))
         .map((task) => task.worktree as string);
-      const result = await window.braveli?.reviewState?.({
+      const result = await window.pitwall?.reviewState?.({
         projectId: activeProject.id,
         projectPath: activeProject.path,
         baseBranch: activeProject.branch,
@@ -1978,13 +1964,13 @@ export function App() {
    * project nobody had looked at.
    */
   function settleReviewedTasks(projectId: string, facts: Record<string, ReviewBranchFacts>) {
-    const settled = braveliRef.current.tasks.filter((task) =>
+    const settled = pitwallRef.current.tasks.filter((task) =>
       task.projectId === projectId && task.status === "review" && reviewStateFor(task.worktree, facts) === "done");
     if (!settled.length) return;
     for (const task of settled) learnWithHermes(task, { kind: "decision", decision: { action: "merged" } });
     const ids = new Set(settled.map((task) => task.id));
     const timestamp = nowIso();
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       tasks: current.tasks.map((task) =>
         ids.has(task.id) && task.status === "review" ? { ...task, status: "completed" as const, updatedAt: timestamp } : task),
@@ -2022,17 +2008,17 @@ export function App() {
   const reviewSweepRunning = useRef(false);
   const lastReviewSweep = useRef(0);
   const sweepReviewQueues = useCallback(async (force = false) => {
-    if (reviewSweepRunning.current || !window.braveli?.reviewState) return;
+    if (reviewSweepRunning.current || !window.pitwall?.reviewState) return;
     if (!force && Date.now() - lastReviewSweep.current < 120_000) return;
     reviewSweepRunning.current = true;
     lastReviewSweep.current = Date.now();
     try {
       for (const project of projectsRef.current) {
-        const branches = braveliRef.current.tasks
+        const branches = pitwallRef.current.tasks
           .filter((task) => task.projectId === project.id && task.status === "review" && task.worktree)
           .map((task) => task.worktree as string);
         if (!branches.length || !project.path) continue;
-        const result = await window.braveli.reviewState({
+        const result = await window.pitwall.reviewState({
           projectId: project.id,
           projectPath: project.path,
           baseBranch: project.branch,
@@ -2057,12 +2043,12 @@ export function App() {
     // state) need not wait five minutes for the next look.
     const onAsked = () => void sweepReviewQueues(true);
     window.addEventListener("focus", onFocus);
-    window.addEventListener("braveli:check-reviews", onAsked);
+    window.addEventListener("pitwall:check-reviews", onAsked);
     return () => {
       window.clearTimeout(first);
       window.clearInterval(every);
       window.removeEventListener("focus", onFocus);
-      window.removeEventListener("braveli:check-reviews", onAsked);
+      window.removeEventListener("pitwall:check-reviews", onAsked);
     };
   }, [sweepReviewQueues]);
 
@@ -2075,7 +2061,7 @@ export function App() {
    * run that changed nothing was rightly done and stays so.
    */
   function repairWronglySettledReviews(projectId: string, facts: Record<string, ReviewBranchFacts>) {
-    setBraveli((current) => {
+    setPitwall((current) => {
       const reopened = current.tasks.filter((task) => {
         if (task.projectId !== projectId || task.status !== "completed" || !task.worktree) return false;
         if (task.worktree.startsWith("sched-")) return false;
@@ -2145,11 +2131,11 @@ export function App() {
 
   useEffect(() => {
     let active = true;
-    if (!activeProject.id || !window.braveli?.getGitHubAuth) {
+    if (!activeProject.id || !window.pitwall?.getGitHubAuth) {
       setGitHubAuthStatus(null);
       return;
     }
-    void window.braveli.getGitHubAuth(projectIdentity).then((status) => {
+    void window.pitwall.getGitHubAuth(projectIdentity).then((status) => {
       if (active) setGitHubAuthStatus(status);
     });
     return () => {
@@ -2203,8 +2189,8 @@ export function App() {
   useEffect(() => {
     let live = true;
     setCodeHost(null);
-    if (!activeProject.path || !window.braveli?.getCodeHost) return;
-    void window.braveli.getCodeHost({ projectPath: activeProject.path }).then((result) => {
+    if (!activeProject.path || !window.pitwall?.getCodeHost) return;
+    void window.pitwall.getCodeHost({ projectPath: activeProject.path }).then((result) => {
       if (live && result?.ok) setCodeHost(result);
     }).catch(() => { /* The words fall back to GitHub's; nothing breaks. */ });
     return () => { live = false; };
@@ -2221,8 +2207,8 @@ export function App() {
    */
   useEffect(() => {
     let live = true;
-    if (!activeProject.id || !window.braveli?.activateGitHubAccount) return;
-    void window.braveli
+    if (!activeProject.id || !window.pitwall?.activateGitHubAccount) return;
+    void window.pitwall
       .activateGitHubAccount(projectIdentity)
       .then((result) => {
         if (!live || !result) return;
@@ -2252,10 +2238,10 @@ export function App() {
 
   useEffect(() => {
     let active = true;
-    if (!githubAuthOpen || !activeProject.id || !window.braveli?.listGitHubAccounts) return;
+    if (!githubAuthOpen || !activeProject.id || !window.pitwall?.listGitHubAccounts) return;
     setGitHubAccounts(null);
     setGitHubAccountsLoading(true);
-    void window.braveli.listGitHubAccounts(projectIdentity)
+    void window.pitwall.listGitHubAccounts(projectIdentity)
       .then((result) => {
         if (active) setGitHubAccounts(result);
       })
@@ -2277,7 +2263,7 @@ export function App() {
     setGitHubAuthBusy(true);
     setGitHubAuthNotice("");
     try {
-      const result = await window.braveli?.rememberGitHubAuth?.({ ...projectIdentity, ...input });
+      const result = await window.pitwall?.rememberGitHubAuth?.({ ...projectIdentity, ...input });
       if (result?.ok) {
         setGitHubAuthStatus(result);
         setGitHubAuthNotice(
@@ -2298,7 +2284,7 @@ export function App() {
     setGitHubAuthBusy(true);
     setGitHubAuthNotice("");
     try {
-      const result = await window.braveli?.forgetGitHubAuth?.(projectIdentity);
+      const result = await window.pitwall?.forgetGitHubAuth?.(projectIdentity);
       if (result?.ok) {
         setGitHubAuthStatus(result);
         setGitHubAuthNotice("Project GitHub account removed.");
@@ -2374,10 +2360,10 @@ export function App() {
     editorChoice === REVEAL_IN_FINDER
       ? null
       : installedEditors.find((editor) => editor.id === editorChoice) ?? installedEditors[0] ?? null;
-  const activeBraveliProject = braveli.projects.find((project) => project.id === activeProject.id);
+  const activePitwallProject = pitwall.projects.find((project) => project.id === activeProject.id);
   const projectTasks = useMemo(
-    () => braveli.tasks.filter((task) => task.projectId === activeProject.id),
-    [activeProject.id, braveli.tasks],
+    () => pitwall.tasks.filter((task) => task.projectId === activeProject.id),
+    [activeProject.id, pitwall.tasks],
   );
   // Work that was filed: what the board, its count and the task pickers show.
   const boardTasks = useMemo(() => projectTasks.filter((task) => !isScheduledRunTask(task)), [projectTasks]);
@@ -2389,9 +2375,9 @@ export function App() {
     () => new Set(projectTasks.map(importedTaskIdentity).filter(Boolean)),
     [projectTasks],
   );
-  const selectedBraveliSession = braveli.sessions.find((session) => session.id === selectedSession.id);
-  const selectedSessionTask = selectedBraveliSession
-    ? projectTasks.find((task) => task.id === selectedBraveliSession.taskId)
+  const selectedPitwallSession = pitwall.sessions.find((session) => session.id === selectedSession.id);
+  const selectedSessionTask = selectedPitwallSession
+    ? projectTasks.find((task) => task.id === selectedPitwallSession.taskId)
     : undefined;
   // A paired task's reviewer has a tab of its own beside its implementer's.
   const selectedPair = hasSelectedSession && selectedSessionTask?.pair ? selectedSessionTask.pair : null;
@@ -2414,8 +2400,8 @@ export function App() {
   const workTask = baseSection === "work" && hasSelectedSession ? selectedSessionTask : activeTask;
   const reviewQueueCount = projectTasks.filter((task) => task.status === "review").length;
   // One state for Hermes, most pressing first: what it cannot do, then what it is doing.
-  const hermesReviewing = braveli.tasks.filter((task) => task.pair?.reviewer === "hermes" && task.pair.state === "reviewing");
-  const activeOverseer = braveli.projects.find((item) => item.id === activeProject.id)?.overseer ?? DEFAULT_OVERSEER;
+  const hermesReviewing = pitwall.tasks.filter((task) => task.pair?.reviewer === "hermes" && task.pair.state === "reviewing");
+  const activeOverseer = pitwall.projects.find((item) => item.id === activeProject.id)?.overseer ?? DEFAULT_OVERSEER;
   const hermesState: HermesState = agentChecks.Hermes && agentChecks.Hermes.status !== "ready"
     ? { kind: "not-set-up", installed: Boolean(agentChecks.Hermes.installed) }
     : hermesSignedOut ? { kind: "signed-out" }
@@ -2434,7 +2420,6 @@ export function App() {
     activity: "Activity",
     connections: "Settings",
     extensions: "Extensions",
-    plans: "Account",
     hermes: "Hermes",
   };
   const headerTitle = baseSection === "work"
@@ -2453,8 +2438,8 @@ export function App() {
     ? projectTasks.find((task) => task.id === taskDetail.id) ?? taskDetail
     : null;
   const projectContextEntries = useMemo(
-    () => braveli.contextEntries.filter((entry) => entry.projectId === activeProject.id),
-    [activeProject.id, braveli.contextEntries],
+    () => pitwall.contextEntries.filter((entry) => entry.projectId === activeProject.id),
+    [activeProject.id, pitwall.contextEntries],
   );
   const selectedContextEntries = useMemo(() => {
     const selected = projectContextEntries.filter((entry) => selectedContextIds.includes(entry.id));
@@ -2462,43 +2447,43 @@ export function App() {
   }, [activeProject.id, draftAgent, projectContextEntries, selectedContextIds]);
   const projectActivity = useMemo(
     () =>
-      braveli.activity
+      pitwall.activity
         .filter((event) => event.projectId === activeProject.id)
         .slice()
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    [activeProject.id, braveli.activity],
+    [activeProject.id, pitwall.activity],
   );
   const runCountByTask = useMemo(() => {
     const counts: Record<string, number> = {};
     const groupedSessionIds = new Set(
-      [...braveli.councilRuns, ...braveli.compareRuns]
+      [...pitwall.councilRuns, ...pitwall.compareRuns]
         .filter((run) => run.projectId === activeProject.id)
         .flatMap((run) => run.responses.map((response) => response.sessionId)),
     );
 
-    for (const session of braveli.sessions) {
+    for (const session of pitwall.sessions) {
       if (session.projectId !== activeProject.id || groupedSessionIds.has(session.id)) continue;
       counts[session.taskId] = (counts[session.taskId] ?? 0) + 1;
     }
-    for (const run of braveli.councilRuns) {
+    for (const run of pitwall.councilRuns) {
       if (run.projectId !== activeProject.id) continue;
       counts[run.taskId] = (counts[run.taskId] ?? 0) + 1;
     }
-    for (const run of braveli.compareRuns) {
+    for (const run of pitwall.compareRuns) {
       if (run.projectId !== activeProject.id) continue;
       counts[run.taskId] = (counts[run.taskId] ?? 0) + 1;
     }
     return counts;
-  }, [activeProject.id, braveli.compareRuns, braveli.councilRuns, braveli.sessions]);
+  }, [activeProject.id, pitwall.compareRuns, pitwall.councilRuns, pitwall.sessions]);
   const activeCouncilRun = useMemo(
-    () => braveli.councilRuns.find((run) => run.id === activeCouncilRunId && run.projectId === activeProject.id),
-    [braveli.councilRuns, activeCouncilRunId, activeProject.id],
+    () => pitwall.councilRuns.find((run) => run.id === activeCouncilRunId && run.projectId === activeProject.id),
+    [pitwall.councilRuns, activeCouncilRunId, activeProject.id],
   );
   const activeRelay = relayRunRef.current[activeCouncilRunId];
   useEffect(() => {
-    if (!activeCouncilRunId || !window.braveli?.inspectProjectKnowledge) return;
+    if (!activeCouncilRunId || !window.pitwall?.inspectProjectKnowledge) return;
     let active = true;
-    void window.braveli.inspectProjectKnowledge({ projectPath: activeProject.path }).then((result) => {
+    void window.pitwall.inspectProjectKnowledge({ projectPath: activeProject.path }).then((result) => {
       if (!active || !result.ok) return;
       setContextReceipts((current) => ({ ...Object.fromEntries(result.receipts.map((receipt) => [receipt.id, receipt])), ...current }));
     }).catch(() => { /* The Context screen exposes storage failures and retry. */ });
@@ -2509,7 +2494,7 @@ export function App() {
     // Relabelled the same way the rail relabels them: a member's role is the
     // only thing that tells it apart from the others, and members created
     // before that was true still carry the shared task title.
-    const title = braveli.tasks.find((task) => task.id === activeCouncilRun.taskId)?.title;
+    const title = pitwall.tasks.find((task) => task.id === activeCouncilRun.taskId)?.title;
     return activeCouncilRun.responses
       .map((response) => activeProject.sessions.find((session) => session.id === response.sessionId))
       .filter((session): session is AgentSession => Boolean(session))
@@ -2518,15 +2503,15 @@ export function App() {
         const label = councilMemberLabel(session.name, title);
         return label === session.name ? session : { ...session, name: label };
       });
-  }, [activeCouncilRun, activeProject.sessions, braveli.tasks]);
+  }, [activeCouncilRun, activeProject.sessions, pitwall.tasks]);
   const councilSessionIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const run of braveli.councilRuns) {
+    for (const run of pitwall.councilRuns) {
       if (run.projectId !== activeProject.id) continue;
       for (const response of run.responses) ids.add(response.sessionId);
     }
     return ids;
-  }, [braveli.councilRuns, activeProject.id]);
+  }, [pitwall.councilRuns, activeProject.id]);
   const railOrder = sessionOrderByProject[activeProject.id] ?? EMPTY_ORDER;
   // Memoised because SessionRail is, and the app re-renders on every frame that
   // carries terminal output — a fresh array here would defeat the memo sixty
@@ -2546,7 +2531,7 @@ export function App() {
    */
   const inspectorTaskRuns = useMemo<RoleRun[]>(() => {
     if (!activeTask) return [];
-    return braveli.sessions
+    return pitwall.sessions
       .filter((record) => record.taskId === activeTask.id)
       .map((record) => {
         const live = activeProject.sessions.find((session) => session.id === record.id);
@@ -2559,13 +2544,13 @@ export function App() {
           sessionId: record.id,
         };
       });
-  }, [activeTask, braveli.sessions, activeProject.sessions]);
+  }, [activeTask, pitwall.sessions, activeProject.sessions]);
 
   useEffect(() => {
     if (workspaceSection !== "connections") return;
     let live = true;
     void (async () => {
-      const result = await window.braveli?.whichCommands?.({
+      const result = await window.pitwall?.whichCommands?.({
         commands: agentCatalogue.map((entry) => entry.command),
       });
       if (live && result?.ok) setCatalogueInstalled(result.found);
@@ -2598,24 +2583,24 @@ export function App() {
 
   const selectedCouncilRun = useMemo(
     () =>
-      braveli.councilRuns.find(
+      pitwall.councilRuns.find(
         (run) =>
           run.projectId === activeProject.id &&
           run.responses.some((response) => response.sessionId === selectedSessionId),
       ),
-    [activeProject.id, braveli.councilRuns, selectedSessionId],
+    [activeProject.id, pitwall.councilRuns, selectedSessionId],
   );
 
   useEffect(() => {
     if (activeCouncilRun) return;
     const restoredRun =
-      selectedCouncilRun ?? braveli.councilRuns.find((run) => run.projectId === activeProject.id);
+      selectedCouncilRun ?? pitwall.councilRuns.find((run) => run.projectId === activeProject.id);
     if (!restoredRun) return;
     setActiveCouncilRunId(restoredRun.id);
     setActiveCouncilMode(
       restoredRun.responses.some((response) => response.sessionId.startsWith("compare-")) ? "compare" : "council",
     );
-  }, [activeCouncilRun, activeProject.id, braveli.councilRuns, selectedCouncilRun]);
+  }, [activeCouncilRun, activeProject.id, pitwall.councilRuns, selectedCouncilRun]);
 
   /**
    * Rebuilds councils that were running when the app last closed. The agent
@@ -2624,7 +2609,7 @@ export function App() {
    * so the conductor picks up with full context the moment it is handed on.
    */
   useEffect(() => {
-    for (const run of braveli.councilRuns) {
+    for (const run of pitwall.councilRuns) {
       if (relayRunRef.current[run.id] || !isRestorableRelayState(run.relay)) continue;
       const relay = run.relay;
       const sessions = new Map(activeProject.sessions.map((session) => [session.id, session]));
@@ -2713,7 +2698,7 @@ export function App() {
       }));
       if (relay.running) void resumeRestoredRelay(run.id);
     }
-  }, [braveli.councilRuns, activeProject.sessions]);
+  }, [pitwall.councilRuns, activeProject.sessions]);
 
   // Show fade cues on the chip strip when it overflows, so hidden sessions read
   // as "there's more" rather than silently clipping off-screen.
@@ -2854,7 +2839,7 @@ export function App() {
    * visible in the interface.
    */
   const track = useCallback((event: string, properties?: Record<string, string | number | boolean>) => {
-    void window.braveli?.captureEvent?.(event, properties);
+    void window.pitwall?.captureEvent?.(event, properties);
   }, []);
 
 
@@ -2875,13 +2860,13 @@ export function App() {
     const names: Record<string, string> = {};
     for (const session of activeProject.sessions) {
       if (!session.name.includes("…")) continue;
-      const taskId = braveli.sessions.find((record) => record.id === session.id)?.taskId;
-      const title = taskId ? braveli.tasks.find((task) => task.id === taskId)?.title : undefined;
+      const taskId = pitwall.sessions.find((record) => record.id === session.id)?.taskId;
+      const title = taskId ? pitwall.tasks.find((task) => task.id === taskId)?.title : undefined;
       const full = expandSessionName(session.name, title);
       if (full !== session.name) names[session.id] = full;
     }
     return names;
-  }, [activeProject.sessions, braveli.sessions, braveli.tasks]);
+  }, [activeProject.sessions, pitwall.sessions, pitwall.tasks]);
   const sidebarBusyById = useMemo(
     () => Object.fromEntries(activeProject.sessions.map((session) => [session.id, screenBusyFor(session.id)])),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2901,9 +2886,9 @@ export function App() {
     if (workspaceSection !== "work" || !selectedSession.id) return "";
     const row = sidebarGroups.find((group) => group.name === "Working")?.rows.find((item) =>
       item.sessionId === selectedSession.id
-      || (item.councilRunId && braveli.councilRuns.find((run) => run.id === item.councilRunId)?.responses.some((response) => response.sessionId === selectedSession.id)));
+      || (item.councilRunId && pitwall.councilRuns.find((run) => run.id === item.councilRunId)?.responses.some((response) => response.sessionId === selectedSession.id)));
     return row?.id ?? "";
-  }, [workspaceSection, selectedSession.id, sidebarGroups, braveli.councilRuns]);
+  }, [workspaceSection, selectedSession.id, sidebarGroups, pitwall.councilRuns]);
   // An agent that has stopped to ask something, anywhere: the moment it starts
   // waiting is the moment to say so, once.
   const waitingSessionsRef = useRef<Set<string> | null>(null);
@@ -2938,9 +2923,9 @@ export function App() {
   const reviewWatchRef = useRef<Map<string, string> | null>(null);
   useEffect(() => {
     const before = reviewWatchRef.current;
-    reviewWatchRef.current = new Map(braveli.tasks.map((task) => [task.id, task.status]));
+    reviewWatchRef.current = new Map(pitwall.tasks.map((task) => [task.id, task.status]));
     if (!before) return;
-    for (const task of braveli.tasks) {
+    for (const task of pitwall.tasks) {
       const was = before.get(task.id);
       if (task.status !== "review" || !was || was === "review") continue;
       notifyRef.current({
@@ -2950,7 +2935,7 @@ export function App() {
         banner: true,
       });
     }
-  }, [braveli.tasks]);
+  }, [pitwall.tasks]);
 
   const sidebarAttention = useMemo(
     () => {
@@ -3132,10 +3117,10 @@ export function App() {
           label: selectedCouncilRun?.name
             ?? (selectedCouncilRun
               ? formatCouncilRunName(
-                  braveli.tasks.find((task) => task.id === selectedCouncilRun.taskId)?.title ?? "Untitled task",
+                  pitwall.tasks.find((task) => task.id === selectedCouncilRun.taskId)?.title ?? "Untitled task",
                   activeCouncilMode,
                 )
-              : `Councils · ${braveli.councilRuns.filter((run) => run.projectId === activeProject.id).length}`),
+              : `Councils · ${pitwall.councilRuns.filter((run) => run.projectId === activeProject.id).length}`),
           runName: selectedCouncilRun?.name ?? null,
           // Relabelled here rather than trusted from the record: members created
           // before members were named by role carry the task title, and every one
@@ -3145,10 +3130,10 @@ export function App() {
           // run only works when a run is selected, and the rail also shows the
           // group when none is — which is exactly when every row looks alike.
           sessions: councilChipSessions.map((session) => {
-            const run = braveli.councilRuns.find((item) =>
+            const run = pitwall.councilRuns.find((item) =>
               item.responses.some((response) => response.sessionId === session.id),
             );
-            const title = run ? braveli.tasks.find((task) => task.id === run.taskId)?.title : undefined;
+            const title = run ? pitwall.tasks.find((task) => task.id === run.taskId)?.title : undefined;
             if (!title) return session;
             const label = councilMemberLabel(session.name, title);
             return label === session.name ? session : { ...session, name: label };
@@ -3157,12 +3142,12 @@ export function App() {
           onOpenCouncil: () => setWorkbenchTab("council"),
         }
       : null),
-    [councilChipSessions, selectedCouncilRun, braveli.tasks, braveli.councilRuns, activeProject.id, activeCouncilMode],
+    [councilChipSessions, selectedCouncilRun, pitwall.tasks, pitwall.councilRuns, activeProject.id, activeCouncilMode],
   );
   const sessionPreviews = useMemo(() => activeProject.sessions.flatMap((session) => {
     const url = previewUrlBySession[session.id] ?? "";
     if (!url) return [];
-    const run = braveli.sessions.find((item) => item.id === session.id);
+    const run = pitwall.sessions.find((item) => item.id === session.id);
     const task = run ? projectTasks.find((item) => item.id === run.taskId) : undefined;
     const identity = task?.identifier || task?.title || session.name;
     return [{
@@ -3171,7 +3156,7 @@ export function App() {
       url,
       label: `${identity} · ${formatServerLabel(url)}`,
     }];
-  }), [activeProject.sessions, braveli.sessions, projectTasks, previewUrlBySession]);
+  }), [activeProject.sessions, pitwall.sessions, projectTasks, previewUrlBySession]);
   const previewByTask = useMemo(() => ({
     ...Object.fromEntries(Object.entries(previewUrlsByProject[activeProject.id] ?? {})
       .filter(([taskId]) => taskId !== "project")
@@ -3281,19 +3266,19 @@ export function App() {
 
 
   const runningAgentSummary = useMemo(() => {
-    const sessions = braveli.sessions.filter(
+    const sessions = pitwall.sessions.filter(
       (session) => session.projectId === activeProject.id && session.status === "running",
     );
     return providerRegistry.map((provider) => {
       const session = sessions.find((item) => item.provider === provider.id);
-      const task = session ? braveli.tasks.find((item) => item.id === session.taskId) : undefined;
+      const task = session ? pitwall.tasks.find((item) => item.id === session.taskId) : undefined;
       return {
         provider,
         status: session ? "Working" : "Idle",
         task: task?.title ?? "No active task",
       };
     });
-  }, [activeProject.id, braveli.sessions, braveli.tasks]);
+  }, [activeProject.id, pitwall.sessions, pitwall.tasks]);
   const providerReadiness = useMemo(() => {
     const connected: AgentOption[] = [];
     let needsSetup = 0;
@@ -3444,7 +3429,7 @@ export function App() {
   function rememberPreviewUrl(projectId: string, url: string, taskId?: string) {
     if (!projectId || !url) return;
     setPreviewUrlsByProject((current) => {
-      const task = taskId ? braveliRef.current.tasks.find((item) => item.id === taskId) : undefined;
+      const task = taskId ? pitwallRef.current.tasks.find((item) => item.id === taskId) : undefined;
       const key = taskId || "project";
       const label = task ? `${task.identifier || "Task"} · ${task.title}` : "Project preview";
       const next = {
@@ -3472,7 +3457,7 @@ export function App() {
     // The main process is the one that normalises: it is the boundary that
     // hands the URL to the OS, so "localhost:5173" with no scheme and an
     // ftp:// paste have to be resolved there rather than trusted from here.
-    const result = await window.braveli?.openExternalUrl?.(typed);
+    const result = await window.pitwall?.openExternalUrl?.(typed);
     if (!result?.ok) {
       setSystemNotice({
         tone: "error",
@@ -3484,18 +3469,18 @@ export function App() {
     rememberPreviewUrl(activeProject.id, result.url ?? typed, taskId || activeTask?.id);
   }
 
-  async function resolveTaskWorkspace(task: BraveliTask) {
-    const listed = await window.braveli?.listWorktrees?.(activeProject.path);
+  async function resolveTaskWorkspace(task: PitwallTask) {
+    const listed = await window.pitwall?.listWorktrees?.(activeProject.path);
     return selectTaskWorkspace({
       task,
       sessions: activeProject.sessions,
-      runs: braveli.sessions.filter((session) => session.projectId === activeProject.id),
+      runs: pitwall.sessions.filter((session) => session.projectId === activeProject.id),
       worktrees: listed?.ok ? listed.worktrees : [],
       projectPath: activeProject.path,
     });
   }
 
-  async function openTaskInEditor(task: BraveliTask) {
+  async function openTaskInEditor(task: PitwallTask) {
     const workspace = await resolveTaskWorkspace(task);
     const opened = await openProjectInEditor(workspace.path);
     if (!opened) {
@@ -3519,8 +3504,8 @@ export function App() {
    * A written request for a task's branch: its commits, files and checks, laid
    * out by `composeRequest`, or filled into the repository's own template.
    */
-  async function draftTaskRequest(task: BraveliTask, projectPath: string, worktreePath: string, baseBranch: string) {
-    const context = await window.braveli?.requestContext?.({ projectPath, worktreePath, baseBranch });
+  async function draftTaskRequest(task: PitwallTask, projectPath: string, worktreePath: string, baseBranch: string) {
+    const context = await window.pitwall?.requestContext?.({ projectPath, worktreePath, baseBranch });
     if (!context?.ok || !context.branch) return { ok: false as const, error: context?.error || "The task's checkout could not be read." };
     return {
       ok: true as const,
@@ -3535,7 +3520,7 @@ export function App() {
     };
   }
 
-  async function startTaskRequest(task: BraveliTask) {
+  async function startTaskRequest(task: PitwallTask) {
     const workspace = await resolveTaskWorkspace(task);
     const written = await draftTaskRequest(task, activeProject.path, workspace.path, activeProject.branch);
     const noun = requestNoun;
@@ -3580,11 +3565,11 @@ export function App() {
    */
   async function writeTaskRequest(pending: NonNullable<typeof requestDraft>) {
     const token = ++requestWriteToken.current;
-    if (!window.braveli?.writeRequest) return;
+    if (!window.pitwall?.writeRequest) return;
     setRequestWriting(true);
     setRequestWriteError("");
     try {
-      const result = await window.braveli.writeRequest({
+      const result = await window.pitwall.writeRequest({
         projectPath: activeProject.path,
         worktreePath: pending.worktreePath,
         baseBranch: pending.baseBranch,
@@ -3623,7 +3608,7 @@ export function App() {
     setRequestBusy(true);
     setRequestError("");
     try {
-      const result = await window.braveli?.openPullRequest?.({
+      const result = await window.pitwall?.openPullRequest?.({
         projectPath: activeProject.path,
         worktreePath: pending.worktreePath,
         branch: pending.branch,
@@ -3655,7 +3640,7 @@ export function App() {
             ? `Pushed as ${result.branch}, because the repository refused ${result.renamedFrom}. ${result.url}`
             : result.url,
         });
-        void window.braveli?.openExternalUrl?.(result.url);
+        void window.pitwall?.openExternalUrl?.(result.url);
         void refreshReviewState(true);
         return;
       }
@@ -3665,7 +3650,7 @@ export function App() {
         try { await navigator.clipboard.writeText(`${input.title}\n\n${input.body}`); } catch { /* The page still opens. */ }
         setRequestDraft(null);
         setSystemNotice({ tone: "info", title: `Pushed ${result.branch || pending.branch}`, message: `The title and description are on the clipboard. Paste them into the ${pending.noun} page that just opened.` });
-        void window.braveli?.openExternalUrl?.(result.url);
+        void window.pitwall?.openExternalUrl?.(result.url);
         return;
       }
       setRequestError(result?.error || `The ${pending.noun} could not be created.`);
@@ -3674,13 +3659,13 @@ export function App() {
     }
   }
 
-  async function openTaskPullRequest(task: BraveliTask) {
+  async function openTaskPullRequest(task: PitwallTask) {
     // Review already found it, possibly on a branch the agent named itself,
     // which asking about the worktree's own branch would miss.
     const known = task.worktree ? reviewFacts?.[task.worktree]?.pullRequest?.url : "";
-    if (known && (await window.braveli?.openExternalUrl?.(known))?.ok) return;
+    if (known && (await window.pitwall?.openExternalUrl?.(known))?.ok) return;
     const workspace = await resolveTaskWorkspace(task);
-    const result = await window.braveli?.getPullRequest?.({ projectPath: workspace.path });
+    const result = await window.pitwall?.getPullRequest?.({ projectPath: workspace.path });
     const noun = result?.requestNoun || requestNoun;
     if (!result?.ok) {
       setSystemNotice({
@@ -3693,7 +3678,7 @@ export function App() {
     if (result.unsupported) {
       // No CLI to ask on this host, so offer the host's own page for a new one.
       if (result.newUrl) {
-        const opened = await window.braveli?.openExternalUrl?.(result.newUrl);
+        const opened = await window.pitwall?.openExternalUrl?.(result.newUrl);
         if (opened?.ok) return;
       }
       setSystemNotice({
@@ -3715,13 +3700,13 @@ export function App() {
     // here rather than at discovery: found-but-never-opened is not the same
     // outcome, and only this line means somebody actually went and looked.
     track("pull_request_opened");
-    const opened = await window.braveli?.openExternalUrl?.(result.url);
+    const opened = await window.pitwall?.openExternalUrl?.(result.url);
     if (!opened?.ok) {
       setSystemNotice({ tone: "error", title: `Could not open the ${noun}`, message: opened?.error || result.url });
     }
   }
 
-  async function openTaskPreview(task: BraveliTask) {
+  async function openTaskPreview(task: PitwallTask) {
     const preview = previewByTask[task.id];
     if (!preview) {
       setSystemNotice({ tone: "info", title: "No preview reported", message: "This task has not reported a local development URL yet." });
@@ -3800,139 +3785,32 @@ export function App() {
   }, [projects]);
 
   useEffect(() => {
-    braveliRef.current = braveli;
-    writeBraveliState(braveli);
-  }, [braveli]);
-
-  // Pitwall Cloud: this window's state goes to the sync engine a moment after
-  // it settles, and other computers' changes come back through applyRemote.
-  const cloudStateRef = useRef({ projects, braveli, taskRuns, outcomes: modelOutcomes, customAgents, sessionOrder: sessionOrderByProject });
-  cloudStateRef.current = { projects, braveli, taskRuns, outcomes: modelOutcomes, customAgents, sessionOrder: sessionOrderByProject };
-  // Survives a reload: written only after the batch's data itself is saved.
-  const cloudGenerationRef = useRef(Number(window.localStorage.getItem(CLOUD_GENERATION_KEY)) || 0);
-  const pushCloudSnapshot = useCallback(() => {
-    window.braveli?.cloudPushSnapshot?.(buildCloudSnapshot({ ...cloudStateRef.current, prefs: readCloudPrefs(), appliedGeneration: cloudGenerationRef.current }));
-  }, []);
-  const cloudReportedRef = useRef(false);
-  useEffect(() => {
-    if (!window.braveli?.cloudPushSnapshot) return undefined;
-    // The first report goes at once: until it arrives, sync can't see this window's state.
-    const timer = window.setTimeout(pushCloudSnapshot, cloudReportedRef.current ? 2000 : 0);
-    cloudReportedRef.current = true;
-    return () => window.clearTimeout(timer);
-  }, [projects, braveli, taskRuns, modelOutcomes, customAgents, sessionOrderByProject, themePreference, pushCloudSnapshot]);
-
-  // Which computer drives each task, and what the hand-over says.
-  const [cloudLeases, setCloudLeases] = useState<Record<string, PitwallCloudLease>>({});
-  const [continuingTaskId, setContinuingTaskId] = useState<string | null>(null);
-  useEffect(() => window.braveli?.onCloudLeases?.(setCloudLeases), []);
-  useEffect(() => window.braveli?.onCloudNotice?.((notice) => setSystemNoticeNow(notice)), []);
-
-  // A synced project arriving without its code: Pitwall clones it (or finds it here) and points the project at it.
-  useEffect(() => window.braveli?.onCloudProjectReady?.((event) => {
-    const name = event.name || "A synced project";
-    if (event.state === "cloning") {
-      setSystemNoticeNow({ tone: "info", title: `Getting ${name}`, message: "Downloading the code so you can keep working here." });
-      return;
-    }
-    if (event.state === "failed") {
-      setSystemNoticeNow({ tone: "warn", title: `${name} isn't on this computer yet`, message: event.message || "Its code couldn't be downloaded." });
-      return;
-    }
-    if (!event.path) return;
-    const current = cloudStateRef.current;
-    const projects = current.projects.map((project) => (project.id === event.projectId ? { ...project, path: event.path! } : project));
-    const braveliNext = { ...current.braveli, projects: current.braveli.projects.map((project) => (project.id === event.projectId ? { ...project, path: event.path! } : project)) };
-    setProjects(projects);
-    writeStoredJson(PROJECTS_STORAGE_KEY, projects);
-    setBraveli(braveliNext);
-    writeBraveliState(braveliNext);
-    cloudStateRef.current = { ...current, projects, braveli: braveliNext };
-    pushCloudSnapshot();
-    setSystemNoticeNow({ tone: "info", title: `${name} is ready`, message: event.action === "adopt" ? `Using the copy already at ${event.path}.` : `Downloaded to ${event.path}.` });
-  }), [pushCloudSnapshot]);
-
-  useEffect(() => window.braveli?.onCloudRenameProject?.(({ from, to }) => {
-    const current = cloudStateRef.current;
-    const next = renameProject(current, from, to);
-    if (next === current) return;
-    setProjects(next.projects);
-    writeStoredJson(PROJECTS_STORAGE_KEY, next.projects);
-    setBraveli(next.braveli);
-    writeBraveliState(next.braveli);
-    setTaskRuns(next.taskRuns);
-    writeTaskRuns(next.taskRuns);
-    setModelOutcomes(next.outcomes);
-    writeOutcomes(next.outcomes);
-    setSessionOrderByProject(next.sessionOrder);
-    writeStoredJson(SESSION_ORDER_STORAGE_KEY, next.sessionOrder);
-    cloudStateRef.current = next;
-  }), []);
-
-  useEffect(() => window.braveli?.onCloudApply?.(({ generation, changes }) => {
-    const current = cloudStateRef.current;
-    const next = applyRemote(current, changes);
-    // Saved now rather than by the usual effects, so a reload right after this still has it.
-    if (next.projects !== current.projects) {
-      setProjects(next.projects);
-      writeStoredJson(PROJECTS_STORAGE_KEY, next.projects);
-    }
-    if (next.braveli !== current.braveli) {
-      setBraveli(next.braveli);
-      writeBraveliState(next.braveli);
-    }
-    if (next.taskRuns !== current.taskRuns) {
-      setTaskRuns(next.taskRuns);
-      writeTaskRuns(next.taskRuns);
-    }
-    if (next.outcomes !== current.outcomes) {
-      setModelOutcomes(next.outcomes);
-      writeOutcomes(next.outcomes);
-    }
-    if (next.customAgents !== current.customAgents) {
-      setCustomAgents(next.customAgents);
-      writeCustomAgents(next.customAgents);
-    }
-    if (next.sessionOrder !== current.sessionOrder) {
-      setSessionOrderByProject(next.sessionOrder);
-      writeStoredJson(SESSION_ORDER_STORAGE_KEY, next.sessionOrder);
-    }
-    if (next.prefs) {
-      for (const [key, value] of Object.entries(next.prefs)) writeStored(key, value);
-      const theme = next.prefs["braveli-theme"];
-      if (theme === "light" || theme === "dark" || theme === "system") setThemePreference(theme);
-      const color = next.prefs["braveli-color-theme"];
-      if (color && (COLOR_THEMES as readonly string[]).includes(color)) setColorTheme(color as ColorTheme);
-    }
-    cloudStateRef.current = { projects: next.projects, braveli: next.braveli, taskRuns: next.taskRuns, outcomes: next.outcomes, customAgents: next.customAgents, sessionOrder: next.sessionOrder };
-    cloudGenerationRef.current = generation;
-    writeStored(CLOUD_GENERATION_KEY, String(generation));
-    // Report straight back, so the main process never works from a snapshot older than this batch.
-    pushCloudSnapshot();
-  }), [pushCloudSnapshot]);
+    pitwallRef.current = pitwall;
+    writePitwallState(pitwall);
+  }, [pitwall]);
 
   // Completed, approved by git, or cancelled: every way a task finishes passes
   // through its status, so its worktree is offered for removal here once.
-  const taskStatusRef = useRef<Record<string, BraveliTask["status"]> | null>(null);
+  const taskStatusRef = useRef<Record<string, PitwallTask["status"]> | null>(null);
   useEffect(() => {
     const previous = taskStatusRef.current;
-    taskStatusRef.current = Object.fromEntries(braveli.tasks.map((task) => [task.id, task.status]));
+    taskStatusRef.current = Object.fromEntries(pitwall.tasks.map((task) => [task.id, task.status]));
     if (!previous) return;
-    for (const task of braveli.tasks) {
+    for (const task of pitwall.tasks) {
       const was = previous[task.id];
       if (was && was !== task.status && (task.status === "completed" || task.status === "cancelled")) {
         void retireTaskWorktrees(task.projectId, task.id);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [braveli.tasks]);
+  }, [pitwall.tasks]);
 
   useEffect(() => {
     let active = true;
-    void window.braveli?.getUpdateState?.().then((state) => {
+    void window.pitwall?.getUpdateState?.().then((state) => {
       if (active) setUpdateState(state);
     });
-    const unsubscribe = window.braveli?.onUpdateStatus?.((state) => setUpdateState(state));
+    const unsubscribe = window.pitwall?.onUpdateStatus?.((state) => setUpdateState(state));
     return () => {
       active = false;
       unsubscribe?.();
@@ -3941,7 +3819,7 @@ export function App() {
 
   useEffect(() => {
     let active = true;
-    void window.braveli?.getRuntimeRecovery?.().then(async (recovery) => {
+    void window.pitwall?.getRuntimeRecovery?.().then(async (recovery) => {
       if (!active) return;
       settleOrphanedRecords(recovery?.live ?? []);
       if (!recovery?.restorable && !recovery?.recovered) return;
@@ -3994,7 +3872,7 @@ export function App() {
             ? { ...session, status: "disconnected", logs: ["Recovered after an interrupted Pitwall shutdown", ...session.logs] }
             : session),
         })));
-        setBraveli((current) => ({
+        setPitwall((current) => ({
           ...current,
           sessions: current.sessions.map((session) => savedIds.has(session.id) && interrupted
             ? { ...session, status: "disconnected", updatedAt: nowIso() }
@@ -4072,15 +3950,15 @@ export function App() {
   }, [selectedSession.id]);
 
   useEffect(() => {
-    writeStored("braveli-mission-open", String(missionOpen));
+    writeStored("pitwall-mission-open", String(missionOpen));
   }, [missionOpen]);
   // A review cut off by a restart is started again: the reviewer is not
   // restored with the sessions, and the work would otherwise wait on it forever.
   useEffect(() => {
     // Only reviews already under way at load: one started since is in flight, not cut off.
-    const cutOff = new Set(braveliRef.current.tasks.filter((task) => task.pair?.state === "reviewing").map((task) => task.id));
+    const cutOff = new Set(pitwallRef.current.tasks.filter((task) => task.pair?.state === "reviewing").map((task) => task.id));
     const timer = window.setTimeout(() => {
-      for (const task of braveliRef.current.tasks) {
+      for (const task of pitwallRef.current.tasks) {
         const pair = task.pair;
         if (!cutOff.has(task.id)) continue;
         if (pair?.state !== "reviewing" || !pair.implementerSessionId || !pair.worktreePath) continue;
@@ -4094,53 +3972,40 @@ export function App() {
   }, []);
   // A CLI that updated itself has been started once to check it still works;
   // the person hears how that went.
-  useEffect(() => window.braveli?.onCliChecked?.(({ notice }) => setSystemNotice(notice)), []);
-  useEffect(() => window.braveli?.onCreditsRefused?.(({ reason }) => {
-    void credits.refresh();
-    setSystemNotice({
-      tone: "error",
-      title: reason === "exhausted" ? "Credits used up" : reason === "no-plan" ? "No plan" : "Signed out of Pitwall",
-      message: reason === "exhausted"
-        ? "This month's plan and pay-as-you-go cap are used up. Raise the cap in Account, or start this agent again on your own login."
-        : reason === "no-plan"
-          ? "This account has no active plan. Choose one in Account, or start this agent on your own login."
-          : "This Mac's Pitwall key is no longer valid. Sign in again in Account.",
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), []);
+  useEffect(() => window.pitwall?.onCliChecked?.(({ notice }) => setSystemNotice(notice)), []);
   // Shipped work keeps no agent running. Once a task is done, each of its
   // sessions ends as soon as it is quiet; one mid-turn, or asking something,
   // is left until it is.
   const endedForShippedRef = useRef(new Set<string>());
   useEffect(() => {
     const statusById = new Map(projects.flatMap((project) => project.sessions.map((session) => [session.id, session.status] as const)));
-    const shipped = new Set(braveli.tasks.filter((task) => task.status === "completed").map((task) => task.id));
-    for (const run of braveli.sessions) {
+    const shipped = new Set(pitwall.tasks.filter((task) => task.status === "completed").map((task) => task.id));
+    for (const run of pitwall.sessions) {
       if (!run.taskId || !shipped.has(run.taskId) || endedForShippedRef.current.has(run.id)) continue;
       if (!terminalAttachedRef.current[run.id]) continue;
       const status = statusById.get(run.id);
       if (status === "running" || status === "starting" || status === "waiting") continue;
       endedForShippedRef.current.add(run.id);
-      void window.braveli?.detachTerminal?.(run.id);
+      void window.pitwall?.detachTerminal?.(run.id);
     }
-  }, [braveli.tasks, braveli.sessions, projects]);
+  }, [pitwall.tasks, pitwall.sessions, projects]);
 
   // Automations speak up: a notice in the window with the way to it, and a
   // click on the macOS notification opens the same place.
   // The banner is shown by the main process, which can do it with no window.
-  useEffect(() => window.braveli?.onAutomationNotice?.(({ title, body, target }) => {
+  useEffect(() => window.pitwall?.onAutomationNotice?.(({ title, body, target }) => {
     if (!target?.projectId) return;
     // Named, because the notice outlives a switch to another project.
     const project = projectsRef.current.find((item) => item.id === target.projectId);
     notifyRef.current({ title, body: project ? `${project.name} · ${body}` : body, target });
   }), []);
-  useEffect(() => window.braveli?.onNavigate?.(({ section, target }) => {
+  useEffect(() => window.pitwall?.onNavigate?.(({ section, target }) => {
     if (target?.projectId) jumpToRef.current(target);
     else setWorkspaceSection(section === "schedule" ? "schedule" : "watch");
   }), []);
 
   // Hermes's sign-in, run from the notice: its progress replaces the notice as it goes.
-  useEffect(() => window.braveli?.onHermesSignInState?.((update) => {
+  useEffect(() => window.pitwall?.onHermesSignInState?.((update) => {
     if (update.state === "approve") {
       setSystemNoticeNow({ tone: "warn", title: "Approve Hermes in your browser", message: `Nous opened in your browser. Confirm the code ${update.code} there, and Pitwall connects as soon as you approve.` });
     } else if (update.state === "done") {
@@ -4152,12 +4017,12 @@ export function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), []);
-  useEffect(() => window.braveli?.onAgentNotice?.(({ notice, modelsChanged, retiredModel, replacementModel, replacementLabel }) => {
+  useEffect(() => window.pitwall?.onAgentNotice?.(({ notice, modelsChanged, retiredModel, replacementModel, replacementLabel }) => {
     if (modelsChanged) void refreshProviderModels(false);
     if (retiredModel && replacementModel) {
       // Every project reviewing with the retired model, or with Hermes's own
       // default (which is what retired), moves to the replacement.
-      setBraveli((current) => ({
+      setPitwall((current) => ({
         ...current,
         projects: current.projects.map((project) => {
           const overseer = project.overseer ?? DEFAULT_OVERSEER;
@@ -4177,18 +4042,13 @@ export function App() {
   }), [refreshProviderModels]);
   // Codex names its conversation after it starts; keep it with the session so
   // a later relaunch resumes it.
-  useEffect(() => window.braveli?.onSessionNativeId?.(({ sessionId, nativeSessionId, nativeSessionStarted }) => {
-    // A conversation that couldn't follow from another computer starts afresh under a new id.
-    const started = nativeSessionStarted === undefined ? {} : { nativeSessionStarted };
+  useEffect(() => window.pitwall?.onSessionNativeId?.(({ sessionId, nativeSessionId }) => {
     setProjects((current) => current.map((project) => project.sessions.some((session) => session.id === sessionId)
-      ? { ...project, sessions: project.sessions.map((session) => session.id === sessionId ? { ...session, nativeSessionId, ...started } : session) }
+      ? { ...project, sessions: project.sessions.map((session) => session.id === sessionId ? { ...session, nativeSessionId } : session) }
       : project));
-    if (nativeSessionStarted !== undefined) {
-      setBraveli((current) => ({ ...current, sessions: current.sessions.map((session) => (session.id === sessionId ? { ...session, nativeSessionId, nativeSessionStarted } : session)) }));
-    }
   }), []);
   useEffect(() => {
-    writeStored("braveli-files-open", String(filesOpen));
+    writeStored("pitwall-files-open", String(filesOpen));
     if (filesOpen && filesPanelEnabled) track("files_opened", { surface: "files" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filesOpen]);
@@ -4198,7 +4058,7 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceSection]);
   useEffect(() => {
-    writeStored("braveli-files-width", String(filesWidth));
+    writeStored("pitwall-files-width", String(filesWidth));
   }, [filesWidth]);
 
   useEffect(() => {
@@ -4206,14 +4066,14 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    writeStored("braveli-theme", themePreference);
+    writeStored("pitwall-theme", themePreference);
     document.documentElement.dataset.theme = theme;
     // Windows draws its caption buttons itself; their colours follow the app's theme.
-    void window.braveli?.setWindowChrome?.({ dark: theme === "dark" });
+    void window.pitwall?.setWindowChrome?.({ dark: theme === "dark" });
   }, [theme, themePreference]);
 
   useEffect(() => {
-    writeStored("braveli-color-theme", colorTheme);
+    writeStored("pitwall-color-theme", colorTheme);
     document.documentElement.dataset.colorTheme = colorTheme;
   }, [colorTheme]);
 
@@ -4225,8 +4085,8 @@ export function App() {
    * `--font-mono`, keep the fixed advance width their columns depend on.
    */
   useEffect(() => {
-    writeStored("braveli-app-font", appFont);
-    writeStored("braveli-app-font-migration", "zed");
+    writeStored("pitwall-app-font", appFont);
+    writeStored("pitwall-app-font-migration", "zed");
     document.documentElement.style.setProperty("--font-sans", FONT_STACKS[appFont] ?? FONT_STACKS.plex);
     document.documentElement.dataset.appFont = appFont;
   }, [appFont]);
@@ -4254,7 +4114,7 @@ export function App() {
   }, [refreshAgentChecks]);
 
   useEffect(() => {
-    if (!window.braveli?.onTerminalData) return;
+    if (!window.pitwall?.onTerminalData) return;
 
     /**
      * Chunks are collected and applied once a frame rather than one at a time.
@@ -4307,7 +4167,7 @@ export function App() {
 
     flushTerminalDataRef.current = flush;
 
-    const stop = window.braveli.onTerminalData(({ sessionId, data }) => {
+    const stop = window.pitwall.onTerminalData(({ sessionId, data }) => {
       const tail = knowledgeOutputRef.current[sessionId];
       if (tail) {
         tail.parts.push(data);
@@ -4353,12 +4213,12 @@ export function App() {
    * pane showed a clean `[process exited 0]` as though nothing were wrong.
    */
   useEffect(() => {
-    if (!window.braveli?.onTerminalClosed) return;
-    return window.braveli.onTerminalClosed(({ sessionId, exitCode, stopped }) => {
+    if (!window.pitwall?.onTerminalClosed) return;
+    return window.pitwall.onTerminalClosed(({ sessionId, exitCode, stopped }) => {
       terminalAttachedRef.current[sessionId] = false;
       settleClosedSession(sessionId, { exitCode, stopped });
-      const run = braveliRef.current.sessions.find((item) => item.id === sessionId);
-      const task = braveliRef.current.tasks.find((item) => item.id === run?.taskId)
+      const run = pitwallRef.current.sessions.find((item) => item.id === sessionId);
+      const task = pitwallRef.current.tasks.find((item) => item.id === run?.taskId)
         ?? taskBySessionRef.current[sessionId];
       const finished = task && (task.status === "completed" || task.status === "cancelled");
       if (finished) void releaseTaskRuntime(task.projectId, task.id);
@@ -4372,11 +4232,11 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (!window.braveli?.onAgentCompleted) return;
-    return window.braveli.onAgentCompleted((event) => {
+    if (!window.pitwall?.onAgentCompleted) return;
+    return window.pitwall.onAgentCompleted((event) => {
       if (event.summary) lastSummaryRef.current[event.sessionId] = event.summary;
       // A pair's reviewer is not a session of its own: its finished turn is a verdict.
-      const reviewed = braveliRef.current.tasks.find((task) => task.pair?.reviewerSessionId === event.sessionId);
+      const reviewed = pitwallRef.current.tasks.find((task) => task.pair?.reviewerSessionId === event.sessionId);
       if (reviewed) {
         void settlePairRound(reviewed.id, event.summary || "");
         return;
@@ -4418,9 +4278,9 @@ export function App() {
       } else if (!relayRunIdBySessionRef.current[event.sessionId]) {
         // Work that goes on to a reviewer or to Review says so when it gets
         // there; "finished" first would be the same news twice.
-        const record = braveliRef.current.sessions.find((item) => item.id === event.sessionId);
-        const linked = record?.taskId ? braveliRef.current.tasks.find((item) => item.id === record.taskId) : undefined;
-        const reviewFollows = linked && (linked.pair || shouldMoveToReview(linked, braveliRef.current.sessions, event.sessionId));
+        const record = pitwallRef.current.sessions.find((item) => item.id === event.sessionId);
+        const linked = record?.taskId ? pitwallRef.current.tasks.find((item) => item.id === record.taskId) : undefined;
+        const reviewFollows = linked && (linked.pair || shouldMoveToReview(linked, pitwallRef.current.sessions, event.sessionId));
         if (!reviewFollows) {
           notifyRef.current({
             title: `${event.sessionName} finished`,
@@ -4445,7 +4305,7 @@ export function App() {
             : session),
         };
       }));
-      setBraveli((current) => ({
+      setPitwall((current) => ({
         ...current,
         sessions: current.sessions.map((session) => session.id === event.sessionId
           ? {
@@ -4470,12 +4330,12 @@ export function App() {
 
       // A scheduled run settles here: this is where the agent says it is done,
       // and the only place that knows whether it failed.
-      const settling = braveliRef.current.sessions.find((session) => session.id === event.sessionId);
+      const settling = pitwallRef.current.sessions.find((session) => session.id === event.sessionId);
       if (settling?.taskId) void settleScheduledRun(settling.taskId, event.status === "failed");
 
       if (event.status !== "failed") {
-        const run = braveliRef.current.sessions.find((session) => session.id === event.sessionId);
-        const task = run ? braveliRef.current.tasks.find((item) => item.id === run.taskId) : undefined;
+        const run = pitwallRef.current.sessions.find((session) => session.id === event.sessionId);
+        const task = run ? pitwallRef.current.tasks.find((item) => item.id === run.taskId) : undefined;
         const projectSession = projectsRef.current
           .find((project) => project.id === event.projectId)
           ?.sessions.find((session) => session.id === event.sessionId);
@@ -4488,9 +4348,9 @@ export function App() {
             // call that blocks — an index.lock held by a concurrent worktree, a
             // slow filesystem — must not cost the user the report the agent
             // just wrote, so this waits only so long for the extra detail.
-            const gitStatus = workspacePath && window.braveli?.getGitStatus
+            const gitStatus = workspacePath && window.pitwall?.getGitStatus
               ? await Promise.race([
-                  window.braveli.getGitStatus(workspacePath).catch(() => null),
+                  window.pitwall.getGitStatus(workspacePath).catch(() => null),
                   new Promise<null>((resolve) => setTimeout(() => resolve(null), 5_000)),
                 ])
               : null;
@@ -4505,7 +4365,7 @@ export function App() {
               ...mergeTaskSummaryComponents(baseSummary, changedFiles),
               reportedAt: completedAt,
             };
-            setBraveli((current) => ({
+            setPitwall((current) => ({
               ...current,
               tasks: current.tasks.map((item) => {
                 if (item.id !== task.id) return item;
@@ -4523,12 +4383,12 @@ export function App() {
             }));
 
             // The agent's own signal that it is done. It already writes
-            // BRAVELI_TASK_SUMMARY when it finishes, and that marker is the
+            // PITWALL_TASK_SUMMARY when it finishes, and that marker is the
             // only thing on this path that means "the work is complete" rather
             // than "the turn ended" — a blocked run that has since been
             // cleared finishes on a later turn, so the turn ending is not
             // enough to settle it, and the summary is.
-            const summarised = braveliRef.current.sessions.find((item) => item.id === event.sessionId);
+            const summarised = pitwallRef.current.sessions.find((item) => item.id === event.sessionId);
             if (summarised?.taskId) void settleScheduledRun(summarised.taskId, false);
           })();
 
@@ -4558,7 +4418,7 @@ export function App() {
             // device. Opening it through macOS again would route it to whichever
             // simulator happens to be the default and break task isolation.
             if (preview.target === "mobile") return;
-            const opening = window.braveli?.openExternalUrl?.(url);
+            const opening = window.pitwall?.openExternalUrl?.(url);
             if (!opening) {
               openedCompletionPreviewsRef.current.delete(previewKey);
               return;
@@ -4585,13 +4445,13 @@ export function App() {
           // A paired task goes to its reviewer before it goes to you. While the
           // reviewer reads, later turn-ends from the implementer are not new
           // work to review.
-          const pairedTask = braveliRef.current.tasks.find((item) => item.id === run.taskId);
+          const pairedTask = pitwallRef.current.tasks.find((item) => item.id === run.taskId);
           // A project with Hermes as its reviewer: finished work goes to Hermes
           // before it comes to you, whoever wrote it and however it was started.
           const overseer = overseerOf(pairedTask?.projectId);
-          if (pairedTask && !pairedTask.pair && overseer && shouldMoveToReview(pairedTask, braveliRef.current.sessions, event.sessionId)) {
-            const pair: BraveliTaskPair = { reviewer: "hermes", model: overseer.model, maxRounds: overseer.rounds, round: 0, state: "implementing" };
-            setBraveli((current) => ({
+          if (pairedTask && !pairedTask.pair && overseer && shouldMoveToReview(pairedTask, pitwallRef.current.sessions, event.sessionId)) {
+            const pair: PitwallTaskPair = { reviewer: "hermes", model: overseer.model, maxRounds: overseer.rounds, round: 0, state: "implementing" };
+            setPitwall((current) => ({
               ...current,
               tasks: current.tasks.map((item) => item.id === pairedTask.id && !item.pair ? { ...item, pair, updatedAt: completedAt } : item),
             }));
@@ -4601,7 +4461,7 @@ export function App() {
           if (pairedTask?.pair) {
             // The same test that would move it to review: only work that is
             // actually finished is worth a reviewer's round.
-            if (pairedTask.pair.state === "implementing" && shouldMoveToReview(pairedTask, braveliRef.current.sessions, event.sessionId)) {
+            if (pairedTask.pair.state === "implementing" && shouldMoveToReview(pairedTask, pitwallRef.current.sessions, event.sessionId)) {
               void runPairReview(pairedTask.id, event.sessionId, run.worktreePath || projectSession?.worktreePath || project?.path || "", project);
             }
             return;
@@ -4611,7 +4471,7 @@ export function App() {
           // completion path wrote a summary, opened the preview, and left the
           // task in Running, so a task whose agent had been done for an hour
           // was indistinguishable from one still being worked on.
-          setBraveli((current) => {
+          setPitwall((current) => {
             const liveTask = current.tasks.find((item) => item.id === run.taskId);
             if (!liveTask || !shouldMoveToReview(liveTask, current.sessions, event.sessionId)) return current;
             return {
@@ -4679,9 +4539,9 @@ export function App() {
   // answer that changes about as often as an app is installed. The main process
   // re-detects on each open, so installing one mid-session still works.
   useEffect(() => {
-    if (!window.braveli?.listEditors) return;
+    if (!window.pitwall?.listEditors) return;
     let active = true;
-    void window.braveli.listEditors().then((result) => {
+    void window.pitwall.listEditors().then((result) => {
       if (active && result?.ok) setInstalledEditors(result.editors ?? []);
     });
     return () => {
@@ -4693,13 +4553,11 @@ export function App() {
   // selectDraftAgent, handoffs, or "use in session", so this guards against a
   // stale model from another provider leaking into the launch command.
   useEffect(() => {
-    // A credits session runs the gateway's models, which no CLI lists as its own.
-    if (draftBilling === "credits" && creditsCanRun(String(draftAgent)) && credits.models.includes(draftModel)) return;
     const option = agentOptions.find((item) => item.agent === draftAgent);
     if (option && !option.models.some((model) => model.label === draftModel)) {
       setDraftModel(option.models[0].label);
     }
-  }, [agentOptions, draftAgent, draftModel, draftBilling, credits.models]);
+  }, [agentOptions, draftAgent, draftModel]);
 
   useEffect(() => {
     if (workbenchTab !== "terminal" || !selectedSession) return;
@@ -4794,7 +4652,7 @@ export function App() {
         return;
       }
       // Command only: Control-E is the terminal's end-of-line.
-      if (isFilesShortcut(event) && readStoredValue("braveli-files-panel", "off") === "on") {
+      if (isFilesShortcut(event) && readStoredValue("pitwall-files-panel", "off") === "on") {
         event.preventDefault();
         setFilesOpen((open) => !open);
         setWorkspaceSection("work");
@@ -4822,7 +4680,7 @@ export function App() {
       };
     }
 
-    window.braveli?.listProjectFiles?.(activeProject.path).then((result) => {
+    window.pitwall?.listProjectFiles?.(activeProject.path).then((result) => {
       if (!active) return;
       if (result?.ok && result.files.length > 0) {
         setProjectFiles(result.files);
@@ -4846,8 +4704,8 @@ export function App() {
     );
   }, [projects, query]);
 
-  function appendActivity(event: Omit<BraveliActivityEvent, "id" | "createdAt">) {
-    setBraveli((current) => ({
+  function appendActivity(event: Omit<PitwallActivityEvent, "id" | "createdAt">) {
+    setPitwall((current) => ({
       ...current,
       activity: [
         {
@@ -4875,7 +4733,7 @@ export function App() {
     const title = draftTaskTitle.trim() || "Untitled task";
     const timestamp = nowIso();
     track("task_created", { source_kind: "local" });
-    const task: BraveliTask = {
+    const task: PitwallTask = {
       id: makeId("task"),
       identifier,
       projectId: activeProject.id,
@@ -4892,7 +4750,7 @@ export function App() {
       updatedAt: timestamp,
     };
 
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       tasks: [task, ...current.tasks],
       activity: [
@@ -4939,18 +4797,18 @@ export function App() {
    * The same task an import makes, for the project the watch belongs to, with
    * the plan kept under the ticket's own text rather than replacing it.
    */
-  function createTaskFromTicket(finding: WatchFinding, plan: string, assignedAgent: BraveliProviderId | "" = ""): BraveliTask | null {
+  function createTaskFromTicket(finding: WatchFinding, plan: string, assignedAgent: PitwallProviderId | "" = ""): PitwallTask | null {
     const ticket = finding.payload?.ticket;
     const source = finding.payload?.source;
     if (!ticket || !source) return null;
     const project = projectsRef.current.find((item) => item.id === finding.projectId);
     if (!project) return null;
-    const used = new Set(braveliRef.current.tasks.filter((task) => task.projectId === project.id).map((task) => taskBranchName(task).toLowerCase()));
+    const used = new Set(pitwallRef.current.tasks.filter((task) => task.projectId === project.id).map((task) => taskBranchName(task).toLowerCase()));
     const candidate = { id: ticket.id || "", title: ticket.title, description: ticket.description, url: ticket.url, status: ticket.status } as McpTaskCandidate;
     const identifier = allocateImportedTaskIdentifier(candidate, used);
     const timestamp = nowIso();
     const description = [trackerHtmlToMarkdown(ticket.description ?? "").trim(), plan.trim() ? `## Plan\n\n${plan.trim()}` : ""].filter(Boolean).join("\n\n");
-    const task: BraveliTask = {
+    const task: PitwallTask = {
       id: makeId("task"),
       identifier,
       projectId: project.id,
@@ -4961,11 +4819,11 @@ export function App() {
       assignedAgent,
       relatedFiles: [],
       worktree: identifier,
-      source: { kind: "mcp", name: source.name, provider: source.provider as BraveliProviderId, target: source.target, externalId: ticket.id, url: ticket.url, status: ticket.status },
+      source: { kind: "mcp", name: source.name, provider: source.provider as PitwallProviderId, target: source.target, externalId: ticket.id, url: ticket.url, status: ticket.status },
       createdAt: timestamp,
       updatedAt: timestamp,
     };
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       tasks: [task, ...current.tasks],
       activity: [
@@ -4980,7 +4838,7 @@ export function App() {
     if (!candidates.length) return;
     const timestamp = nowIso();
     const usedIdentifiers = new Set(projectTasks.map((task) => taskBranchName(task).toLowerCase()));
-    const tasks = candidates.map<BraveliTask>((candidate) => {
+    const tasks = candidates.map<PitwallTask>((candidate) => {
       const identifier = allocateImportedTaskIdentifier(candidate, usedIdentifiers);
       return {
         id: makeId("task"),
@@ -5007,7 +4865,7 @@ export function App() {
       };
     });
 
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       tasks: [...tasks, ...current.tasks],
       activity: [
@@ -5028,17 +4886,17 @@ export function App() {
   }
 
   /** The session working on a task in the open project, if one is still there. */
-  function sessionForTask(task: BraveliTask) {
-    const braveliSession = braveli.sessions.find(
+  function sessionForTask(task: PitwallTask) {
+    const pitwallSession = pitwall.sessions.find(
       (session) => session.projectId === activeProject.id && session.taskId === task.id,
     );
     return (
-      (braveliSession && activeProject.sessions.find((session) => session.id === braveliSession.id)) ??
+      (pitwallSession && activeProject.sessions.find((session) => session.id === pitwallSession.id)) ??
       activeProject.sessions.find((session) => session.task === task.title || `task-${session.id}` === task.id)
     );
   }
 
-  function selectMissionTask(task: BraveliTask) {
+  function selectMissionTask(task: PitwallTask) {
     setDraftTaskId(task.id);
     setWorkspaceSection("work");
     if (task.assignedAgent) {
@@ -5071,8 +4929,8 @@ export function App() {
    * back to the implementer with what to fix. The rounds are bounded; when
    * they run out the work goes to the person with the open points on it.
    */
-  async function runPairReview(taskId: string, implementerSessionId: string, worktreePath: string, project?: Project, { retry = false, pair: attached, task: attachedTask }: { retry?: boolean; pair?: BraveliTaskPair; task?: BraveliTask } = {}) {
-    const task = braveliRef.current.tasks.find((item) => item.id === taskId) ?? attachedTask;
+  async function runPairReview(taskId: string, implementerSessionId: string, worktreePath: string, project?: Project, { retry = false, pair: attached, task: attachedTask }: { retry?: boolean; pair?: PitwallTaskPair; task?: PitwallTask } = {}) {
+    const task = pitwallRef.current.tasks.find((item) => item.id === taskId) ?? attachedTask;
     // A pair attached this instant is not in the ref until the next render.
     const pair = attached ?? task?.pair;
     if (!task || !pair) return;
@@ -5088,7 +4946,7 @@ export function App() {
       `${reviewerLabel} is reviewing ${task.identifier || task.title} (round ${round} of ${pair.maxRounds})`,
     );
     const ownerProject = project ?? activeProject;
-    const prepared = await window.braveli?.pairPrepare?.({
+    const prepared = await window.pitwall?.pairPrepare?.({
       projectPath: ownerProject.path,
       worktreePath,
       baseBranch: ownerProject.branch,
@@ -5118,7 +4976,7 @@ export function App() {
     if (!delivered) {
       updateTerminalLines((current) => ({ ...current, [reviewerSessionId]: [] }));
       const size = workbenchTerminalSizeRef.current;
-      const result = await window.braveli?.startTerminal?.({
+      const result = await window.pitwall?.startTerminal?.({
         projectId: task.projectId,
         projectPath: prepared.worktree || worktreePath,
         sessionId: reviewerSessionId,
@@ -5144,7 +5002,7 @@ export function App() {
     // that never comes, the work is not left waiting on it forever.
     const watched = round;
     window.setTimeout(() => {
-      const current = braveliRef.current.tasks.find((item) => item.id === taskId)?.pair;
+      const current = pitwallRef.current.tasks.find((item) => item.id === taskId)?.pair;
       if (current?.state === "reviewing" && current.round === watched) skip("it did not finish within 20 minutes");
     }, 20 * 60_000);
   }
@@ -5154,7 +5012,7 @@ export function App() {
    * left it: the reviewer's track record. Only once the reviewer has finished;
    * a decision mid-review says nothing about its verdict.
    */
-  function withLeadDecision(pair: BraveliTaskPair, lead: "approved" | "sent-back", at: string): BraveliTaskPair {
+  function withLeadDecision(pair: PitwallTaskPair, lead: "approved" | "sent-back", at: string): PitwallTaskPair {
     if (pair.state !== "approved" && pair.state !== "open-points") return pair;
     const model = [...(pair.rounds ?? [])].reverse().find((round) => round.model)?.model;
     return { ...pair, decisions: [...(pair.decisions ?? []), { at, lead, reviewer: pair.state, ...(model ? { model } : {}) }] };
@@ -5162,8 +5020,8 @@ export function App() {
 
   /** Writes a pair's state, with an Activity line when there is something to say. */
   function pairUpdater(taskId: string) {
-    return (patch: Partial<BraveliTaskPair>, extra: Partial<BraveliTask> = {}, message = "") =>
-      setBraveli((current) => {
+    return (patch: Partial<PitwallTaskPair>, extra: Partial<PitwallTask> = {}, message = "") =>
+      setPitwall((current) => {
         const task = current.tasks.find((item) => item.id === taskId);
         return {
           ...current,
@@ -5181,16 +5039,16 @@ export function App() {
    * The reviewer has finished a turn: read its closing message as a verdict,
    * then send the work back or on to the person.
    */
-  function updateProjectRecord(projectId: string, patch: Partial<BraveliProjectRecord>) {
-    setBraveli((current) => ({
+  function updateProjectRecord(projectId: string, patch: Partial<PitwallProjectRecord>) {
+    setPitwall((current) => ({
       ...current,
       projects: current.projects.map((item) => item.id === projectId ? { ...item, ...patch, updatedAt: nowIso() } : item),
     }));
   }
 
   /** A project's Hermes settings, whether or not it is switched on; on unless turned off. */
-  function projectOverseer(projectId?: string): BraveliProjectOverseer {
-    return braveliRef.current.projects.find((item) => item.id === projectId)?.overseer ?? DEFAULT_OVERSEER;
+  function projectOverseer(projectId?: string): PitwallProjectOverseer {
+    return pitwallRef.current.projects.find((item) => item.id === projectId)?.overseer ?? DEFAULT_OVERSEER;
   }
 
   /**
@@ -5198,7 +5056,7 @@ export function App() {
    * Hermes that is not installed or signed in counts as off, so finished work
    * is never held for a reviewer that cannot run.
    */
-  function overseerOf(projectId?: string): BraveliProjectOverseer | null {
+  function overseerOf(projectId?: string): PitwallProjectOverseer | null {
     const overseer = projectOverseer(projectId);
     return overseer.enabled && hermesReadyRef.current ? overseer : null;
   }
@@ -5208,7 +5066,7 @@ export function App() {
    * project facts is filed as tentative knowledge, credited to Hermes, for the
    * person to keep or reject; how to review the project stays in its own memory.
    */
-  function learnWithHermes(task: BraveliTask, observation: {
+  function learnWithHermes(task: PitwallTask, observation: {
     kind: "task-finished" | "decision";
     agent?: string;
     summary?: string;
@@ -5217,11 +5075,11 @@ export function App() {
   }) {
     const overseer = overseerOf(task.projectId);
     const project = projectsRef.current.find((item) => item.id === task.projectId);
-    if (!overseer || !project || !window.braveli?.overseerObserve) return;
-    const sessionId = task.pair?.implementerSessionId ?? braveliRef.current.sessions.find((item) => item.taskId === task.id)?.id;
+    if (!overseer || !project || !window.pitwall?.overseerObserve) return;
+    const sessionId = task.pair?.implementerSessionId ?? pitwallRef.current.sessions.find((item) => item.taskId === task.id)?.id;
     const learningId = makeId("learning");
     setHermesLearning((current) => [...current, { id: learningId, key: (task.identifier || task.title).toUpperCase() }]);
-    void window.braveli.overseerObserve({
+    void window.pitwall.overseerObserve({
       ...observation,
       projectId: project.id,
       projectPath: project.path,
@@ -5234,7 +5092,7 @@ export function App() {
       const learned = parseKnowledgeObservations(result.reply).length;
       await rememberSessionKnowledge(sessionId, result.reply, [], "hermes");
       if (learned) {
-        setBraveli((current) => ({
+        setPitwall((current) => ({
           ...current,
           activity: [{
             id: makeId("activity"), projectId: task.projectId, taskId: task.id, type: "system" as const,
@@ -5248,7 +5106,7 @@ export function App() {
     });
   }
 
-  function learnFromFinishedTask(task: BraveliTask, pair: BraveliTaskPair, review?: { verdict?: string; summary?: string }) {
+  function learnFromFinishedTask(task: PitwallTask, pair: PitwallTaskPair, review?: { verdict?: string; summary?: string }) {
     const implementer = pair.implementerSessionId;
     learnWithHermes(task, {
       kind: "task-finished",
@@ -5259,13 +5117,13 @@ export function App() {
   }
 
   async function settlePairRound(taskId: string, closing: string) {
-    const task = braveliRef.current.tasks.find((item) => item.id === taskId);
+    const task = pitwallRef.current.tasks.find((item) => item.id === taskId);
     const pair = task?.pair;
     if (!task || !pair || pair.state !== "reviewing") return;
     const reviewerLabel = pairReviewerLabel(pair.reviewer);
     const round = pair.round;
     const setPair = pairUpdater(taskId);
-    const result = await window.braveli?.pairVerdict?.({ raw: closing, reviewer: pair.reviewer, round, maxRounds: pair.maxRounds })
+    const result = await window.pitwall?.pairVerdict?.({ raw: closing, reviewer: pair.reviewer, round, maxRounds: pair.maxRounds })
       .catch(() => null);
     const at = nowIso();
     // Which model reviewed, so its track record can be told apart from another's.
@@ -5284,7 +5142,7 @@ export function App() {
         { status: "review" },
         `Ready for review: ${task.title} — ${reviewerLabel} gave no verdict`,
       );
-      void window.braveli?.detachTerminal?.(pair.reviewerSessionId || "");
+      void window.pitwall?.detachTerminal?.(pair.reviewerSessionId || "");
       learnFromFinishedTask(task, pair);
       return;
     }
@@ -5300,7 +5158,7 @@ export function App() {
         `Ready for review: ${task.title} — ${result.outcome}`,
       );
       // Its work is done; the transcript stays on screen.
-      void window.braveli?.detachTerminal?.(pair.reviewerSessionId || "");
+      void window.pitwall?.detachTerminal?.(pair.reviewerSessionId || "");
       terminalAttachedRef.current[pair.reviewerSessionId || ""] = false;
       learnFromFinishedTask(task, pair, { verdict: result.verdict, summary: result.summary });
       return;
@@ -5323,14 +5181,14 @@ export function App() {
       { state: "open-points", outcome: `${reviewerLabel} sent it back, but the implementer was not reachable` },
       {
         status: "review",
-        changeRequests: (braveliRef.current.tasks.find((item) => item.id === taskId)?.changeRequests ?? []).map((item) => item.id === request.id ? { ...item, deliveredAt: null } : item),
+        changeRequests: (pitwallRef.current.tasks.find((item) => item.id === taskId)?.changeRequests ?? []).map((item) => item.id === request.id ? { ...item, deliveredAt: null } : item),
       },
       `Ready for review: ${task.title} — the implementer was not reachable for ${reviewerLabel}'s points`,
     );
   }
 
   async function requestTaskChanges(
-    task: BraveliTask,
+    task: PitwallTask,
     body: string,
     filePath?: string,
   ): Promise<boolean> {
@@ -5342,17 +5200,17 @@ export function App() {
     const withRequest = {
       ...task,
       changeRequests: [...(task.changeRequests ?? []), request],
-    } as BraveliTask;
+    } as PitwallTask;
 
     // Only a session that is actually attached can be told anything.
-    const live = braveli.sessions.find(
+    const live = pitwall.sessions.find(
       (session) => session.taskId === task.id && terminalAttachedBySession[session.id],
     );
     track("change_requested");
     const prompt = formatChangeRequestPrompt(withRequest, [request]);
     const delivered = live ? await sendTerminalPrompt(live.id, prompt) : false;
 
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       tasks: current.tasks.map((item) =>
         item.id === task.id
@@ -5395,24 +5253,24 @@ export function App() {
     return delivered;
   }
 
-  function taskValidation(task: BraveliTask) {
-    const sessions = braveli.sessions.filter((session) => session.projectId === task.projectId && session.taskId === task.id);
+  function taskValidation(task: PitwallTask) {
+    const sessions = pitwall.sessions.filter((session) => session.projectId === task.projectId && session.taskId === task.id);
     const results = [taskChecks[task.id], ...sessions.map((session) => sessionChecks[session.id])].filter((result): result is ValidationResult => Boolean(result));
     return results.sort((left, right) => Date.parse(right.ranAt) - Date.parse(left.ranAt))[0];
   }
 
-  function taskValidationRunning(task: BraveliTask) {
-    return Boolean(checkingTasks[task.id] || braveli.sessions.some((session) => session.projectId === task.projectId && session.taskId === task.id && checkingSessions[session.id]));
+  function taskValidationRunning(task: PitwallTask) {
+    return Boolean(checkingTasks[task.id] || pitwall.sessions.some((session) => session.projectId === task.projectId && session.taskId === task.id && checkingSessions[session.id]));
   }
 
-  async function runTaskValidation(task: BraveliTask) {
+  async function runTaskValidation(task: PitwallTask) {
     if (taskCheckInFlight.current.has(task.id)) return;
     const project = projectsRef.current.find((item) => item.id === task.projectId);
     if (!project) return;
     taskCheckInFlight.current.add(task.id);
     setCheckingTasks((current) => ({ ...current, [task.id]: true }));
     try {
-      const response = await window.braveli?.runValidation?.({ projectPath: project.path, branch: task.worktree || project.branch });
+      const response = await window.pitwall?.runValidation?.({ projectPath: project.path, branch: task.worktree || project.branch });
       if (!response?.ok || !response.result) throw new Error("Validation is unavailable. Restart Pitwall and try again.");
       setTaskChecks((current) => ({ ...current, [task.id]: response.result }));
     } catch (error) {
@@ -5425,7 +5283,7 @@ export function App() {
     }
   }
 
-  function completeActiveTask(task: BraveliTask, override?: string) {
+  function completeActiveTask(task: PitwallTask, override?: string) {
     if (override === undefined) {
       setTaskPendingCompletion(task);
       return;
@@ -5435,7 +5293,7 @@ export function App() {
     setTaskPendingCompletion(null);
     learnWithHermes(task, { kind: "decision", decision: { action: "approved", comment: override || undefined } });
     const timestamp = nowIso();
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       tasks: current.tasks.map((item) =>
         item.id === task.id
@@ -5470,9 +5328,9 @@ export function App() {
     }));
   }
 
-  function moveTaskToReview(task: BraveliTask) {
+  function moveTaskToReview(task: PitwallTask) {
     const timestamp = nowIso();
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       tasks: current.tasks.map((item) =>
         item.id === task.id ? { ...item, status: "review", updatedAt: timestamp } : item,
@@ -5497,7 +5355,7 @@ export function App() {
     const title = draftContextTitle.trim() || "Project context";
     const content = draftContextContent.trim() || "Add the project fact, decision, constraint, or standard agents should receive.";
     const timestamp = nowIso();
-    const entry: BraveliContextEntry = {
+    const entry: PitwallContextEntry = {
       id: makeId("ctx"),
       projectId: activeProject.id,
       title,
@@ -5510,7 +5368,7 @@ export function App() {
       updatedAt: timestamp,
     };
 
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       contextEntries: [entry, ...current.contextEntries],
       activity: [
@@ -5532,7 +5390,7 @@ export function App() {
   }
 
 
-  function createHandoff(targetProvider: BraveliProviderId = "codex") {
+  function createHandoff(targetProvider: PitwallProviderId = "codex") {
     const task = activeTask;
     if (!task) return;
 
@@ -5571,10 +5429,10 @@ export function App() {
     setCreateSessionOpen(true);
   }
 
-  function recordTaskStarted(task: BraveliTask, session: AgentSession) {
+  function recordTaskStarted(task: PitwallTask, session: AgentSession) {
     const timestamp = nowIso();
     const provider = providerIdFromAgent(session.agent);
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       tasks: current.tasks.map((item) =>
         item.id === task.id
@@ -5603,7 +5461,7 @@ export function App() {
     let prompt = withManualContext(basePrompt, manualEntries);
     let receipt: DeliveryReceipt | undefined;
     try {
-      const result = await window.braveli?.prepareProjectContext?.({ ...input, manualEntries, basePrompt });
+      const result = await window.pitwall?.prepareProjectContext?.({ ...input, manualEntries, basePrompt });
       if (result?.ok && result.receipt) {
         prompt = result.prompt;
         receipt = result.receipt;
@@ -5615,9 +5473,9 @@ export function App() {
       setSystemNotice({ tone: "error", title: "Project memory could not be loaded", message: `${error instanceof Error ? error.message : "The knowledge store is unavailable."} Selected context is still included.` });
     }
     if (input.sessionId) {
-      const prior = braveliRef.current.sessions.find((session) => session.id === input.sessionId);
+      const prior = pitwallRef.current.sessions.find((session) => session.id === input.sessionId);
       const providerRestricted = Boolean(prior?.contextProviderRestricted || preparedContextRef.current[input.sessionId]?.providerRestricted || receipt?.providerRestricted) ||
-        braveliRef.current.contextSnapshots.some((snapshot) => snapshot.sessionId === input.sessionId && snapshot.receipt?.providerRestricted) ||
+        pitwallRef.current.contextSnapshots.some((snapshot) => snapshot.sessionId === input.sessionId && snapshot.receipt?.providerRestricted) ||
         manualEntries.some((entry) => entry.visibility === "selected-agents");
       preparedContextRef.current[input.sessionId] = { prompt, receipt, projectPath: input.projectPath, providerRestricted };
     }
@@ -5627,20 +5485,20 @@ export function App() {
   async function markPreparedContext(sessionId: string, prompt: string, status: "delivered" | "failed") {
     const prepared = preparedContextRef.current[sessionId];
     if (prepared?.prompt === prompt && prepared.providerRestricted) {
-      setBraveli((current) => ({ ...current, sessions: current.sessions.map((session) =>
+      setPitwall((current) => ({ ...current, sessions: current.sessions.map((session) =>
         session.id === sessionId && !session.contextProviderRestricted ? { ...session, contextProviderRestricted: true } : session),
       }));
     }
     if (!prepared?.receipt || prepared.prompt !== prompt || prepared.receipt.status === "delivered") return;
     try {
-      const result = await window.braveli?.markContextReceipt?.({ projectPath: prepared.projectPath, id: prepared.receipt.id, status,
+      const result = await window.pitwall?.markContextReceipt?.({ projectPath: prepared.projectPath, id: prepared.receipt.id, status,
         ...(status === "failed" ? { error: "The agent transport did not accept this prompt." } : {}),
       });
       if (!result?.ok || !result.receipt) return;
       prepared.receipt = result.receipt;
       const receipt = result.receipt;
       setContextReceipts((current) => ({ ...current, [receipt.id]: receipt }));
-      setBraveli((current) => ({ ...current, contextSnapshots: current.contextSnapshots.map((snapshot) =>
+      setPitwall((current) => ({ ...current, contextSnapshots: current.contextSnapshots.map((snapshot) =>
         snapshot.receipt?.id === receipt.id ? { ...snapshot, receipt } : snapshot),
       }));
     } catch { /* The saved prepared receipt remains honest when persistence fails. */ }
@@ -5649,36 +5507,36 @@ export function App() {
   async function prepareCouncilMemberPrompt(runId: string, member: CouncilRelayMember, basePrompt: string) {
     const run = relayRunRef.current[runId];
     if (!run) return basePrompt;
-    const storedSession = braveliRef.current.sessions.find((entry) => entry.id === member.sessionId);
+    const storedSession = pitwallRef.current.sessions.find((entry) => entry.id === member.sessionId);
     const project = sessionProjectRef.current[member.sessionId] ?? projectsRef.current.find((entry) =>
       entry.id === storedSession?.projectId || entry.path === run.projectRoot || entry.sessions.some((session) => session.id === member.sessionId));
     if (!project) return basePrompt;
-    const task = braveliRef.current.tasks.find((entry) => entry.id === (run.taskId ?? storedSession?.taskId))
+    const task = pitwallRef.current.tasks.find((entry) => entry.id === (run.taskId ?? storedSession?.taskId))
       ?? taskBySessionRef.current[member.sessionId];
     const provider = providerIdFromAgent(relaySessionRef.current[member.sessionId]?.agent ?? member.agentLabel);
     return prepareAgentPrompt({
       projectPath: run.projectRoot ?? project.path, workspacePath: run.projectPath, projectId: project.id,
       taskId: run.taskId ?? task?.id, runId, sessionId: member.sessionId, task: task ?? run.task,
       role: run.verification?.pending ? "verification" : member.roleLabel, provider,
-      manualEntries: braveliRef.current.contextEntries.filter((entry) => entry.projectId === project.id &&
+      manualEntries: pitwallRef.current.contextEntries.filter((entry) => entry.projectId === project.id &&
         (run.contextEntryIds === undefined || run.contextEntryIds.includes(entry.id))), basePrompt,
     });
   }
 
   async function rememberSessionKnowledge(sessionId: string, output: string, extra: KnowledgeObservation[] = [], author?: string) {
     const observations = [...parseKnowledgeObservations(output), ...extra];
-    if (!observations.length || !window.braveli?.rememberProjectKnowledge) return;
-    const session = braveliRef.current.sessions.find((item) => item.id === sessionId);
-    const task = taskBySessionRef.current[sessionId] ?? braveliRef.current.tasks.find((item) => item.id === session?.taskId);
+    if (!observations.length || !window.pitwall?.rememberProjectKnowledge) return;
+    const session = pitwallRef.current.sessions.find((item) => item.id === sessionId);
+    const task = taskBySessionRef.current[sessionId] ?? pitwallRef.current.tasks.find((item) => item.id === session?.taskId);
     const project = projectsRef.current.find((item) => item.id === (task?.projectId ?? session?.projectId)) ?? sessionProjectRef.current[sessionId];
     if (!project || !task) return;
     const fingerprint = JSON.stringify(observations);
     if (capturedKnowledgeRef.current[sessionId] === fingerprint) return;
     const provider = session?.provider ?? providerIdFromAgent(sessionByIdRef.current[sessionId]?.agent ?? "");
     const restricted = session?.contextProviderRestricted || preparedContextRef.current[sessionId]?.providerRestricted ||
-      braveliRef.current.contextEntries.some((entry) => entry.projectId === project.id && entry.visibility === "selected-agents");
+      pitwallRef.current.contextEntries.some((entry) => entry.projectId === project.id && entry.visibility === "selected-agents");
     try {
-      const result = await window.braveli.rememberProjectKnowledge({
+      const result = await window.pitwall.rememberProjectKnowledge({
         projectPath: project.path,
         workspacePath: session?.worktreePath ?? sessionByIdRef.current[sessionId]?.worktreePath ?? project.path,
         taskId: task.id, runId: relayRunIdBySessionRef.current[sessionId],
@@ -5708,14 +5566,14 @@ export function App() {
       stamp: Date.now(),
     });
     if (!plan) return prompt;
-    const written = await window.braveli?.writeProjectFile?.({ projectPath: run.projectPath, filePath: plan.filePath, content: plan.content })
+    const written = await window.pitwall?.writeProjectFile?.({ projectPath: run.projectPath, filePath: plan.filePath, content: plan.content })
       .catch(() => null);
     return written?.ok ? plan.pointer : prompt;
   }
 
   /** Sends a prompt to a session's terminal. False means it never landed. */
   async function sendTerminalPrompt(sessionId: string, prompt: string) {
-    const write = window.braveli?.writeTerminal;
+    const write = window.pitwall?.writeTerminal;
     if (!write) { await markPreparedContext(sessionId, prompt, "failed"); return false; }
     if (preparedContextRef.current[sessionId]?.prompt === prompt) {
       knowledgeOutputRef.current[sessionId] = { parts: [], size: 0 };
@@ -5739,14 +5597,14 @@ export function App() {
    * task out from under a council.
    */
   async function syncTrackerSources(projectId: string, { manual = false }: { manual?: boolean } = {}) {
-    if (!window.braveli?.listMcpTasks) return;
+    if (!window.pitwall?.listMcpTasks) return;
     lastTrackerSyncRef.current[projectId] = Date.now();
     setTrackerSyncedAt((current) => ({ ...current, [projectId]: Date.now() }));
     const report = (message: string) =>
       appendActivity({ projectId, type: "system", message });
     const project = projectsRef.current.find((item) => item.id === projectId);
     if (!project) return;
-    const tasks = braveliRef.current.tasks.filter((task) => task.projectId === projectId);
+    const tasks = pitwallRef.current.tasks.filter((task) => task.projectId === projectId);
     const sources = new Map<string, { provider: string; name: string; target: string }>();
     for (const task of tasks) {
       if (task.source?.kind !== "mcp" || !task.source.name) continue;
@@ -5765,7 +5623,7 @@ export function App() {
     for (const source of sources.values()) {
       let result;
       try {
-        result = await window.braveli.listMcpTasks({
+        result = await window.pitwall.listMcpTasks({
           projectId,
           projectPath: project.path,
           provider: source.provider,
@@ -5787,7 +5645,7 @@ export function App() {
         continue;
       }
 
-      const current = braveliRef.current.tasks.filter((task) => task.projectId === projectId);
+      const current = pitwallRef.current.tasks.filter((task) => task.projectId === projectId);
       const plan = planTrackerSync({ tasks: current, candidates: result.tasks, source });
       if (!plan.added.length && !plan.updates.length) {
         // Only on request: a quiet board every half hour would bury the
@@ -5798,7 +5656,7 @@ export function App() {
 
       const timestamp = nowIso();
       const usedIdentifiers = new Set(current.map((task) => taskBranchName(task).toLowerCase()));
-      const created = plan.added.map<BraveliTask>((candidate) => {
+      const created = plan.added.map<PitwallTask>((candidate) => {
         const identifier = allocateImportedTaskIdentifier(candidate, usedIdentifiers);
         return {
           id: makeId("task"),
@@ -5814,7 +5672,7 @@ export function App() {
           source: {
             kind: "mcp",
             name: source.name,
-            provider: source.provider as BraveliProviderId,
+            provider: source.provider as PitwallProviderId,
             target: source.target,
             externalId: candidate.id,
             url: candidate.url,
@@ -5826,7 +5684,7 @@ export function App() {
       });
 
       const patches = new Map(plan.updates.map((update) => [update.taskId, update.patch]));
-      setBraveli((state) => ({
+      setPitwall((state) => ({
         ...state,
         tasks: [
           ...created,
@@ -5855,12 +5713,12 @@ export function App() {
   }
 
   /** Refreshes imported tracker data through Pitwall's audited read-only broker. */
-  async function refreshTaskFromOrigin(task: BraveliTask) {
-    if (task.source?.kind !== "mcp" || !task.source.name || !window.braveli?.listMcpTasks) {
+  async function refreshTaskFromOrigin(task: PitwallTask) {
+    if (task.source?.kind !== "mcp" || !task.source.name || !window.pitwall?.listMcpTasks) {
       return { task, refreshed: false, error: "" };
     }
     try {
-      const result = await window.braveli.listMcpTasks({
+      const result = await window.pitwall.listMcpTasks({
         projectId: task.projectId,
         projectPath: projectsRef.current.find((project) => project.id === task.projectId)?.path || activeProject.path,
         provider: task.source.provider || "claude",
@@ -5874,7 +5732,7 @@ export function App() {
         (task.source?.url && item.url === task.source.url),
       ) ?? (result.tasks.length === 1 ? result.tasks[0] : undefined);
       if (!candidate) return { task, refreshed: false, error: "The imported work item was not present in the source response." };
-      const refreshedTask: BraveliTask = {
+      const refreshedTask: PitwallTask = {
         ...task,
         title: candidate.title || task.title,
         description: candidate.description?.trim() || task.description,
@@ -5887,7 +5745,7 @@ export function App() {
         },
         updatedAt: candidate.updatedAt || nowIso(),
       };
-      setBraveli((current) => ({
+      setPitwall((current) => ({
         ...current,
         tasks: current.tasks.map((item) => item.id === task.id ? refreshedTask : item),
       }));
@@ -5899,7 +5757,7 @@ export function App() {
 
   async function prepareProjectTrust(projectPath: string, provider: string, autoApprove = false) {
     try {
-      const result = await window.braveli?.trustProject?.({ projectPath, provider, autoApprove });
+      const result = await window.pitwall?.trustProject?.({ projectPath, provider, autoApprove });
       if (!result?.ok || !result.trusted) throw new Error(result?.error || result?.message || "Project trust could not be established.");
       return true;
     } catch (error) {
@@ -5908,13 +5766,13 @@ export function App() {
     }
   }
 
-  async function allocateTaskRuntime(task: BraveliTask, sessionId: string) {
+  async function allocateTaskRuntime(task: PitwallTask, sessionId: string) {
     const previousTask = taskBySessionRef.current[sessionId];
     const cached = taskRuntimeBySessionRef.current[sessionId];
     taskBySessionRef.current[sessionId] = task;
     if (cached && previousTask?.id === task.id && previousTask.projectId === task.projectId) return cached;
     try {
-      const result = await window.braveli?.allocateTaskRuntime?.({
+      const result = await window.pitwall?.allocateTaskRuntime?.({
         projectId: task.projectId,
         taskId: task.id,
         taskIdentifier: task.identifier,
@@ -5976,7 +5834,7 @@ export function App() {
       };
       return next;
     });
-    setBraveli((current) => {
+    setPitwall((current) => {
       if (!current.sessions.some((session) => session.id === sessionId && session.status !== "running")) return current;
       const timestamp = nowIso();
       return {
@@ -6000,7 +5858,7 @@ export function App() {
       });
       return changed ? next : current;
     });
-    setBraveli((current) => {
+    setPitwall((current) => {
       const sessions = settleSessions(current.sessions, settle, { updatedAt: nowIso() });
       return sessions === current.sessions ? current : { ...current, sessions };
     });
@@ -6018,7 +5876,7 @@ export function App() {
     settleSessionRecords((session) => statusWithoutTerminal(session, hasTerminal));
   }
 
-  async function startTaskInSession(task: BraveliTask, session: AgentSession) {
+  async function startTaskInSession(task: PitwallTask, session: AgentSession) {
     if (!licence.canStartWork) {
       track("licence_required");
       setLicenceOpen(true);
@@ -6047,7 +5905,7 @@ export function App() {
       }
       const origin = await refreshTaskFromOrigin(task);
       if (origin.error) appendTerminalLine(session.id, `Tracker refresh unavailable: ${origin.error}`);
-      const sessionType = braveli.sessions.find((item) => item.id === session.id)?.type;
+      const sessionType = pitwall.sessions.find((item) => item.id === session.id)?.type;
       const basePrompt = formatTaskLaunchPrompt(origin.task, {
         startDevServer: sessionType ? roleWritesCode[sessionType] : true,
         originRefreshed: origin.refreshed,
@@ -6059,7 +5917,7 @@ export function App() {
       const project = projectsRef.current.find((entry) => entry.id === task.projectId) ?? activeProject;
       const prepared = await prepareAgentPrompt({ projectPath: project.path, workspacePath: session.worktreePath ?? project.path,
         projectId: project.id, taskId: task.id, sessionId: session.id, task: origin.task, provider: providerIdFromAgent(session.agent),
-        role: sessionType ?? "implementation", manualEntries: braveliRef.current.contextEntries.filter((entry) => entry.projectId === project.id), basePrompt });
+        role: sessionType ?? "implementation", manualEntries: pitwallRef.current.contextEntries.filter((entry) => entry.projectId === project.id), basePrompt });
       const sent = await sendTerminalPrompt(session.id, prepared);
       if (sent) {
         recordTaskStarted(origin.task, session);
@@ -6109,7 +5967,7 @@ export function App() {
   async function startCouncilMode(
     members?: CouncilMember[],
     mode: "council" | "compare" = "council",
-    overrides?: { project?: Project; task?: BraveliTask; contextEntries?: BraveliContextEntry[] },
+    overrides?: { project?: Project; task?: PitwallTask; contextEntries?: PitwallContextEntry[] },
     conductor?: { enabled: boolean; agent: string; model: string; runTests?: boolean; openingDebate?: boolean; autoApprove?: boolean; maxTurns?: number | null },
   ) {
     if (!licence.canStartWork) {
@@ -6134,7 +5992,7 @@ export function App() {
     track(mode === "compare" ? "compare_started" : "council_started", { mode });
     const prompt = `${task.title}\n\n${task.description || ""}`.trim();
     const councilBranch = taskBranchName(task);
-    const councilWorktree = await window.braveli?.ensureWorktree?.({
+    const councilWorktree = await window.pitwall?.ensureWorktree?.({
       projectPath: councilProject.path,
       branch: councilBranch,
       baseBranch: councilProject.branch || "HEAD",
@@ -6149,7 +6007,7 @@ export function App() {
     }
     const councilProjectPath = councilWorktree.path;
     const taskBriefPath = getCouncilTaskBriefPath(runId);
-    const briefResult = await window.braveli?.writeProjectFile?.({
+    const briefResult = await window.pitwall?.writeProjectFile?.({
       projectPath: councilProjectPath,
       filePath: taskBriefPath,
       content: buildCouncilTaskBrief(task),
@@ -6169,7 +6027,7 @@ export function App() {
         : (availableProviders.length > 0 ? availableProviders : implementers).map((provider) => ({
             agent: provider.agent,
             model: providerOptions.find((option) => option.agent === provider.agent)?.models[0]?.label ?? "Auto",
-            role: "implementation" as BraveliSessionType,
+            role: "implementation" as PitwallSessionType,
           }));
     // Number members that reuse the same agent so their panes stay distinguishable.
     const providerTotals: Record<string, number> = {};
@@ -6191,7 +6049,7 @@ export function App() {
       const providerId = providerIdFromAgent(agent);
       // Compare = every agent answers the same task independently (no role).
       // Council = each member takes its assigned role.
-      const roleType: BraveliSessionType = mode === "compare" ? "implementation" : member.role;
+      const roleType: PitwallSessionType = mode === "compare" ? "implementation" : member.role;
       const role = getRole(roleType);
       providerSeen[member.agent] = (providerSeen[member.agent] ?? 0) + 1;
       const dupSuffix = providerTotals[member.agent] > 1 ? ` ${providerSeen[member.agent]}` : "";
@@ -6236,7 +6094,7 @@ export function App() {
         started: "now",
         logs: [`${roleLabel} session for ${task.title}`],
       };
-      const braveliSession: BraveliSession = {
+      const pitwallSession: PitwallSession = {
         id: sessionId,
         projectId: councilProject.id,
         provider: providerId,
@@ -6253,7 +6111,7 @@ export function App() {
         updatedAt: timestamp,
       };
       sessionProjectRef.current[sessionId] = councilProject;
-      return { providerId, agent, model, sessionId, snapshot, agentSession, braveliSession, injected };
+      return { providerId, agent, model, sessionId, snapshot, agentSession, pitwallSession, injected };
     }).filter((item): item is NonNullable<typeof item> => item !== null);
 
     const trusted = await Promise.all(built.map((item) => prepareProjectTrust(councilProjectPath, item.providerId, Boolean(item.agentSession.autoApprove))));
@@ -6277,8 +6135,8 @@ export function App() {
     if (relay) {
       const handles: string[] = [];
       const members: CouncilRelayMember[] = built.map((item) => {
-        const role = getRole(item.braveliSession.type);
-        const memberId = makeCouncilMemberId(roleKeys[item.braveliSession.type], item.agent, handles);
+        const role = getRole(item.pitwallSession.type);
+        const memberId = makeCouncilMemberId(roleKeys[item.pitwallSession.type], item.agent, handles);
         handles.push(memberId);
         return {
           sessionId: item.sessionId,
@@ -6286,7 +6144,7 @@ export function App() {
           rolePrompt: role.systemPrompt,
           roleLabel: role.label,
           agentLabel: item.agent,
-          writesCode: roleWritesCode[item.braveliSession.type],
+          writesCode: roleWritesCode[item.pitwallSession.type],
         };
       });
       relayRunRef.current[runId] = {
@@ -6389,12 +6247,12 @@ export function App() {
       const manualEntries = contextForAgent(councilContextEntries, councilProject.id, item.providerId);
       item.injected = await prepareAgentPrompt({ projectPath: councilProject.path, workspacePath: councilProjectPath,
         projectId: councilProject.id, taskId: task.id, runId, sessionId: item.sessionId, task,
-        role: item.braveliSession.type, provider: item.providerId, manualEntries, basePrompt: item.injected });
+        role: item.pitwallSession.type, provider: item.providerId, manualEntries, basePrompt: item.injected });
       item.snapshot.receipt = preparedContextRef.current[item.sessionId]?.receipt;
       if (relay) relayRunRef.current[runId].currentPrompt = item.injected;
     }
 
-    const councilRun: BraveliCouncilRun = {
+    const councilRun: PitwallCouncilRun = {
       id: runId,
       name: formatCouncilRunName(task.title, mode),
       projectId: councilProject.id,
@@ -6422,9 +6280,9 @@ export function App() {
           : project,
       ),
     );
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
-      sessions: [...built.map((item) => item.braveliSession), ...current.sessions],
+      sessions: [...built.map((item) => item.pitwallSession), ...current.sessions],
       contextSnapshots: [...built.map((item) => item.snapshot), ...current.contextSnapshots],
       councilRuns: [councilRun, ...current.councilRuns],
       tasks: current.tasks.map((item) =>
@@ -6574,7 +6432,7 @@ export function App() {
     const outgoing = relaySessionRef.current[sessionId];
     // The seat's role, task and context belong to the seat, not to whoever was
     // sitting in it, so they are carried across rather than re-derived.
-    const outgoingRecord = braveliRef.current.sessions.find((item) => item.id === sessionId);
+    const outgoingRecord = pitwallRef.current.sessions.find((item) => item.id === sessionId);
     const councilProject = sessionProjectRef.current[sessionId]
       ?? projectsRef.current.find((project) => project.id === outgoingRecord?.projectId) ?? activeProject;
     const projectPath = run.projectPath || councilProject.path;
@@ -6590,7 +6448,7 @@ export function App() {
     // Stop the outgoing CLI. Deliberately not detachSessionsFromRelay: that
     // drops the member from the roster, and below two members it ends the run —
     // which is the opposite of a swap.
-    const stopped = await window.braveli?.runSessionAction?.({
+    const stopped = await window.pitwall?.runSessionAction?.({
       projectId: councilProject.id,
       sessionId,
       action: "stop",
@@ -6630,7 +6488,7 @@ export function App() {
       started: "now",
       logs: [`${plan.member.roleLabel} seat taken over from ${plan.fromAgent}`],
     };
-    const braveliSession: BraveliSession = {
+    const pitwallSession: PitwallSession = {
       id: nextSessionId,
       projectId: councilProject.id,
       provider: providerId,
@@ -6647,7 +6505,7 @@ export function App() {
       updatedAt: timestamp,
     };
     sessionProjectRef.current[nextSessionId] = councilProject;
-    const task = braveliRef.current.tasks.find((item) => item.id === braveliSession.taskId) ?? taskBySessionRef.current[sessionId];
+    const task = pitwallRef.current.tasks.find((item) => item.id === pitwallSession.taskId) ?? taskBySessionRef.current[sessionId];
     if (task) taskBySessionRef.current[nextSessionId] = task;
     if (taskRuntimeBySessionRef.current[sessionId]) taskRuntimeBySessionRef.current[nextSessionId] = taskRuntimeBySessionRef.current[sessionId];
 
@@ -6689,10 +6547,10 @@ export function App() {
           : project,
       ),
     );
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       sessions: [
-        braveliSession,
+        pitwallSession,
         ...current.sessions.map((item) =>
           item.id === sessionId ? { ...item, status: "completed" as const, updatedAt: timestamp } : item,
         ),
@@ -6741,7 +6599,7 @@ export function App() {
     });
 
     const prompt = plan.holdsTurn ? await prepareCouncilSessionPrompt(runId, agentSession) : null;
-    await window.braveli?.trustProject?.({
+    await window.pitwall?.trustProject?.({
       projectPath,
       provider: providerId,
       autoApprove: Boolean(agentSession.autoApprove),
@@ -6808,12 +6666,12 @@ export function App() {
     const ownerProject = sessionProjectRef.current[session.id]
       ?? projectsRef.current.find((project) => project.sessions.some((item) => item.id === session.id)) ?? activeProject;
     const workspacePath = await sessionWorkspace(session, ownerProject);
-    const record = braveliRef.current.sessions.find((item) => item.id === session.id);
-    const task = (record?.taskId ? braveliRef.current.tasks.find((item) => item.id === record.taskId) : undefined)
+    const record = pitwallRef.current.sessions.find((item) => item.id === session.id);
+    const task = (record?.taskId ? pitwallRef.current.tasks.find((item) => item.id === record.taskId) : undefined)
       ?? taskBySessionRef.current[session.id];
 
     if (terminalAttachedRef.current[session.id]) {
-      const detached = await window.braveli?.detachTerminal?.(session.id);
+      const detached = await window.pitwall?.detachTerminal?.(session.id);
       if (detached && !detached.ok) {
         setSystemNotice({ tone: "error", title: "Could not swap the agent", message: `${session.agent} could not be stopped.` });
         return;
@@ -6823,7 +6681,7 @@ export function App() {
     setTerminalAttachedBySession((current) => ({ ...current, [session.id]: false }));
     delete terminalInitialPromptRef.current[session.id];
 
-    const handoff = await window.braveli?.writeSessionHandoff?.({
+    const handoff = await window.pitwall?.writeSessionHandoff?.({
       cwd: workspacePath,
       fromAgent: session.agent,
       toAgent: nextAgent,
@@ -6852,7 +6710,7 @@ export function App() {
     setProjects((current) => current.map((project) => project.id === ownerProject.id
       ? { ...project, sessions: project.sessions.map((item) => (item.id === session.id ? nextSession : item)) }
       : project));
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       sessions: current.sessions.map((item) => item.id === session.id
         ? { ...item, provider: providerId, model, nativeSessionId, nativeSessionStarted: false, status: "running" as const, updatedAt: timestamp }
@@ -6875,7 +6733,7 @@ export function App() {
     if (!handoff?.ok) appendTerminalLine(session.id, `The handoff file could not be written: ${handoff?.error ?? "unknown error"}`);
     track("session_agent_swapped", { from: session.agent.toLowerCase(), to: nextAgent.toLowerCase() });
 
-    await window.braveli?.trustProject?.({ projectPath: workspacePath, provider: providerId, autoApprove: Boolean(nextSession.autoApprove) });
+    await window.pitwall?.trustProject?.({ projectPath: workspacePath, provider: providerId, autoApprove: Boolean(nextSession.autoApprove) });
     const attached = await ensureAgentTerminal(nextSession, { resume: false });
     if (!attached) return;
     if (!(await waitForSessionSettle(session.id))) {
@@ -6897,11 +6755,11 @@ export function App() {
   async function attachReviewer(session: AgentSession, choice: { reviewer: PairReviewer; model: string; rounds: number; now: boolean }) {
     const ownerProject = sessionProjectRef.current[session.id]
       ?? projectsRef.current.find((project) => project.sessions.some((item) => item.id === session.id)) ?? activeProject;
-    const record = braveliRef.current.sessions.find((item) => item.id === session.id);
+    const record = pitwallRef.current.sessions.find((item) => item.id === session.id);
     const timestamp = nowIso();
-    const existing = record?.taskId ? braveliRef.current.tasks.find((item) => item.id === record.taskId) : undefined;
-    const pair: BraveliTaskPair = { reviewer: choice.reviewer, ...(choice.model ? { model: choice.model } : {}), maxRounds: choice.rounds, round: 0, state: "implementing" };
-    const task: BraveliTask = existing
+    const existing = record?.taskId ? pitwallRef.current.tasks.find((item) => item.id === record.taskId) : undefined;
+    const pair: PitwallTaskPair = { reviewer: choice.reviewer, ...(choice.model ? { model: choice.model } : {}), maxRounds: choice.rounds, round: 0, state: "implementing" };
+    const task: PitwallTask = existing
       ? { ...existing, pair, status: existing.status === "completed" || existing.status === "review" ? "running" : existing.status, updatedAt: timestamp }
       : {
           id: makeId("task"),
@@ -6918,12 +6776,12 @@ export function App() {
           updatedAt: timestamp,
         };
     taskBySessionRef.current[session.id] = task;
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       tasks: existing ? current.tasks.map((item) => (item.id === task.id ? task : item)) : [task, ...current.tasks],
       sessions: record
         ? current.sessions.map((item) => (item.id === session.id ? { ...item, taskId: task.id } : item))
-        : [{ id: session.id, projectId: ownerProject.id, provider: providerIdFromAgent(session.agent), taskId: task.id, type: "implementation", status: "running", model: session.model, contextSnapshotId: "", messages: [], createdAt: timestamp, updatedAt: timestamp } as BraveliSession, ...current.sessions],
+        : [{ id: session.id, projectId: ownerProject.id, provider: providerIdFromAgent(session.agent), taskId: task.id, type: "implementation", status: "running", model: session.model, contextSnapshotId: "", messages: [], createdAt: timestamp, updatedAt: timestamp } as PitwallSession, ...current.sessions],
     }));
     track("pair_started", { agent: choice.reviewer, turns: choice.rounds });
     if (!choice.now) return;
@@ -6933,14 +6791,14 @@ export function App() {
 
   /** Takes the reviewer off a session; what it already said stays on the task. */
   function detachReviewer(session: AgentSession) {
-    const taskId = braveliRef.current.sessions.find((item) => item.id === session.id)?.taskId;
-    const task = taskId ? braveliRef.current.tasks.find((item) => item.id === taskId) : undefined;
+    const taskId = pitwallRef.current.sessions.find((item) => item.id === session.id)?.taskId;
+    const task = taskId ? pitwallRef.current.tasks.find((item) => item.id === taskId) : undefined;
     if (!task?.pair) return;
     if (task.pair.reviewerSessionId) {
-      void window.braveli?.detachTerminal?.(task.pair.reviewerSessionId);
+      void window.pitwall?.detachTerminal?.(task.pair.reviewerSessionId);
       terminalAttachedRef.current[task.pair.reviewerSessionId] = false;
     }
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       tasks: current.tasks.map((item) => (item.id === task.id ? { ...item, pair: undefined, updatedAt: nowIso() } : item)),
     }));
@@ -7198,7 +7056,7 @@ export function App() {
    */
   async function watchRelayTurn(runId: string, turn: number) {
     const run = relayRunRef.current[runId];
-    if (!run || run.paused || !window.braveli?.readProjectFile) return;
+    if (!run || run.paused || !window.pitwall?.readProjectFile) return;
 
     const token = (relayWatchTokenRef.current[runId] ?? 0) + 1;
     relayWatchTokenRef.current[runId] = token;
@@ -7279,7 +7137,7 @@ export function App() {
     const run = relayRunRef.current[runId];
     if (!run) return;
     const locations = [...new Set([run.projectRoot, run.projectPath].filter((value): value is string => Boolean(value)))];
-    const files = await Promise.allSettled(locations.map((projectPath) => window.braveli?.readProjectFile?.({ projectPath, filePath: getCouncilLessonsPath() })));
+    const files = await Promise.allSettled(locations.flatMap((projectPath) => getCouncilLessonsPaths().map((filePath) => window.pitwall?.readProjectFile?.({ projectPath, filePath }))));
     for (const result of files) {
       if (result.status === "fulfilled" && result.value?.ok) run.lessons = mergeLessons(run.lessons, parseLessonsFile(result.value.content ?? ""));
     }
@@ -7312,7 +7170,7 @@ export function App() {
       stopRelay(runId, "The final reviewer's session is unavailable. Restore its pane before retrying verification.");
       return false;
     }
-    const detached = await window.braveli?.detachTerminal?.(verifier.sessionId);
+    const detached = await window.pitwall?.detachTerminal?.(verifier.sessionId);
     if (!detached?.ok) {
       stopRelay(runId, "The final reviewer could not start a fresh conversation. Restart the reviewer and hand off to retry verification.");
       return false;
@@ -7323,7 +7181,7 @@ export function App() {
     relaySessionRef.current[verifier.sessionId] = freshSession;
     delete terminalInitialPromptRef.current[verifier.sessionId];
     setProjects((current) => current.map((project) => ({ ...project, sessions: project.sessions.map((session) => session.id === verifier.sessionId ? freshSession : session) })));
-    setBraveli((current) => ({ ...current, sessions: current.sessions.map((session) => session.id === verifier.sessionId
+    setPitwall((current) => ({ ...current, sessions: current.sessions.map((session) => session.id === verifier.sessionId
       ? { ...session, nativeSessionId: freshSession.nativeSessionId, nativeSessionStarted: false } : session) }));
     return true;
   }
@@ -7432,7 +7290,7 @@ export function App() {
   async function writeRelayWorkingSet(runId: string) {
     const run = relayRunRef.current[runId];
     if (!run) return;
-    await window.braveli?.writeProjectFile?.({
+    await window.pitwall?.writeProjectFile?.({
       projectPath: run.projectPath || activeProject.path,
       filePath: getCouncilWorkingSetFile(runId),
       content: renderWorkingSet(run.workingSet ?? emptyWorkingSet(), run.task.title),
@@ -7476,7 +7334,7 @@ export function App() {
       contextEntryIds: run.contextEntryIds,
       running: run.auto && !run.stopped,
     });
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       councilRuns: current.councilRuns.map((item) => (item.id === runId ? { ...item, relay } : item)),
     }));
@@ -7486,7 +7344,7 @@ export function App() {
   async function writeRelayThread(runId: string) {
     const run = relayRunRef.current[runId];
     if (!run) return;
-    await window.braveli?.writeProjectFile?.({
+    await window.pitwall?.writeProjectFile?.({
       projectPath: run.projectPath || activeProject.path,
       filePath: getCouncilThreadFile(runId),
       content: renderCouncilThread(run.members, run.messages, run.task, run.workingSet),
@@ -7523,7 +7381,7 @@ export function App() {
     const run = relayRunRef.current[runId];
     if (!run) return "";
     const read = async (filePath: string) => {
-      const result = await window.braveli?.readProjectFile?.({
+      const result = await window.pitwall?.readProjectFile?.({
         projectPath: run.projectPath || activeProject.path,
         filePath,
       });
@@ -7610,7 +7468,7 @@ export function App() {
     const run = relayRunRef.current[runId];
     const question = text.trim();
     if (!run || !question) return;
-    if (!window.braveli?.routeCouncilTurn) {
+    if (!window.pitwall?.routeCouncilTurn) {
       appendConductorNote(runId, "system", "The conductor cannot be reached from this build.");
       return;
     }
@@ -7619,7 +7477,7 @@ export function App() {
     setConductorMessage("");
     setConductorBusy(true);
     try {
-      const result = await window.braveli.routeCouncilTurn({
+      const result = await window.pitwall.routeCouncilTurn({
         agent: run.conductor.agent,
         model: run.conductor.model,
         projectPath: run.projectPath || activeProject.path,
@@ -7757,7 +7615,7 @@ export function App() {
   async function resolveRelayTestCommand(runId: string) {
     const run = relayRunRef.current[runId];
     if (!run || run.testCommand !== undefined) return;
-    const result = await window.braveli?.getProjectTestCommand?.({
+    const result = await window.pitwall?.getProjectTestCommand?.({
       projectPath: run.projectPath || activeProject.path,
     });
     const current = relayRunRef.current[runId];
@@ -7774,14 +7632,14 @@ export function App() {
     if (!run || !run.conductor.runTests || !changed) return null;
     await resolveRelayTestCommand(runId);
     const command = relayRunRef.current[runId]?.testCommand;
-    if (!command || !window.braveli?.runProjectTests) return null;
+    if (!command || !window.pitwall?.runProjectTests) return null;
 
     setRelayRunState((current) => ({
       ...current,
       [runId]: { ...(current[runId] ?? { turn: run.turn, auto: run.auto, note: "" }), testing: true },
     }));
     try {
-      const result = await window.braveli.runProjectTests({
+      const result = await window.pitwall.runProjectTests({
         projectPath: run.projectPath || activeProject.path,
         command,
       });
@@ -7810,9 +7668,9 @@ export function App() {
    */
   async function snapshotRelayRepo(runId: string): Promise<Record<string, string>> {
     const run = relayRunRef.current[runId];
-    if (!run || !window.braveli?.getGitStatus) return {};
+    if (!run || !window.pitwall?.getGitStatus) return {};
     try {
-      const status = await window.braveli.getGitStatus(run.projectPath || activeProject.path);
+      const status = await window.pitwall.getGitStatus(run.projectPath || activeProject.path);
       return status?.ok ? snapshotRepoChanges(status.changes) : {};
     } catch {
       // A project that is not a Git worktree simply has no evidence to offer;
@@ -7834,7 +7692,7 @@ export function App() {
     options: { exclude?: string | null } = {},
   ): Promise<ConductorDecision | null> {
     const run = relayRunRef.current[runId];
-    if (!run || !run.conductor.enabled || !window.braveli?.routeCouncilTurn) return null;
+    if (!run || !run.conductor.enabled || !window.pitwall?.routeCouncilTurn) return null;
 
     const prompt = buildConductorPrompt({
       task: run.task,
@@ -7869,7 +7727,7 @@ export function App() {
         : "Asking the conductor who takes the turn — up to two minutes.",
     );
     try {
-      const result = await window.braveli.routeCouncilTurn({
+      const result = await window.pitwall.routeCouncilTurn({
         agent: run.conductor.agent,
         model: run.conductor.model,
         projectPath: run.projectPath || activeProject.path,
@@ -8240,7 +8098,7 @@ export function App() {
         costUsd: run.conductorCostUsd,
       },
     }));
-    void window.braveli?.writeProjectFile?.({
+    void window.pitwall?.writeProjectFile?.({
       projectPath: run.projectPath || activeProject.path,
       filePath: getCouncilConductorLogFile(runId),
       content: renderConductorLog(run.routes),
@@ -8294,7 +8152,7 @@ export function App() {
         gated.push(item);
         continue;
       }
-      const stage = await window.braveli?.readProjectFile?.({
+      const stage = await window.pitwall?.readProjectFile?.({
         projectPath: run.projectPath || activeProject.path,
         filePath: getTurnStageFile(runId, turn, item.memberId, panel.length),
       });
@@ -8458,7 +8316,7 @@ export function App() {
    * The router speaks in providers and models; sessions start against an
    * agent, so the choice has to be resolved back to one before it can be run.
    */
-  function agentForCandidate(provider: BraveliProviderId | "", model: string): AgentProvider {
+  function agentForCandidate(provider: PitwallProviderId | "", model: string): AgentProvider {
     const match = agentOptionsRef.current.find((option) => (provider
       ? !option.local && providerIdFromAgent(option.agent) === provider
       : Boolean(option.local) && option.models.some((item) => item.value === model)));
@@ -8466,7 +8324,7 @@ export function App() {
   }
 
   /** The seat that judges. Never local, because it is the check on the cheap one. */
-  function judgeSeat(): { provider: BraveliProviderId | ""; model: string } {
+  function judgeSeat(): { provider: PitwallProviderId | ""; model: string } {
     const cloud = runnerCandidates().find((candidate) => !candidate.local);
     return { provider: cloud?.provider ?? "", model: cloud?.model ?? "" };
   }
@@ -8492,7 +8350,7 @@ export function App() {
   }
 
   /** Starts a task through the staged loop rather than in a single session. */
-  async function startStagedRun(task: BraveliTask) {
+  async function startStagedRun(task: PitwallTask) {
     const request = [task.title, task.description].filter(Boolean).join("\n\n");
     const run = startRun({
       id: makeId("run"),
@@ -8540,7 +8398,7 @@ export function App() {
       // In the worktree the work happened in, not the project root, which is
       // still sitting on the trunk.
       const attemptCwd = stagedCwdRef.current[run.id] || activeProject.path;
-      const result = await window.braveli?.runValidation?.({
+      const result = await window.pitwall?.runValidation?.({
         projectPath: attemptCwd,
         branch: run.contract ? run.contract.taskId : activeProject.branch,
       });
@@ -8617,7 +8475,7 @@ export function App() {
       // only for a session that never got a worktree.
       for (const base of [link.cwd, activeProject.path]) {
         if (!base) continue;
-        const result = await window.braveli?.readProjectFile?.({ projectPath: base, filePath: link.outputFile });
+        const result = await window.pitwall?.readProjectFile?.({ projectPath: base, filePath: link.outputFile });
         const content = result?.ok ? result.content?.trim() ?? "" : "";
         if (content) return content;
       }
@@ -8677,7 +8535,7 @@ export function App() {
     // patches, so the patches are fetched per file. Capped: past a few dozen
     // files this is no longer a change one review can meaningfully judge, and
     // the reviewer is told rather than quietly given a truncated picture.
-    const changeset = await window.braveli?.getTaskChangeset?.({
+    const changeset = await window.pitwall?.getTaskChangeset?.({
       projectPath: stagedCwdRef.current[run.id] || activeProject.path,
       branch: activeProject.branch,
       baseBranch: activeProject.branch,
@@ -8685,7 +8543,7 @@ export function App() {
     if (changeset?.ok && changeset.files.length) {
       const shown = changeset.files.filter((file) => !file.binary).slice(0, 40);
       const patches = await Promise.all(shown.map(async (file) => {
-        const result = await window.braveli?.getTaskFileDiff?.({
+        const result = await window.pitwall?.getTaskFileDiff?.({
           projectPath: stagedCwdRef.current[run.id] || activeProject.path,
           branch: activeProject.branch,
           base: changeset.base ?? "",
@@ -8718,7 +8576,7 @@ export function App() {
    * turn 1 would write over the record of what it already did. The old run
    * keeps its history and is marked finished; the new one starts empty.
    */
-  async function startAnotherCouncilTask(previousRunId: string, task: BraveliTask) {
+  async function startAnotherCouncilTask(previousRunId: string, task: PitwallTask) {
     const previous = relayRunRef.current[previousRunId];
     if (!previous || !task) return;
 
@@ -8742,7 +8600,7 @@ export function App() {
     // The brief is per run, so the new task gets its own file rather than
     // overwriting the one the finished run is the record of.
     const taskBriefPath = getCouncilTaskBriefPath(runId);
-    const briefResult = await window.braveli?.writeProjectFile?.({
+    const briefResult = await window.pitwall?.writeProjectFile?.({
       projectPath: previous.projectPath,
       filePath: taskBriefPath,
       content: buildCouncilTaskBrief(task),
@@ -8770,7 +8628,7 @@ export function App() {
       }),
       projectRoot: councilProject.path,
       taskId: task.id,
-      contextEntryIds: braveliRef.current.contextEntries.filter((entry) => entry.projectId === councilProject.id &&
+      contextEntryIds: pitwallRef.current.contextEntries.filter((entry) => entry.projectId === councilProject.id &&
         (activeProject.id !== councilProject.id || selectedContextIds.includes(entry.id))).map((entry) => entry.id),
       workingSet: emptyWorkingSet(),
       verification: undefined,
@@ -8827,7 +8685,7 @@ export function App() {
       },
     }));
 
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       councilRuns: [
         {
@@ -8931,7 +8789,7 @@ export function App() {
 
     const project = sessionProjectRef.current[sessionId] ?? activeProject;
     const cwd = session.worktreePath || project.path;
-    const changeset = await window.braveli?.getTaskChangeset?.({
+    const changeset = await window.pitwall?.getTaskChangeset?.({
       projectPath: cwd,
       branch: session.branch,
       baseBranch: project.branch,
@@ -8940,7 +8798,7 @@ export function App() {
 
     setCheckingSessions((current) => ({ ...current, [sessionId]: true }));
     try {
-      const result = await window.braveli?.runValidation?.({
+      const result = await window.pitwall?.runValidation?.({
         projectPath: cwd,
         branch: session.branch,
         reuseUnchanged: true,
@@ -9063,7 +8921,7 @@ export function App() {
    * adopting one costs nothing and loses nothing.
    */
   async function adoptLegacyCouncil(runId: string) {
-    const run = braveliRef.current.councilRuns.find((item) => item.id === runId);
+    const run = pitwallRef.current.councilRuns.find((item) => item.id === runId);
     if (!run || relayRunRef.current[runId]) return;
     const councilProject = projectsRef.current.find((project) => project.id === run.projectId);
     if (!councilProject) return;
@@ -9075,7 +8933,7 @@ export function App() {
 
     const handles: string[] = [];
     const members: CouncilRelayMember[] = sessions.map((session) => {
-      const stored = braveliRef.current.sessions.find((item) => item.id === session.id);
+      const stored = pitwallRef.current.sessions.find((item) => item.id === session.id);
       const type = stored?.type ?? "implementation";
       const role = getRole(type);
       const memberId = makeCouncilMemberId(roleKeys[type], session.agent, handles);
@@ -9090,12 +8948,12 @@ export function App() {
       };
     });
 
-    const task = braveliRef.current.tasks.find((item) => item.id === run.taskId);
+    const task = pitwallRef.current.tasks.find((item) => item.id === run.taskId);
     const projectPath = sessions[0].worktreePath || councilProject.path;
     const taskBriefPath = getCouncilTaskBriefPath(runId);
-    const existingBrief = await window.braveli?.readProjectFile?.({ projectPath, filePath: taskBriefPath });
+    const existingBrief = await window.pitwall?.readProjectFile?.({ projectPath, filePath: taskBriefPath });
     const taskBrief = existingBrief?.ok && existingBrief.content?.trim() ? existingBrief
-      : task ? await window.braveli?.writeProjectFile?.({ projectPath, filePath: taskBriefPath, content: buildCouncilTaskBrief(task) }) : null;
+      : task ? await window.pitwall?.writeProjectFile?.({ projectPath, filePath: taskBriefPath, content: buildCouncilTaskBrief(task) }) : null;
     const taskPrompt = taskBrief?.ok ? formatCouncilTaskFilePrompt(taskBriefPath)
       : task ? `${task.title}\n\n${task.description}`.trim() : run.prompt;
 
@@ -9104,7 +8962,7 @@ export function App() {
     // history it already wrote.
     const stages: Array<{ turn: number; content: string }> = [];
     for (let turn = 1; turn <= MAX_RELAY_TURNS * 4; turn += 1) {
-      const stage = await window.braveli?.readProjectFile?.({
+      const stage = await window.pitwall?.readProjectFile?.({
         projectPath,
         filePath: getCouncilStageFile(runId, turn),
       });
@@ -9426,7 +9284,7 @@ export function App() {
     }
     if (answered) return;
     codexUpdateAnsweredRef.current[sessionId] = true;
-    void window.braveli?.writeTerminal?.({ sessionId, data: CODEX_UPDATE_SKIP_KEY });
+    void window.pitwall?.writeTerminal?.({ sessionId, data: CODEX_UPDATE_SKIP_KEY });
   }
 
   /**
@@ -9527,12 +9385,12 @@ export function App() {
       return prompt;
     }
 
-    const run = braveliRef.current.councilRuns.find((item) => item.id === runId);
+    const run = pitwallRef.current.councilRuns.find((item) => item.id === runId);
     const project = projectsRef.current.find((item) => item.id === run?.projectId) ?? sessionProjectRef.current[session.id];
     if (!run || !project) return null;
-    const task = braveliRef.current.tasks.find((item) => item.id === run.taskId);
+    const task = pitwallRef.current.tasks.find((item) => item.id === run.taskId);
     const snapshotIds = new Set(run.responses.map((response) => response.sessionId));
-    const snapshots = braveliRef.current.contextSnapshots.filter((snapshot) => snapshotIds.has(snapshot.sessionId) && snapshot.taskId === run.taskId);
+    const snapshots = pitwallRef.current.contextSnapshots.filter((snapshot) => snapshotIds.has(snapshot.sessionId) && snapshot.taskId === run.taskId);
     const contextIds = relay?.contextEntryIds ?? (snapshots.length ? snapshots.flatMap((snapshot) => snapshot.contextEntries.map((entry) => entry.id)) : undefined);
     const synthesis = session.id.startsWith("synth-");
     const basePrompt = synthesis
@@ -9543,13 +9401,13 @@ export function App() {
       projectId: project.id, taskId: run.taskId, runId, sessionId: session.id,
       task: task ?? { title: run.name ?? "Council" }, provider: providerIdFromAgent(session.agent),
       role: synthesis ? "synthesis" : "comparison",
-      manualEntries: braveliRef.current.contextEntries.filter((entry) => entry.projectId === project.id && (!contextIds || contextIds.includes(entry.id))),
+      manualEntries: pitwallRef.current.contextEntries.filter((entry) => entry.projectId === project.id && (!contextIds || contextIds.includes(entry.id))),
       basePrompt,
     });
   }
 
   async function sendCouncilPrompt() {
-    const run = braveli.councilRuns.find((item) => item.id === activeCouncilRunId);
+    const run = pitwall.councilRuns.find((item) => item.id === activeCouncilRunId);
     if (!run) return;
     const targets =
       activeCouncilMode === "compare"
@@ -9573,7 +9431,7 @@ export function App() {
    */
   async function broadcastCouncilMessage(scope: "all" | "current" = "all") {
     const message = councilSharedMessage.trim();
-    const run = braveli.councilRuns.find((item) => item.id === activeCouncilRunId);
+    const run = pitwall.councilRuns.find((item) => item.id === activeCouncilRunId);
     if (!message || !run || councilSessions.length === 0) return;
 
     const relayRun = relayRunRef.current[activeCouncilRunId];
@@ -9619,7 +9477,7 @@ export function App() {
       }
       const targetIds = new Set(recipients.map((session) => session.id));
       const timestamp = nowIso();
-      setBraveli((current) => ({
+      setPitwall((current) => ({
         ...current,
         sessions: current.sessions.map((session) =>
           targetIds.has(session.id)
@@ -9651,7 +9509,7 @@ export function App() {
 
   async function sendCouncilToSession(session: AgentSession) {
     const runId = relayRunIdBySessionRef.current[session.id] ?? activeCouncilRunId;
-    const run = braveliRef.current.councilRuns.find((item) => item.id === runId);
+    const run = pitwallRef.current.councilRuns.find((item) => item.id === runId);
     if (!run) return;
     const relayRun = relayRunRef.current[runId];
     const member = relayRun?.members.find((item) => item.sessionId === session.id);
@@ -9725,7 +9583,7 @@ export function App() {
   }
 
   async function stopCouncil() {
-    const run = braveli.councilRuns.find((item) => item.id === activeCouncilRunId);
+    const run = pitwall.councilRuns.find((item) => item.id === activeCouncilRunId);
     if (!run) return;
     track("council_stopped", { outcome: "stopped" });
 
@@ -9736,7 +9594,7 @@ export function App() {
       delete relaySessionRef.current[session.id];
       if (!(await runSessionAction(session, "stop"))) return;
     }
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       councilRuns: current.councilRuns.map((item) =>
         item.id === run.id ? { ...item, status: "completed" } : item,
@@ -9756,9 +9614,9 @@ export function App() {
   }
 
   async function synthesizeCouncil() {
-    const run = braveliRef.current.councilRuns.find((item) => item.id === activeCouncilRunId);
+    const run = pitwallRef.current.councilRuns.find((item) => item.id === activeCouncilRunId);
     if (!run) return;
-    const task = braveliRef.current.tasks.find((item) => item.id === run.taskId);
+    const task = pitwallRef.current.tasks.find((item) => item.id === run.taskId);
     const councilProject = projectsRef.current.find((project) => project.id === run.projectId);
     if (!task || !councilProject || run.responses.length === 0) return;
     const firstMember = councilProject.sessions.find((session) => run.responses.some((response) => response.sessionId === session.id));
@@ -9794,7 +9652,7 @@ export function App() {
       started: "now",
       logs: [`Synthesizing council for ${task.title}`],
     };
-    const braveliSession: BraveliSession = {
+    const pitwallSession: PitwallSession = {
       id: sessionId,
       projectId: councilProject.id,
       provider: provider.id,
@@ -9822,9 +9680,9 @@ export function App() {
           : project,
       ),
     );
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
-      sessions: [braveliSession, ...current.sessions],
+      sessions: [pitwallSession, ...current.sessions],
       councilRuns: current.councilRuns.map((item) =>
         item.id === run.id
           ? {
@@ -9856,7 +9714,7 @@ export function App() {
     setWorkspaceSection("work");
     setSelectedSessionId(sessionId);
 
-    await window.braveli?.trustProject?.({ projectPath: workspacePath, provider: provider.id });
+    await window.pitwall?.trustProject?.({ projectPath: workspacePath, provider: provider.id });
     const attached = await ensureAgentTerminal(agentSession);
     if (!attached) {
       setCouncilGate(sessionId, "CLI could not attach.");
@@ -9872,13 +9730,13 @@ export function App() {
   }
 
   async function addProject() {
-    const selectedPath = await window.braveli?.chooseProjectDirectory();
+    const selectedPath = await window.pitwall?.chooseProjectDirectory();
     if (!selectedPath) return;
 
     const newProject = makeProjectFromPath(selectedPath, projects.length);
     const projectState = createEmptyProjectState(newProject);
     setProjects((current) => [...current, newProject]);
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       projects: [...current.projects, ...projectState.projects],
       tasks: [...current.tasks, ...projectState.tasks],
@@ -9888,7 +9746,7 @@ export function App() {
     setActiveProjectId(newProject.id);
     setSelectedSessionId("");
     track("project_added");
-    void window.braveli?.learnProjectKnowledge?.({ projectPath: newProject.path }).then((result) => {
+    void window.pitwall?.learnProjectKnowledge?.({ projectPath: newProject.path }).then((result) => {
       if (result.ok) setKnowledgeRefresh((value) => value + 1);
       else setSystemNotice({ tone: "error", title: "Project learning failed", message: result.error || "Open Context to retry learning this project." });
     }).catch((error: unknown) => setSystemNotice({ tone: "error", title: "Project learning failed", message: error instanceof Error ? error.message : String(error) }));
@@ -9908,12 +9766,12 @@ export function App() {
     }
 
     setCreateProjectFlowError("");
-    const parentPath = await window.braveli?.chooseProjectDirectory();
+    const parentPath = await window.pitwall?.chooseProjectDirectory();
     if (!parentPath) return;
 
     setCreateProjectFlowBusy(true);
     try {
-      const created = await window.braveli?.createProjectDirectory?.({
+      const created = await window.pitwall?.createProjectDirectory?.({
         parentPath,
         folderName: slugifyProjectName(draft.name),
         brief: buildProjectBrief({ name: draft.name, description: draft.description }),
@@ -9927,7 +9785,7 @@ export function App() {
       const projectState = createEmptyProjectState(newProject);
       const taskDraft = buildProjectTaskDraft({ name: draft.name, description: draft.description });
       const timestamp = nowIso();
-      const task: BraveliTask = {
+      const task: PitwallTask = {
         id: makeId("task"),
         identifier: taskDraft.identifier,
         projectId: newProject.id,
@@ -9944,7 +9802,7 @@ export function App() {
       };
 
       setProjects((current) => [...current, newProject]);
-      setBraveli((current) => ({
+      setPitwall((current) => ({
         ...current,
         projects: [...current.projects, ...projectState.projects],
         tasks: [task, ...current.tasks, ...projectState.tasks],
@@ -10023,7 +9881,7 @@ export function App() {
       }
       return next;
     });
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       projects: current.projects.filter((item) => item.id !== project.id),
       tasks: current.tasks.filter((item) => item.projectId !== project.id),
@@ -10039,7 +9897,7 @@ export function App() {
 
   async function requestSessionAction(projectId: string, sessionId: string, action: string) {
     try {
-      const result = await window.braveli?.runSessionAction({ projectId, sessionId, action });
+      const result = await window.pitwall?.runSessionAction({ projectId, sessionId, action });
       if (!result?.ok) throw new Error(result?.error || "The session action could not be completed.");
       if (action === "stop" || action === "delete") {
         terminalAttachedRef.current[sessionId] = false;
@@ -10054,11 +9912,11 @@ export function App() {
 
   async function releaseTaskRuntime(projectId: string, taskId?: string) {
     try {
-      const result = await window.braveli?.releaseTaskRuntime?.({ projectId, taskId });
+      const result = await window.pitwall?.releaseTaskRuntime?.({ projectId, taskId });
       if (!result?.ok) return false;
       for (const sessionId of Object.keys(taskRuntimeBySessionRef.current)) {
         const task = taskBySessionRef.current[sessionId];
-        const run = braveliRef.current.sessions.find((item) => item.id === sessionId);
+        const run = pitwallRef.current.sessions.find((item) => item.id === sessionId);
         const ownerId = task?.projectId ?? run?.projectId ?? sessionProjectRef.current[sessionId]?.id;
         if (ownerId === projectId && (!taskId || (task?.id ?? run?.taskId ?? sessionId) === taskId)) {
           delete taskRuntimeBySessionRef.current[sessionId];
@@ -10081,11 +9939,11 @@ export function App() {
   async function retireTaskWorktrees(projectId: string, taskId: string) {
     const project = projectsRef.current.find((item) => item.id === projectId);
     if (!project || !taskId) return;
-    const paths = new Set(braveliRef.current.sessions
+    const paths = new Set(pitwallRef.current.sessions
       .filter((session) => session.taskId === taskId && session.worktreePath && session.worktreePath !== project.path)
       .map((session) => session.worktreePath as string));
     for (const worktreePath of paths) {
-      const result = await window.braveli?.removeWorktree?.({ projectPath: project.path, worktreePath, onlyIfSafe: true })
+      const result = await window.pitwall?.removeWorktree?.({ projectPath: project.path, worktreePath, onlyIfSafe: true })
         .catch(() => null);
       // The agent may have renamed the branch it was given, and a resume
       // recreates the worktree from the branch the work is actually on.
@@ -10103,13 +9961,13 @@ export function App() {
   async function sessionWorkspace(session: AgentSession, project: Project) {
     const current = session.worktreePath;
     if (!current || current === project.path || !session.branch) return current || project.path;
-    const worktree = await window.braveli?.ensureWorktree?.({
+    const worktree = await window.pitwall?.ensureWorktree?.({
       projectPath: project.path,
       branch: session.branch,
       baseBranch: project.branch || "HEAD",
       worktreePath: current,
       // So a worktree comes back on the branch the agent moved this ticket's work to.
-      ticket: braveliRef.current.tasks.find((task) => task.id === braveliRef.current.sessions.find((item) => item.id === session.id)?.taskId)?.identifier,
+      ticket: pitwallRef.current.tasks.find((task) => task.id === pitwallRef.current.sessions.find((item) => item.id === session.id)?.taskId)?.identifier,
     }).catch(() => null);
     const restored = worktree?.ok ? worktree.path : undefined;
     if (worktree && !worktree.ok && worktree.error) workspaceProblemRef.current[session.id] = worktree.error;
@@ -10118,13 +9976,13 @@ export function App() {
     const moved = <T extends { worktreePath?: string }>(item: T): T =>
       item.worktreePath === current ? { ...item, worktreePath: restored } : item;
     setProjects((all) => all.map((item) => item.id !== project.id ? item : { ...item, sessions: item.sessions.map(moved) }));
-    setBraveli((state) => ({ ...state, sessions: state.sessions.map(moved) }));
+    setPitwall((state) => ({ ...state, sessions: state.sessions.map(moved) }));
     return restored;
   }
 
   async function openWorktreeAudit(projectPath = activeProject.path) {
     setWorktreeAudit((current) => ({ ...current, open: true, error: "", worktrees: current.open ? current.worktrees : null }));
-    const result = await window.braveli?.auditWorktrees?.({ projectPath }).catch(() => null);
+    const result = await window.pitwall?.auditWorktrees?.({ projectPath }).catch(() => null);
     setWorktreeAudit((current) => ({
       ...current,
       worktrees: result?.ok ? result.worktrees : [],
@@ -10134,7 +9992,7 @@ export function App() {
 
   async function removeAuditedWorktree(worktree: WorktreeAudit) {
     setWorktreeAudit((current) => ({ ...current, busyPath: worktree.path }));
-    const result = await window.braveli?.removeWorktree?.({ projectPath: activeProject.path, worktreePath: worktree.path })
+    const result = await window.pitwall?.removeWorktree?.({ projectPath: activeProject.path, worktreePath: worktree.path })
       .catch((error: unknown) => ({ ok: false, error: error instanceof Error ? error.message : String(error) }));
     setWorktreeAudit((current) => ({ ...current, busyPath: "" }));
     await openWorktreeAudit();
@@ -10150,8 +10008,8 @@ export function App() {
     if (action === "stop") track("session_stopped", { agent: session.agent.toLowerCase() });
 
     const timestamp = nowIso();
-    setBraveli((current) => {
-      const braveliSession = current.sessions.find((item) => item.id === session.id);
+    setPitwall((current) => {
+      const pitwallSession = current.sessions.find((item) => item.id === session.id);
       const nextSessionStatus =
         action === "start" || action === "unblock"
           ? started ? "running" : "failed"
@@ -10159,7 +10017,7 @@ export function App() {
             ? "waiting"
             : action === "stop"
               ? "completed"
-              : braveliSession?.status ?? "completed";
+              : pitwallSession?.status ?? "completed";
       return {
         ...current,
         sessions: current.sessions.map((item) =>
@@ -10175,9 +10033,9 @@ export function App() {
           {
             id: makeId("activity"),
             projectId: activeProject.id,
-            taskId: braveliSession?.taskId,
+            taskId: pitwallSession?.taskId,
             sessionId: session.id,
-            provider: braveliSession?.provider,
+            provider: pitwallSession?.provider,
             type: "system",
             message: `${session.name}: ${action}`,
             createdAt: timestamp,
@@ -10224,7 +10082,7 @@ export function App() {
     setDeletingSessionId(session.id);
     try {
       if (!(await requestSessionAction(owner.id, session.id, "delete"))) return false;
-      const taskId = braveliRef.current.sessions.find((item) => item.id === session.id)?.taskId;
+      const taskId = pitwallRef.current.sessions.find((item) => item.id === session.id)?.taskId;
       await releaseTaskRuntime(owner.id, taskId || session.id);
 
       const remainingSessions = owner.sessions.filter((item) => item.id !== session.id);
@@ -10247,7 +10105,7 @@ export function App() {
           };
         }),
       );
-      setBraveli((current) => ({
+      setPitwall((current) => ({
         ...current,
         sessions: current.sessions.filter((item) => item.id !== session.id),
         contextSnapshots: current.contextSnapshots.filter((item) => item.sessionId !== session.id),
@@ -10296,7 +10154,7 @@ export function App() {
     }
   }
 
-  async function deleteCouncilRun(run: BraveliCouncilRun) {
+  async function deleteCouncilRun(run: PitwallCouncilRun) {
     const sessionIds = new Set(run.responses.map((response) => response.sessionId));
     const owner = projectsRef.current.find((project) => project.id === run.projectId) ?? activeProject;
     const sessions = owner.sessions.filter((session) => sessionIds.has(session.id));
@@ -10324,7 +10182,7 @@ export function App() {
           };
         }),
       );
-      setBraveli((current) => ({
+      setPitwall((current) => ({
         ...current,
         sessions: current.sessions.filter((session) => !sessionIds.has(session.id)),
         contextSnapshots: current.contextSnapshots.filter((snapshot) => !sessionIds.has(snapshot.sessionId)),
@@ -10369,11 +10227,11 @@ export function App() {
     }
   }
 
-  async function deleteTask(task: BraveliTask) {
-    const taskCouncilRuns = braveli.councilRuns.filter((run) => run.taskId === task.id);
-    const taskCompareRuns = braveli.compareRuns.filter((run) => run.taskId === task.id);
+  async function deleteTask(task: PitwallTask) {
+    const taskCouncilRuns = pitwall.councilRuns.filter((run) => run.taskId === task.id);
+    const taskCompareRuns = pitwall.compareRuns.filter((run) => run.taskId === task.id);
     const sessionIds = new Set(
-      braveli.sessions.filter((session) => session.taskId === task.id).map((session) => session.id),
+      pitwall.sessions.filter((session) => session.taskId === task.id).map((session) => session.id),
     );
     for (const run of [...taskCouncilRuns, ...taskCompareRuns]) {
       for (const response of run.responses) sessionIds.add(response.sessionId);
@@ -10404,7 +10262,7 @@ export function App() {
           };
         }),
       );
-      setBraveli((current) => ({
+      setPitwall((current) => ({
         ...current,
         tasks: current.tasks.filter((item) => item.id !== task.id),
         sessions: current.sessions.filter((session) => !sessionIds.has(session.id) && session.taskId !== task.id),
@@ -10458,7 +10316,7 @@ export function App() {
     if (!session.id) return;
     if (session.id !== selectedSession.id) track("session_opened", { agent: session.agent.toLowerCase() });
 
-    const councilRun = braveli.councilRuns.find((run) =>
+    const councilRun = pitwall.councilRuns.find((run) =>
       run.responses.some((response) => response.sessionId === session.id),
     );
     if (councilRun) {
@@ -10468,7 +10326,7 @@ export function App() {
         councilRun.responses.some((response) => response.sessionId.startsWith("compare-"));
       setActiveCouncilMode(isCompareRun ? "compare" : "council");
     }
-    const run = braveli.sessions.find((item) => item.id === session.id);
+    const run = pitwall.sessions.find((item) => item.id === session.id);
     if (run?.taskId) setDraftTaskId(run.taskId);
     setWorkspaceSection("work");
     setSelectedSessionId(session.id);
@@ -10640,7 +10498,7 @@ export function App() {
    * drift: the CLI acts on that option, or on nothing at all.
    */
   async function answerTerminalMenu(session: AgentSession, _menu: TerminalMenu, choice: MenuOption) {
-    const write = window.braveli?.writeTerminal;
+    const write = window.pitwall?.writeTerminal;
     const key = menuChoiceKey(choice.index);
     if (!write || !key) {
       setSystemNotice({
@@ -10699,17 +10557,17 @@ export function App() {
    * no fact that settles it. Completing by hand is gone because it was the
    * drift; abandoning work is a judgement git cannot infer, so it stays here.
    */
-  function cancelTask(task: BraveliTask) {
+  function cancelTask(task: PitwallTask) {
     const timestamp = nowIso();
-    setBraveli((current) => ({
+    setPitwall((current) => ({
       ...current,
       tasks: current.tasks.map((item) =>
         item.id === task.id ? { ...item, status: "cancelled" as const, updatedAt: timestamp } : item),
     }));
   }
 
-  function moveTaskToColumn(task: BraveliTask, column: string) {
-    setBraveli((current) => ({
+  function moveTaskToColumn(task: PitwallTask, column: string) {
+    setPitwall((current) => ({
       ...current,
       tasks: current.tasks.map((item) =>
         item.id === task.id ? { ...item, boardColumn: column, updatedAt: nowIso() } : item,
@@ -10756,7 +10614,7 @@ export function App() {
   const workbenchTerminalSizeRef = useRef<{ cols: number; rows: number } | null>(null);
 
   const [sendPtySize] = useState(() => createKeyedThrottle<{ cols: number; rows: number }>(80, (sessionId, size) => {
-    void window.braveli?.resizeTerminal?.({ sessionId, ...size });
+    void window.pitwall?.resizeTerminal?.({ sessionId, ...size });
   }));
 
   /** Remembers a pane's fitted size and keeps its PTY in step with it. */
@@ -10864,19 +10722,19 @@ export function App() {
         activeProject;
       const workspacePath = await sessionWorkspace(session, ownerProject);
       const shouldResume = options.resume ?? session.nativeSessionStarted !== false;
-      const taskRun = braveliRef.current.sessions.find((item) => item.id === session.id);
-      const task = (taskRun ? braveliRef.current.tasks.find((item) => item.id === taskRun.taskId) : undefined)
+      const taskRun = pitwallRef.current.sessions.find((item) => item.id === session.id);
+      const task = (taskRun ? pitwallRef.current.tasks.find((item) => item.id === taskRun.taskId) : undefined)
         ?? taskBySessionRef.current[session.id];
       const taskRuntime = taskRuntimeBySessionRef.current[session.id] ?? (task ? await allocateTaskRuntime(task, session.id) : undefined);
       if (task && !taskRuntime) return false;
       if (!initialPrompt && options.refreshContext && shouldResume && task?.status === "running" && !relayRunIdBySessionRef.current[session.id]) {
-        const snapshot = braveliRef.current.contextSnapshots.find((entry) => entry.sessionId === session.id);
+        const snapshot = pitwallRef.current.contextSnapshots.find((entry) => entry.sessionId === session.id);
         const entryIds = new Set(snapshot?.contextEntries.map((entry) => entry.id) ?? []);
         initialPrompt = await prepareAgentPrompt({
           projectPath: ownerProject.path, workspacePath,
           projectId: ownerProject.id, taskId: task.id, sessionId: session.id, task,
           provider: providerIdFromAgent(session.agent), role: taskRun?.type ?? "implementation",
-          manualEntries: braveliRef.current.contextEntries.filter((entry) => entryIds.has(entry.id)),
+          manualEntries: pitwallRef.current.contextEntries.filter((entry) => entryIds.has(entry.id)),
           // Only Claude, and Codex once its conversation was recorded, come
           // back with their history. Anything else starts blank, and telling a
           // blank agent to "continue" left it waiting with no task at all.
@@ -10906,7 +10764,7 @@ export function App() {
         knowledgeOutputRef.current[session.id] = { parts: [], size: 0 };
         delete capturedKnowledgeRef.current[session.id];
       }
-      const result = await window.braveli?.startTerminal?.({
+      const result = await window.pitwall?.startTerminal?.({
         projectId: ownerProject.id,
         projectPath: workspacePath,
         projectRoot: ownerProject.path,
@@ -10929,7 +10787,6 @@ export function App() {
         nativeSessionId: session.nativeSessionId,
         resumeSession: shouldResume,
         initialPrompt,
-        billing: session.billing,
         taskId: task?.id,
         taskIdentifier: task?.identifier,
         taskTitle: task?.title,
@@ -10950,7 +10807,7 @@ export function App() {
           const pane = terminalSizeRef.current[session.id] ?? size;
           if (!pane || !terminalAttachedRef.current[session.id]) return;
           if (pane.cols === startedAt.cols && pane.rows === startedAt.rows) return;
-          void window.braveli?.resizeTerminal?.({ sessionId: session.id, cols: pane.cols, rows: pane.rows });
+          void window.pitwall?.resizeTerminal?.({ sessionId: session.id, cols: pane.cols, rows: pane.rows });
         }, 400);
       }
       if (initialPrompt && (!result?.ok || result.initialPromptMode === "argument")) {
@@ -10968,7 +10825,7 @@ export function App() {
       // whichever one is on screen, and a follower started late has already
       // missed the turns it was supposed to show.
       if (false && result?.ok && session.agent === "Claude") {
-        void window.braveli?.startAgentMirror?.({
+        void window.pitwall?.startAgentMirror?.({
           sessionId: session.id,
           projectPath: session.worktreePath || ownerProject.path,
           claudeSessionId: resolvedNativeSessionId,
@@ -10987,7 +10844,7 @@ export function App() {
               : item),
           }
         : project));
-      setBraveli((current) => ({
+      setPitwall((current) => ({
         ...current,
         sessions: current.sessions.map((item) => item.id === session.id
           ? {
@@ -11050,7 +10907,7 @@ export function App() {
     setEditorStatus("");
     try {
       if (editorChoice === REVEAL_IN_FINDER) {
-        const revealed = await window.braveli?.openPath?.(target);
+        const revealed = await window.pitwall?.openPath?.(target);
         if (revealed && !revealed.ok) {
           setEditorStatus(revealed.error || "Could not reveal the folder.");
           return false;
@@ -11058,7 +10915,7 @@ export function App() {
         return true;
       }
 
-      const result = await window.braveli?.openInEditor?.({
+      const result = await window.pitwall?.openInEditor?.({
         projectPath: target,
         editorId: editorChoice || preferredEditor?.id,
       });
@@ -11114,7 +10971,7 @@ export function App() {
     const live = runs.find((entry) => entry.outcome === "running");
     const session = live?.taskId
       ? activeProject.sessions.find((item) => {
-        const record = braveli.sessions.find((s) => s.id === item.id);
+        const record = pitwall.sessions.find((s) => s.id === item.id);
         return record?.taskId === live.taskId;
       })
       : undefined;
@@ -11132,7 +10989,7 @@ export function App() {
             onInput={(data) => {
               void (async () => {
                 const attached = terminalAttachedBySession[session.id] || (await ensureAgentTerminal(session));
-                if (attached) await window.braveli?.writeTerminal?.({ sessionId: session.id, data });
+                if (attached) await window.pitwall?.writeTerminal?.({ sessionId: session.id, data });
               })();
             }}
             // Not a workbench pane: this is the small box inside a booking's
@@ -11155,7 +11012,7 @@ export function App() {
             <span className={`dk-badge${run.outcome === "ok" ? " dk-badge--green" : " dk-badge--amber"}`}>{run.outcome === "ok" ? "Done" : run.outcome.charAt(0).toUpperCase() + run.outcome.slice(1)}</span>
             <span className="dk-muted">
               {run.pullRequestUrl ? (
-                <button type="button" className="dk-link" onClick={() => void window.braveli?.openExternalUrl?.(run.pullRequestUrl!)}>
+                <button type="button" className="dk-link" onClick={() => void window.pitwall?.openExternalUrl?.(run.pullRequestUrl!)}>
                   Open the {requestNoun}
                 </button>
               ) : (run.reason || run.branch || "")}
@@ -11193,11 +11050,11 @@ export function App() {
     if (!job) return;
 
     const record = async (entry: ScheduleRun) => {
-      await window.braveli?.recordScheduleRun?.({ id: job.id, entry });
+      await window.pitwall?.recordScheduleRun?.({ id: job.id, entry });
       await refreshSchedule();
     };
 
-    const task = braveliRef.current.tasks.find((item) => item.id === taskId);
+    const task = pitwallRef.current.tasks.find((item) => item.id === taskId);
     const branch = task?.worktree || "";
     if (failed) {
       await record({ at: nowIso(), outcome: "failed", taskId, branch });
@@ -11209,10 +11066,10 @@ export function App() {
     // The worktree the run worked in, so the push can read what the agent is
     // actually on rather than the name Pitwall gave the branch before the
     // agent knew what the work was.
-    const ranIn = braveliRef.current.sessions.find((item) => item.taskId === taskId)?.worktreePath || "";
+    const ranIn = pitwallRef.current.sessions.find((item) => item.taskId === taskId)?.worktreePath || "";
     const drafted = task && project ? await draftTaskRequest(task, project.path, ranIn, project.branch) : null;
     const written = drafted?.ok ? drafted : null;
-    const pr = await window.braveli?.openPullRequest?.({
+    const pr = await window.pitwall?.openPullRequest?.({
       projectPath: project?.path || "",
       worktreePath: ranIn,
       branch,
@@ -11249,7 +11106,7 @@ export function App() {
     if (!prompt.trim()) return `Say what should run at ${time.trim()}.`;
     if (!agent) return "Pick an agent for this booking.";
     if ("error" in times) return times.error;
-    const result = await window.braveli?.saveScheduleJob?.({
+    const result = await window.pitwall?.saveScheduleJob?.({
       untilMinutes: times.untilMinutes,
       hour: times.hour,
       minute: times.minute,
@@ -11274,7 +11131,7 @@ export function App() {
    */
   async function runScheduledJob(job: ScheduleJob) {
     const record = async (entry: ScheduleRun) => {
-      await window.braveli?.recordScheduleRun?.({ id: job.id, entry });
+      await window.pitwall?.recordScheduleRun?.({ id: job.id, entry });
       await refreshSchedule();
     };
 
@@ -11287,7 +11144,7 @@ export function App() {
     // The overlap rule, enforced in exactly one place: a booking whose
     // previous run is still going is left alone, and this fire is recorded as
     // a fact about the occurrence rather than as a run.
-    const overlap = scheduleOverlap(job, (taskId) => braveli.sessions.some(
+    const overlap = scheduleOverlap(job, (taskId) => pitwall.sessions.some(
       (session) => session.taskId === taskId
         && (session.status === "running" || session.status === "starting" || session.status === "waiting"),
     ), Date.now());
@@ -11343,7 +11200,7 @@ export function App() {
     // The workspace record knows the task; the rail's session carries the
     // agent and the PTY. Match on the first to find the second.
     const ran = previous?.taskId
-      ? braveli.sessions.find((item) => item.taskId === previous.taskId)
+      ? pitwall.sessions.find((item) => item.taskId === previous.taskId)
       : undefined;
     const existing = ran
       ? projectsRef.current.flatMap((item) => item.sessions).find((item) => item.id === ran.id)
@@ -11364,7 +11221,7 @@ export function App() {
 
     const timestamp = nowIso();
     const identifier = scheduleRunBranch(job.id, new Date(timestamp));
-    const task: BraveliTask = {
+    const task: PitwallTask = {
       id: makeId("task"),
       identifier,
       projectId: project.id,
@@ -11380,7 +11237,7 @@ export function App() {
       updatedAt: timestamp,
     };
 
-    setBraveli((current) => ({ ...current, tasks: [task, ...current.tasks] }));
+    setPitwall((current) => ({ ...current, tasks: [task, ...current.tasks] }));
     await record({ at: timestamp, outcome: "running", taskId: task.id, branch: identifier });
 
     try {
@@ -11443,10 +11300,10 @@ export function App() {
     overrides: {
       agent?: AgentProvider;
       model?: string;
-      sessionType?: BraveliSessionType;
+      sessionType?: PitwallSessionType;
       taskId?: string;
       /** A task the caller already has in hand, for callers with no draft state. */
-      task?: BraveliTask;
+      task?: PitwallTask;
       /** A name for the session; blank falls through to one derived from the work. */
       sessionName?: string;
       /** What the person typed for the agent to do: sent after the role and any task brief, and names the session. */
@@ -11460,8 +11317,6 @@ export function App() {
        * silently did nothing.
        */
       autoApprove?: boolean;
-      /** Run on Pitwall credits instead of the person's own login. */
-      billing?: "credits";
       /** Ask the agent for a closing summary marker. Only a scheduled run and
           a council read one; a session you are watching does not. */
       wantsSummary?: boolean;
@@ -11479,7 +11334,7 @@ export function App() {
        * twice. Reading a task from its source is a CLI round trip, which is
        * most of what starting a session costs.
        */
-      origin?: { task: BraveliTask; refreshed: boolean; error: string };
+      origin?: { task: PitwallTask; refreshed: boolean; error: string };
     } = {},
     /** Called once the session is in the sidebar, so its "starting" row can go. */
     listed: () => void = () => {},
@@ -11508,10 +11363,7 @@ export function App() {
     }
 
     const agent = overrides.agent ?? draftAgent;
-    const requestedModel = overrides.model ?? draftModel;
-    const model = overrides.billing === "credits" && !credits.models.includes(requestedModel)
-      ? credits.models[0] ?? requestedModel
-      : requestedModel;
+    const model = overrides.model ?? draftModel;
     const sessionType = overrides.sessionType ?? draftSessionType;
     const provider = agentOptions.find((option) => option.agent === agent) ?? agentOptions[0];
     const check = agentChecks[agent];
@@ -11571,7 +11423,7 @@ export function App() {
     // do with; anything it wrote landed on that ticket's branch.
     const sessionBranch =
       (hasChosenTask ? taskBranchName(task) : "") || `${agent.toLowerCase()}/session-${sessionNumber}`;
-    const worktree = await window.braveli?.ensureWorktree?.({
+    const worktree = await window.pitwall?.ensureWorktree?.({
       projectPath: runProject.path,
       branch: sessionBranch,
       baseBranch: runProject.branch || "HEAD",
@@ -11664,7 +11516,7 @@ export function App() {
     // attach its terminal before this function resumes after an await.
     if (initialPrompt && !(await prepareProjectTrust(sessionProjectPath, providerId, Boolean(overrides.autoApprove)))) return null;
     mark("trust");
-    const launch = await window.braveli?.launchSession({
+    const launch = await window.pitwall?.launchSession({
       projectId: runProject.id,
       projectPath: sessionProjectPath,
       sessionId,
@@ -11681,7 +11533,7 @@ export function App() {
     if (waitingRequests.length > 0) {
       const deliveredAt = nowIso();
       const ids = waitingRequests.map((request) => request.id);
-      setBraveli((current) => ({
+      setPitwall((current) => ({
         ...current,
         tasks: current.tasks.map((item) =>
           item.id === task.id
@@ -11696,7 +11548,7 @@ export function App() {
     // its first second is its own business, which is worth knowing when the
     // numbers below are small and the wait was not.
     const breakdown = `${((Date.now() - startedAt) / 1000).toFixed(1)}s${phases.length ? ` — ${phases.join(", ")}` : ""}`;
-    console.info(`[braveli] session ready in ${breakdown}`);
+    console.info(`[pitwall] session ready in ${breakdown}`);
     appendTerminalLine(sessionId, `ready in ${breakdown}`, { informational: true });
 
     const command = launch?.command ?? bootCommand;
@@ -11717,7 +11569,6 @@ export function App() {
       // flag that agent's CLI actually documents — or into nothing, for an
       // agent whose flag was never verified.
       autoApprove: Boolean(overrides.autoApprove) && supportsAutoApprove(agentLaunch.command),
-      ...(overrides.billing === "credits" ? { billing: "credits" as const } : {}),
       // Kept so this session can be restarted when the agent row that
       // produced it is not there — a local model's row is derived from what
       // Ollama has pulled, and nothing guarantees it exists at re-attach.
@@ -11736,7 +11587,7 @@ export function App() {
         needsLogin ? `${agent} sign-in may be required` : `Selected ${model}`,
       ],
     };
-    const braveliSession: BraveliSession = {
+    const pitwallSession: PitwallSession = {
       id: sessionId,
       projectId: runProject.id,
       provider: providerId,
@@ -11778,7 +11629,7 @@ export function App() {
       }),
     );
     listed();
-    setBraveli((current) => {
+    setPitwall((current) => {
       const taskExists = current.tasks.some((item) => item.id === task.id);
       const timestamp = nowIso();
       return {
@@ -11807,7 +11658,7 @@ export function App() {
               },
               ...current.tasks,
             ],
-        sessions: [braveliSession, ...current.sessions],
+        sessions: [pitwallSession, ...current.sessions],
         contextSnapshots: [snapshot, ...current.contextSnapshots],
         activity: [
           {
@@ -12026,7 +11877,7 @@ export function App() {
     const tone = input.tone ?? "info";
     setNotifications((list) => addNotification(list, { id: makeId("note"), title: input.title, body: input.body, tone, at: Date.now(), target: input.target, seen: false }));
     setSystemNotice({ tone, title: input.title, message: input.body, target: input.target });
-    if (input.banner && !focused) void window.braveli?.showNotification?.({ title: input.title, body: input.body, target: input.target });
+    if (input.banner && !focused) void window.pitwall?.showNotification?.({ title: input.title, body: input.body, target: input.target });
   }
 
   /** Opens what a notification is about, in whichever project it happened. */
@@ -12038,7 +11889,7 @@ export function App() {
     if (sidebarProjectFilter && sidebarProjectFilter !== project.id) setSidebarProjectFilter(project.id);
     const blank = { needsYou: false, title: "", key: "", status: "", when: "", sortAt: 0, projectId: project.id };
     const scheduledSession = target.section === "schedule" && target.taskId
-      ? braveliRef.current.sessions.find((item) => item.taskId === target.taskId)?.id
+      ? pitwallRef.current.sessions.find((item) => item.taskId === target.taskId)?.id
       : undefined;
     const sessionId = target.sessionId ?? scheduledSession;
     if (sessionId && project.sessions.some((item) => item.id === sessionId)) {
@@ -12086,7 +11937,7 @@ export function App() {
       if (!councilSessionIds.has(session.id)) setWorkbenchTab("terminal");
       return;
     }
-    const task = braveli.tasks.find((item) => item.id === row.taskId);
+    const task = pitwall.tasks.find((item) => item.id === row.taskId);
     if (!task) return;
     if (task.status === "review") {
       setReviewFocusTaskId(task.id);
@@ -12341,7 +12192,7 @@ export function App() {
     void (async () => {
       const attached = terminalAttachedBySession[selectedSession.id] || (await ensureAgentTerminal(selectedSession));
       if (attached) {
-        await window.braveli?.writeTerminal?.({
+        await window.pitwall?.writeTerminal?.({
           sessionId: selectedSession.id,
           data,
         });
@@ -12374,17 +12225,17 @@ export function App() {
           projectName={activeProject.name}
           overseer={activeOverseer}
           models={(agentOptions.find((option) => option.agent === "Hermes")?.models ?? []).map((model) => ({ value: model.value, label: model.label }))}
-          reviews={braveli.tasks
+          reviews={pitwall.tasks
             .filter((task) => task.pair?.reviewer === "hermes" && (task.pair.state === "reviewing" || task.pair.outcome))
             .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
             .slice(0, 12)}
-          learned={braveli.activity.filter((event) => event.message.startsWith("Hermes learned")).slice(0, 12)}
-          scorecard={reviewerScorecard(braveli.tasks, "hermes", activeProject.id)}
+          learned={pitwall.activity.filter((event) => event.message.startsWith("Hermes learned")).slice(0, 12)}
+          scorecard={reviewerScorecard(pitwall.tasks, "hermes", activeProject.id)}
           onToggle={(enabled) => updateProjectRecord(activeProject.id, { overseer: { ...activeOverseer, enabled } })}
           onModel={(model) => updateProjectRecord(activeProject.id, { overseer: { ...activeOverseer, model } })}
           onSignIn={() => {
             setSystemNoticeNow({ tone: "warn", title: "Signing Hermes in…", message: "Starting Hermes's sign-in. Your browser opens to approve it." });
-            void window.braveli?.hermesSignIn?.();
+            void window.pitwall?.hermesSignIn?.();
           }}
           onSetUp={() => { setConnectionsProvider(null); setWorkspaceSection("connections"); }}
           onOpenReview={(task) => {
@@ -12395,8 +12246,6 @@ export function App() {
           }}
           onOpenMemory={() => setWorkspaceSection("context")}
         />
-      ) : section === "plans" ? (
-        <PlansPanel state={credits.state} account={credits.account} plans={credits.plans} error={credits.error} onChanged={credits.refresh} cloud={<CloudPanel signedIn={credits.state.signedIn} projects={braveli.projects} onToggleHistory={(projectId, on) => updateProjectRecord(projectId, { cloudHistory: on })} />} />
       ) : section === "connections" ? (
             <ConnectionsPanel
               embedded
@@ -12404,7 +12253,7 @@ export function App() {
                 enabled: analyticsEnabled,
                 onChange: (enabled) => {
                   setAnalyticsEnabled(enabled);
-                  void window.braveli?.analyticsState?.({ enabled });
+                  void window.pitwall?.analyticsState?.({ enabled });
                 },
               }}
               onAddAgent={() => {
@@ -12462,14 +12311,14 @@ export function App() {
               track={track}
               initialProvider={extensionsProvider}
               onAddCustomMcp={(provider) => {
-                setMcpProvider(provider as BraveliProviderId);
+                setMcpProvider(provider as PitwallProviderId);
                 setAddMcpOpen(true);
               }}
             />
           ) : section === "home" ? (
             <HomePage
               projects={projects}
-              tasks={braveli.tasks}
+              tasks={pitwall.tasks}
               defaultProjectId={activeProject.id}
               onStart={(projectId, instruction) => {
                 const project = projects.find((item) => item.id === projectId);
@@ -12496,9 +12345,9 @@ export function App() {
               modelOptions={automationModelOptions}
               reviewModelOptions={reviewModelOptions}
               automationSettings={automationSettings}
-              onSetModel={(watch, model) => void window.braveli?.updateWatch?.({ watchId: watch.id, config: { model } })}
+              onSetModel={(watch, model) => void window.pitwall?.updateWatch?.({ watchId: watch.id, config: { model } })}
               onSaveAutomationSettings={(patch) => {
-                void window.braveli?.setAutomationSettings?.(patch).then((result) => { if (result?.settings) setAutomationSettings(result.settings); });
+                void window.pitwall?.setAutomationSettings?.(patch).then((result) => { if (result?.settings) setAutomationSettings(result.settings); });
               }}
               hostLabel={codeHost?.kind === "github" ? "GitHub" : codeHost?.kind === "gitlab" ? "GitLab" : codeHost ? null : "your code host"}
               requestNoun={requestNoun}
@@ -12515,20 +12364,20 @@ export function App() {
                 return [...sources.values()];
               })()}
               onAdd={async (kind, config, intervalSeconds) => {
-                const result = await window.braveli?.addWatch?.({ projectId: activeProject.id, projectPath: activeProject.path, kind, config, intervalSeconds });
+                const result = await window.pitwall?.addWatch?.({ projectId: activeProject.id, projectPath: activeProject.path, kind, config, intervalSeconds });
                 return result ?? { ok: false, error: "Watches are not available in this build." };
               }}
-              onToggleWatch={(watch, enabled) => void window.braveli?.updateWatch?.({ watchId: watch.id, enabled })}
-              onSetInterval={(watch, intervalSeconds) => void window.braveli?.updateWatch?.({ watchId: watch.id, intervalSeconds })}
-              onRemoveWatch={(watch) => void window.braveli?.removeWatch?.({ watchId: watch.id })}
+              onToggleWatch={(watch, enabled) => void window.pitwall?.updateWatch?.({ watchId: watch.id, enabled })}
+              onSetInterval={(watch, intervalSeconds) => void window.pitwall?.updateWatch?.({ watchId: watch.id, intervalSeconds })}
+              onRemoveWatch={(watch) => void window.pitwall?.removeWatch?.({ watchId: watch.id })}
               onCheckNow={async () => {
-                const state = await window.braveli?.checkWatchesNow?.({ projectId: activeProject.id });
+                const state = await window.pitwall?.checkWatchesNow?.({ projectId: activeProject.id });
                 if (state?.ok) setWatchState({ watches: state.watches, findings: state.findings });
               }}
-              onRetry={(finding) => void window.braveli?.retryWatchFinding?.({ findingId: finding.id })}
-              onDismiss={(finding) => void window.braveli?.dismissWatchFinding?.({ findingId: finding.id })}
+              onRetry={(finding) => void window.pitwall?.retryWatchFinding?.({ findingId: finding.id })}
+              onDismiss={(finding) => void window.pitwall?.dismissWatchFinding?.({ findingId: finding.id })}
               onPost={async (finding, review, approveOnly = false) => {
-                const result = await window.braveli?.postWatchReview?.(approveOnly ? { findingId: finding.id, approveOnly } : { findingId: finding.id, review });
+                const result = await window.pitwall?.postWatchReview?.(approveOnly ? { findingId: finding.id, approveOnly } : { findingId: finding.id, review });
                 if (!result) return { ok: false, error: "Posting is not available in this build." };
                 if (result.ok) {
                   appendActivity({ projectId: activeProject.id, type: "system", message: `${approveOnly ? "Approved" : "Review posted on"} ${requestNoun === "merge request" ? "!" : "#"}${finding.number} ${finding.title}` });
@@ -12537,7 +12386,7 @@ export function App() {
                 return result;
               }}
               onApproveFix={async (finding, fix) => {
-                const result = await window.braveli?.approveWatchFix?.({ findingId: finding.id, fix });
+                const result = await window.pitwall?.approveWatchFix?.({ findingId: finding.id, fix });
                 if (!result) return { ok: false, error: "This is not available in this build." };
                 if (result.ok) {
                   const what = fix.commit ? `Pushed a fix to ${finding.headRef}` : "Posted replies";
@@ -12551,7 +12400,7 @@ export function App() {
               onApproveTicket={async (finding, plan, start, agent, model) => {
                 const created = createTaskFromTicket(finding, plan, providerIdFromAgent(agent as AgentProvider));
                 if (!created) return { ok: false, error: "The ticket could not be made into a task." };
-                await window.braveli?.resolveWatchFinding?.({ findingId: finding.id, url: finding.url });
+                await window.pitwall?.resolveWatchFinding?.({ findingId: finding.id, url: finding.url });
                 if (start) {
                   const session = await createAgentSession({ project: activeProject, agent: agent as AgentProvider, model, sessionType: "implementation", taskId: created.id, task: created, startTask: true });
                   if (!session) return { ok: true, warning: "The task was created, but its session could not start." };
@@ -12561,10 +12410,10 @@ export function App() {
                 return { ok: true };
               }}
               onRevise={async (finding, instruction, current) => {
-                const result = await window.braveli?.reviseWatchFinding?.({ findingId: finding.id, instruction, current });
+                const result = await window.pitwall?.reviseWatchFinding?.({ findingId: finding.id, instruction, current });
                 return result ?? { ok: false, error: "This is not available in this build." };
               }}
-              onOpenUrl={(url) => void window.braveli?.openExternalUrl?.(url)}
+              onOpenUrl={(url) => void window.pitwall?.openExternalUrl?.(url)}
             />
           ) : section !== "work" ? (
             <ProjectHub
@@ -12572,13 +12421,13 @@ export function App() {
               section={section}
               project={activeProject}
               scheduleJobs={scheduleJobs.filter((job) => job.projectId === activeProject.id)}
-              onSaveScheduleJob={(job) => { void window.braveli?.saveScheduleJob?.(job).then(refreshSchedule); }}
-              onDeleteScheduleJob={(job) => { void window.braveli?.deleteScheduleJob?.({ id: job.id }).then(refreshSchedule); }}
+              onSaveScheduleJob={(job) => { void window.pitwall?.saveScheduleJob?.(job).then(refreshSchedule); }}
+              onDeleteScheduleJob={(job) => { void window.pitwall?.deleteScheduleJob?.({ id: job.id }).then(refreshSchedule); }}
               onRunScheduleJobNow={(job) => { void runScheduledJob(job); }}
               onMarkScheduleRunDone={(job) => {
                 // Recorded as a run rather than as a flag, so the history says
                 // what settled it and when — and says plainly that it was you.
-                void window.braveli?.recordScheduleRun?.({
+                void window.pitwall?.recordScheduleRun?.({
                   id: job.id,
                   entry: { at: nowIso(), outcome: "ok", reason: "marked done by you" },
                 }).then(refreshSchedule);
@@ -12612,7 +12461,7 @@ export function App() {
               // shown as unknown rather than filled in with a guess.
               usageByTask={Object.fromEntries(
                 projectTasks.map((task) => {
-                  const usages = braveli.sessions
+                  const usages = pitwall.sessions
                     .filter((item) => item.taskId === task.id)
                     .map((item) => sessionUsage[item.id])
                     .filter(Boolean);
@@ -12621,7 +12470,7 @@ export function App() {
               )}
               checksByTask={Object.fromEntries(projectTasks.map((task) => [task.id, taskValidation(task)]))}
               checkingTaskIds={projectTasks.filter(taskValidationRunning).map((task) => task.id)}
-              attentionTaskIds={braveli.sessions.filter((session) => session.projectId === activeProject.id && (activeProject.sessions.find((item) => item.id === session.id)?.status === "waiting" || councilOutputLooksGated(session.id))).map((session) => session.taskId)}
+              attentionTaskIds={pitwall.sessions.filter((session) => session.projectId === activeProject.id && (activeProject.sessions.find((item) => item.id === session.id)?.status === "waiting" || councilOutputLooksGated(session.id))).map((session) => session.taskId)}
               onRunValidation={(task) => void runTaskValidation(task)}
               onSelectSession={(session) => void selectSession(session)}
               onOpenBranch={() => track("branch_diff_opened", { surface: "review" })}
@@ -12684,7 +12533,7 @@ export function App() {
                 );
               }}
               onOpenGitHub={() => setGitHubAuthOpen(true)}
-              overseer={braveli.projects.find((item) => item.id === activeProject.id)?.overseer}
+              overseer={pitwall.projects.find((item) => item.id === activeProject.id)?.overseer}
               hermesReady={agentChecks.Hermes?.status === "ready"}
               hermesModels={(agentOptions.find((option) => option.agent === "Hermes")?.models ?? []).map((model) => ({ value: model.value, label: model.label }))}
               onChangeOverseer={(next) => updateProjectRecord(activeProject.id, { overseer: next })}
@@ -12695,7 +12544,7 @@ export function App() {
                 setConnectionsProvider(null);
                 setWorkspaceSection("connections");
               }}
-              onOpenProject={() => window.braveli?.openPath(activeProject.path)}
+              onOpenProject={() => window.pitwall?.openPath(activeProject.path)}
               editorLabel={preferredEditor?.name ?? "Finder"}
               previewByTask={previewByTask}
               onOpenTaskEditor={openTaskInEditor}
@@ -12727,7 +12576,6 @@ export function App() {
         extensionsOpen={workspaceSection === "extensions"}
         settingsOpen={workspaceSection === "connections"}
         agentsNeedingSetup={providerReadiness.needsSetup}
-        statusLine={creditsStatusLine(credits.state, credits.account)}
         theme={theme}
         updateState={updateState}
         onProjectFilter={(projectId) => {
@@ -12751,7 +12599,7 @@ export function App() {
         // The row as its session: the same path a loose session takes, other projects included.
         onOpenSession={(row) => openSidebarRow({ ...row, kind: "session" })}
         onDeleteCouncil={(row) => {
-          const run = braveli.councilRuns.find((item) => item.id === row.councilRunId);
+          const run = pitwall.councilRuns.find((item) => item.id === row.councilRunId);
           if (run) setCouncilPendingDelete(run);
         }}
         onNewWork={() => { setDraftInstruction(""); setCreateSessionOpen(true); }}
@@ -12760,7 +12608,6 @@ export function App() {
         onOpenExtensions={() => setWorkspaceSection("extensions")}
         onOpenSettings={() => { setConnectionsProvider(null); setWorkspaceSection("connections"); }}
         onOpenAgents={() => { setConnectionsProvider(null); setWorkspaceSection("connections"); }}
-        onOpenPlans={() => { void credits.refresh(); setWorkspaceSection("plans"); }}
         onToggleTheme={() => setThemePreference(theme === "dark" ? "light" : "dark")}
       />
 
@@ -12771,26 +12618,6 @@ export function App() {
           subtitle={headerSubtitle}
           actions={
             <>
-              {workTask && cloudLeases[workTask.id] && !cloudLeases[workTask.id].mine ? (
-                <button
-                  type="button"
-                  className="dk-btn dk-btn--sm dk-btn--attention"
-                  disabled={continuingTaskId === workTask.id}
-                  title={`This task's agent is running on ${cloudLeases[workTask.id].holder}. Continue here stops it there, brings its unfinished changes, and lets you carry on on this computer.`}
-                  onClick={async () => {
-                    const taskId = workTask.id;
-                    setContinuingTaskId(taskId);
-                    setSystemNoticeNow({ tone: "info", title: `Asking ${cloudLeases[taskId].holder} to hand over`, message: "It saves its unfinished changes and stops the agent there." });
-                    const reply = await window.braveli?.cloudContinueHere?.({ taskId });
-                    setContinuingTaskId(null);
-                    if (!reply?.ok) setSystemNoticeNow({ tone: "warn", title: "Couldn't continue here yet", message: reply?.message ?? "Try again in a minute." });
-                    else if (reply.answered) setSystemNoticeNow({ tone: "info", title: "You're driving this task now", message: "Resume its agent to carry on where it stopped." });
-                    void window.braveli?.cloudRefreshLeases?.();
-                  }}
-                >
-                  {continuingTaskId === workTask.id ? "Continuing…" : `Running on ${cloudLeases[workTask.id].holder} · Continue here`}
-                </button>
-              ) : null}
               {githubActivationPrompt === activeProject.id && activeProject.id ? (
                 <button
                   type="button"
@@ -12813,11 +12640,11 @@ export function App() {
                   disabled={updateState.status === "downloading"}
                   title={updateState.message}
                   onClick={() => {
-                    if (updateState.status === "ready") void window.braveli?.installUpdate?.();
-                    else if (updateState.status === "available") void window.braveli?.downloadUpdate?.();
+                    if (updateState.status === "ready") void window.pitwall?.installUpdate?.();
+                    else if (updateState.status === "available") void window.pitwall?.downloadUpdate?.();
                     // Nothing to retry when the install itself is the problem.
-                    else if (updateState.status === "blocked") window.braveli?.openPath?.("/Applications");
-                    else void window.braveli?.checkForUpdates?.();
+                    else if (updateState.status === "blocked") window.pitwall?.openPath?.("/Applications");
+                    else void window.pitwall?.checkForUpdates?.();
                   }}
                 >
                   {updateState.status === "ready"
@@ -12850,8 +12677,8 @@ export function App() {
                 <SessionReviewer
                   key={`reviewer-${selectedSession.id}`}
                   current={(() => {
-                    const taskId = braveli.sessions.find((item) => item.id === selectedSession.id)?.taskId;
-                    const pair = taskId ? braveli.tasks.find((item) => item.id === taskId)?.pair : undefined;
+                    const taskId = pitwall.sessions.find((item) => item.id === selectedSession.id)?.taskId;
+                    const pair = taskId ? pitwall.tasks.find((item) => item.id === taskId)?.pair : undefined;
                     return pair ? pairReviewerLabel(pair.reviewer) : null;
                   })()}
                   options={automationModelOptions}
@@ -12882,7 +12709,7 @@ export function App() {
                       { value: "folder", label: "Open folder" },
                     ]}
                     onChange={(value) => {
-                      if (value === "folder") window.braveli?.openPath(activeProject.path);
+                      if (value === "folder") window.pitwall?.openPath(activeProject.path);
                       else setWorkspaceSection(value as WorkspaceSection);
                     }}
                   />
@@ -12907,7 +12734,7 @@ export function App() {
           <div className="dk-banner is-warn" role="status">
             <Download size={16} aria-hidden="true" />
             <p>{updateState.message}</p>
-            <button type="button" className="dk-btn dk-btn--sm" onClick={() => window.braveli?.openPath?.("/Applications")}>
+            <button type="button" className="dk-btn dk-btn--sm" onClick={() => window.pitwall?.openPath?.("/Applications")}>
               Open Applications
             </button>
           </div>
@@ -12928,7 +12755,6 @@ export function App() {
             hidden`. For that moment a notice was positioned against the shell
             and clipped by it, which is exactly when the one about restored
             sessions arrives. Out here nothing can capture it. */}
-        <CloudBanner />
         {systemNotice ? createPortal((
           <div className={`dk-toast is-${systemNotice.tone}`} role={systemNotice.tone === "error" ? "alert" : "status"}>
             {systemNotice.tone === "error" ? <AlertTriangle size={16} aria-hidden="true" /> : <CircleDot size={16} aria-hidden="true" />}
@@ -12941,7 +12767,7 @@ export function App() {
                   className="dk-btn dk-btn--sm dk-btn--primary dk-toast-action"
                   onClick={() => {
                     setSystemNoticeNow({ tone: "warn", title: "Signing Hermes in…", message: "Starting Hermes's sign-in. Your browser opens to approve it." });
-                    void window.braveli?.hermesSignIn?.();
+                    void window.pitwall?.hermesSignIn?.();
                   }}
                 >
                   Sign in to Hermes
@@ -12970,7 +12796,7 @@ export function App() {
           <UpdateBanner
             state={updateState}
             workingCount={allSessions.filter((session) => session.status === "running").length}
-            onRestart={() => void window.braveli?.installUpdate?.()}
+            onRestart={() => void window.pitwall?.installUpdate?.()}
           />
           {renderSection(baseSection)}
 
@@ -13268,7 +13094,7 @@ export function App() {
                         void (async () => {
                           const attached = terminalAttachedBySession[session.id] || (await ensureAgentTerminal(session));
                           if (attached) {
-                            await window.braveli?.writeTerminal?.({
+                            await window.pitwall?.writeTerminal?.({
                               sessionId: session.id,
                               data,
                             });
@@ -13403,7 +13229,7 @@ export function App() {
                   activeCouncilRun?.name ??
                   (activeCouncilRun
                     ? formatCouncilRunName(
-                        braveli.tasks.find((task) => task.id === activeCouncilRun.taskId)?.title ?? "Untitled task",
+                        pitwall.tasks.find((task) => task.id === activeCouncilRun.taskId)?.title ?? "Untitled task",
                         activeCouncilMode,
                       )
                     : undefined)
@@ -13413,7 +13239,7 @@ export function App() {
                 relayBySession={relayBySession}
                 relayRun={relayRunState[activeCouncilRunId]}
                 summary={activeCouncilRun ? {
-                  objective: activeRelay?.task.title ?? braveli.tasks.find((task) => task.id === activeCouncilRun.taskId)?.title ?? "Council task",
+                  objective: activeRelay?.task.title ?? pitwall.tasks.find((task) => task.id === activeCouncilRun.taskId)?.title ?? "Council task",
                   description: activeRelay?.task.description,
                   workingSet: activeRelay?.workingSet,
                   decisions: activeRelay?.workingSet.decisions,
@@ -13510,7 +13336,7 @@ export function App() {
                     const attached =
                       terminalAttachedBySession[session.id] || (await ensureAgentTerminal(session));
                     if (attached) {
-                      await window.braveli?.writeTerminal?.({ sessionId: session.id, data });
+                      await window.pitwall?.writeTerminal?.({ sessionId: session.id, data });
                       if (data.trim() && !isTerminalReply(data)) markSessionRunning(session.id);
                     }
                   })();
@@ -13608,7 +13434,7 @@ export function App() {
                       </button>
                     ))}
                   </div>
-                  {colorTheme === "braveli" ? (
+                  {colorTheme === "pitwall" ? (
                     <div className="dk-segmented" role="group" aria-label="Appearance">
                       {(["light", "dark", "system"] as const).map((value) => (
                         <button
@@ -13663,7 +13489,7 @@ export function App() {
               track("ask_agent_used", { surface: "files" });
               const sessionId = selectedSession.id;
               setWorkbenchTab("terminal");
-              void window.braveli?.writeTerminal?.({ sessionId, data: reference }).then(() => {
+              void window.pitwall?.writeTerminal?.({ sessionId, data: reference }).then(() => {
                 terminalHandlesRef.current[sessionId]?.focus();
               });
             }}
@@ -13797,7 +13623,7 @@ export function App() {
         open={broadcastOpen}
         sessions={activeBroadcastSessions}
         taskLabel={(session) => {
-          const run = braveli.sessions.find((item) => item.id === session.id);
+          const run = pitwall.sessions.find((item) => item.id === session.id);
           const task = run ? projectTasks.find((item) => item.id === run.taskId) : undefined;
           return task ? `${task.identifier || "Task"} · ${task.title}` : session.name;
         }}
@@ -13813,7 +13639,7 @@ export function App() {
         worktrees={worktreeAudit.worktrees}
         error={worktreeAudit.error}
         busyPath={worktreeAudit.busyPath}
-        onOpen={(worktree) => void window.braveli?.openPath?.(worktree.path)}
+        onOpen={(worktree) => void window.pitwall?.openPath?.(worktree.path)}
         onRemove={(worktree) => void removeAuditedWorktree(worktree)}
         onClose={() => setWorktreeAudit((current) => ({ ...current, open: false }))}
       />
@@ -13893,9 +13719,9 @@ export function App() {
                   <span className="dk-label">Priority</span>
                   <Dropdown
                     value={draftTaskPriority}
-                    onChange={(value) => setDraftTaskPriority(value as BraveliTaskPriority)}
+                    onChange={(value) => setDraftTaskPriority(value as PitwallTaskPriority)}
                     ariaLabel="Priority"
-                    options={(["low", "medium", "high", "urgent"] as BraveliTaskPriority[]).map((priority) => ({
+                    options={(["low", "medium", "high", "urgent"] as PitwallTaskPriority[]).map((priority) => ({
                       value: priority,
                       label: priority.charAt(0).toUpperCase() + priority.slice(1),
                     }))}
@@ -13910,7 +13736,7 @@ export function App() {
                         setDraftTaskAgent("council");
                         return;
                       }
-                      const providerId = value as BraveliProviderId;
+                      const providerId = value as PitwallProviderId;
                       setDraftTaskAgent(providerId);
                       setDraftAgent(agentFromProviderId(providerId));
                     }}
@@ -13958,7 +13784,7 @@ export function App() {
           setMcpAuthServer(server);
         }}
         onImport={importMcpTasks}
-        onScopeSaved={(source) => void refreshMcp(source.provider as BraveliProviderId)}
+        onScopeSaved={(source) => void refreshMcp(source.provider as PitwallProviderId)}
       />
 
       {createContextOpen && (
@@ -13988,9 +13814,9 @@ export function App() {
                 <span className="dk-label">Category</span>
                 <Dropdown
                   value={draftContextCategory}
-                  onChange={(value) => setDraftContextCategory(value as BraveliContextEntry["category"])}
+                  onChange={(value) => setDraftContextCategory(value as PitwallContextEntry["category"])}
                   ariaLabel="Category"
-                  options={(["architecture", "coding-standards", "database", "api", "project-goals", "decision", "testing", "security", "notes"] as BraveliContextEntry["category"][]).map((category) => ({
+                  options={(["architecture", "coding-standards", "database", "api", "project-goals", "decision", "testing", "security", "notes"] as PitwallContextEntry["category"][]).map((category) => ({
                     value: category,
                     label: category === "api" ? "API" : (category.charAt(0).toUpperCase() + category.slice(1)).replace(/-/g, " "),
                   }))}
@@ -14072,7 +13898,7 @@ export function App() {
         onClear={clearLicence}
         onOpenCheckout={(url) => {
           track("checkout_opened");
-          void window.braveli?.openExternalUrl?.(url);
+          void window.pitwall?.openExternalUrl?.(url);
         }}
         onClose={() => setLicenceOpen(false)}
       />
@@ -14083,7 +13909,7 @@ export function App() {
         analyticsEnabled={analyticsEnabled}
         onAnalyticsChange={(enabled) => {
           setAnalyticsEnabled(enabled);
-          void window.braveli?.analyticsState?.({ enabled });
+          void window.pitwall?.analyticsState?.({ enabled });
         }}
         agents={providerOptions.map((provider) => ({
           name: provider.agent,
@@ -14095,13 +13921,13 @@ export function App() {
           message: agentChecks[provider.agent]?.message ?? "Checking…",
         }))}
         onAddProject={() => {
-          writeStored("braveli-onboarded", "yes");
+          writeStored("pitwall-onboarded", "yes");
           track("onboarding_completed");
           setOnboardingOpen(false);
           void addProject();
         }}
         onClose={() => {
-          writeStored("braveli-onboarded", "yes");
+          writeStored("pitwall-onboarded", "yes");
           track("onboarding_completed");
           setOnboardingOpen(false);
         }}
@@ -14244,7 +14070,7 @@ export function App() {
                 type="button"
                 onClick={() => {
                   const ids = new Set(columnPendingClear.tasks.map((task) => task.id));
-                  setBraveli((current) => ({ ...current, tasks: current.tasks.filter((task) => !ids.has(task.id)) }));
+                  setPitwall((current) => ({ ...current, tasks: current.tasks.filter((task) => !ids.has(task.id)) }));
                   setColumnPendingClear(null);
                 }}
               >
@@ -14260,7 +14086,7 @@ export function App() {
           councilPendingDelete
             ? councilPendingDelete.name ??
               formatCouncilRunName(
-                braveli.tasks.find((task) => task.id === councilPendingDelete.taskId)?.title ?? "Untitled task",
+                pitwall.tasks.find((task) => task.id === councilPendingDelete.taskId)?.title ?? "Untitled task",
                 "council",
               )
             : null
@@ -14280,13 +14106,13 @@ export function App() {
         queued={Math.max(0, tasksPendingDelete.length - 1)}
         sessionCount={
           taskPendingDelete
-            ? braveli.sessions.filter((session) => session.taskId === taskPendingDelete.id).length
+            ? pitwall.sessions.filter((session) => session.taskId === taskPendingDelete.id).length
             : 0
         }
         councilCount={
           taskPendingDelete
-            ? braveli.councilRuns.filter((run) => run.taskId === taskPendingDelete.id).length +
-              braveli.compareRuns.filter((run) => run.taskId === taskPendingDelete.id).length
+            ? pitwall.councilRuns.filter((run) => run.taskId === taskPendingDelete.id).length +
+              pitwall.compareRuns.filter((run) => run.taskId === taskPendingDelete.id).length
             : 0
         }
         deleting={Boolean(deletingTaskId)}
@@ -14445,7 +14271,7 @@ export function App() {
         onCancel={() => {
           if (mcpAuthServer) void cancelMcpAuth(mcpAuthServer);
         }}
-        onOpenUrl={(url) => void window.braveli?.openExternalUrl?.(url)}
+        onOpenUrl={(url) => void window.pitwall?.openExternalUrl?.(url)}
         onForget={() => {
           if (mcpAuthServer) void forgetMcpAuth(mcpAuthServer);
         }}
@@ -14458,19 +14284,7 @@ export function App() {
         agentChecks={agentChecks}
         checkingAgents={checkingAgents}
         draftAgent={draftAgent}
-        draftModels={draftBilling === "credits" && creditsCanRun(String(draftAgent))
-          ? credits.models.map((model) => ({ label: model, value: model }))
-          : draftProvider.models}
-        billing={creditsCanRun(String(draftAgent)) && credits.state.available ? {
-          value: draftBilling,
-          creditsReady: Boolean(credits.account?.active),
-          note: !credits.state.signedIn ? "Sign in under Account first" : !credits.account?.active ? "Choose a plan under Account first" : `$${(credits.account.remaining_usd ?? 0).toFixed(2)} left this month`,
-          onChange: (value) => {
-            setDraftBilling(value);
-            // Credits run the gateway's models; a login runs the CLI's own.
-            setDraftModel(value === "credits" ? credits.models[0] ?? "Auto" : draftProvider.models[0]?.label ?? "Auto");
-          },
-        } : undefined}
+        draftModels={draftProvider.models}
         draftModel={draftModel}
         draftTaskId={draftTaskId}
         draftInstruction={draftInstruction}
@@ -14515,13 +14329,12 @@ export function App() {
           void createAgentSession({
             autoApprove: draftAutoApprove,
             instruction: draftInstruction,
-            ...(draftBilling === "credits" && creditsCanRun(String(draftAgent)) ? { billing: "credits" as const } : {}),
           })
             .then((session) => {
               if (!session || !pairing) return;
               const [reviewer, rounds] = pairing.value.split(":");
               track("pair_started", { agent: reviewer, turns: Number(rounds) || 3 });
-              setBraveli((current) => ({
+              setPitwall((current) => ({
                 ...current,
                 tasks: current.tasks.map((task) => task.id === pairing.taskId
                   ? { ...task, pair: { reviewer: toPairReviewer(reviewer), maxRounds: Number(rounds) || 3, round: 0, state: "implementing" } }
@@ -14548,7 +14361,7 @@ export function App() {
         confirmation={voice.confirmation}
         error={voice.error}
         log={voice.log}
-        onToggle={() => void (voice.enabled ? voice.stop() : voice.start({ wakeWords: ["pitwall", "pit wall", "braveli", "bravely"] }))}
+        onToggle={() => void (voice.enabled ? voice.stop() : voice.start({ wakeWords: ["pitwall", "pit wall"] }))}
         onPushToTalk={() => void voice.listenOnce()}
         onConfirm={() => void voice.confirm()}
         onCancelConfirmation={() => void voice.cancelConfirmation()}

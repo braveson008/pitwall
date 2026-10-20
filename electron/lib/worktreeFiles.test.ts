@@ -19,7 +19,7 @@ let temp: string;
 let repo: string;
 
 beforeEach(() => {
-  temp = fs.mkdtempSync(path.join(os.tmpdir(), "braveli-files-"));
+  temp = fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-files-"));
   repo = path.join(temp, "repo");
   fs.mkdirSync(path.join(repo, "src"), { recursive: true });
   execFileSync("git", ["init", "-q"], { cwd: repo });
@@ -76,5 +76,12 @@ describe("worktree files", () => {
     ]);
     const live = await worktreeChanges(repo, process.env);
     expect(live.changes).toEqual(expect.arrayContaining([{ path: "src/a.ts", kind: "untracked" }]));
+  });
+
+  it("leaves out council files, under the current folder and the one older versions wrote", () => {
+    expect(parseStatusZ("?? .pitwall/council/r1/thread.md\0?? .braveli/council/r0/thread.md\0?? .pitwallish\0 M src/a.ts\0")).toEqual([
+      { path: ".pitwallish", kind: "untracked" },
+      { path: "src/a.ts", kind: "modified" },
+    ]);
   });
 });

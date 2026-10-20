@@ -1,6 +1,6 @@
 import { KeyRound, Plus, RefreshCw, Terminal, Trash2 } from "lucide-react";
 import { getProviderById, providerRegistry } from "../domain/providers";
-import type { BraveliProviderId } from "../domain/types";
+import type { PitwallProviderId } from "../domain/types";
 import { mcpTaskSourceLabel } from "../lib/taskImport";
 
 const mcpStatusLabel: Record<string, string> = {
@@ -24,11 +24,11 @@ const mcpStatusText: Record<string, string> = {
   "needs-auth": "is-needs",
 };
 
-function providerLabel(id: BraveliProviderId) {
+function providerLabel(id: PitwallProviderId) {
   return getProviderById(id)?.displayName ?? String(id);
 }
 
-function providerCommand(id: BraveliProviderId) {
+function providerCommand(id: PitwallProviderId) {
   return getProviderById(id)?.command ?? String(id);
 }
 
@@ -54,19 +54,19 @@ export function McpPanel({
   onUseInSession,
 }: {
   activeProjectId: string;
-  mcpProvider: BraveliProviderId;
-  setMcpProvider: (id: BraveliProviderId) => void;
-  mcpByProvider: Partial<Record<BraveliProviderId, McpListResult>>;
+  mcpProvider: PitwallProviderId;
+  setMcpProvider: (id: PitwallProviderId) => void;
+  mcpByProvider: Partial<Record<PitwallProviderId, McpListResult>>;
   mcpLoading: boolean;
   mcpBusy: string;
   mcpAuthBusy: string;
   mcpNotice: string;
   mcpNoticeTone: "neutral" | "success" | "error";
   onAdd: () => void;
-  onRefresh: (provider: BraveliProviderId) => void;
+  onRefresh: (provider: PitwallProviderId) => void;
   onRemove: (server: McpServerInfo) => void;
   onAuth: (server: McpServerInfo) => void;
-  onUseInSession: (provider: BraveliProviderId) => void;
+  onUseInSession: (provider: PitwallProviderId) => void;
 }) {
   const mcpState = mcpByProvider[mcpProvider];
   const mcpServers = mcpState?.servers ?? [];

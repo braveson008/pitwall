@@ -173,8 +173,8 @@ describe("prompts", () => {
       taskPrompt: "fix the duplicate requests",
       member,
       others: [{ memberId: "impl-codex", roleLabel: "Implementer", agentLabel: "Codex" }],
-      threadFile: ".braveli/council/r1/thread.md",
-      stanceFile: ".braveli/council/r1/stance-1-qa-claude.md",
+      threadFile: ".pitwall/council/r1/thread.md",
+      stanceFile: ".pitwall/council/r1/stance-1-qa-claude.md",
     });
     expect(prompt).toMatch(/impl-codex/);
     expect(prompt).toMatch(/do not defer/i);
@@ -190,7 +190,7 @@ describe("prompts", () => {
         { memberId: "qa-claude", roleLabel: "Reviewer", agentLabel: "Claude", summary: "use a store" },
       ],
       round: 2,
-      stanceFile: ".braveli/council/r1/stance-2-qa-claude.md",
+      stanceFile: ".pitwall/council/r1/stance-2-qa-claude.md",
     });
     expect(prompt).toMatch(/impl-codex \(Implementer\) said: memoize/);
     expect(prompt).toMatch(new RegExp(`${AGREE_MARKER}: <member>`));

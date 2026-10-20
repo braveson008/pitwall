@@ -13,7 +13,7 @@ import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
 const root = process.cwd();
-const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "braveli-existing-request-"));
+const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-existing-request-"));
 const fakeHome = path.join(temp, "home");
 const fakeBin = path.join(temp, "bin");
 for (const dir of [fakeHome, fakeBin]) await mkdir(dir, { recursive: true });
@@ -42,12 +42,12 @@ git(["worktree", "add", "-q", "-b", "acme-2687", worktree], repo);
 await writeFile(path.join(worktree, "vip.txt"), "vip\n");
 const headBefore = git(["rev-parse", "HEAD"], worktree).trim();
 
-const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") } });
+const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, HOME: fakeHome, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") } });
 try {
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(1500);
-  const result = await page.evaluate((payload) => window.braveli.openPullRequest(payload), {
+  const result = await page.evaluate((payload) => window.pitwall.openPullRequest(payload), {
     projectPath: repo,
     worktreePath: worktree,
     branch: "acme-2687",
@@ -74,9 +74,9 @@ try {
   const workspace = { version: 1, projects: [{ id: "p", name: "repo", path: repo, defaultBranch: "main", providerIds: ["claude"], createdAt: now, updatedAt: now }], tasks: [task], contextEntries: [], contextSnapshots: [], sessions: [], activity: [], taskRuns: [], councilRuns: [], compareRuns: [] };
   await page.evaluate(({ project, workspace }) => {
     localStorage.clear();
-    localStorage.setItem("braveli-projects", JSON.stringify([project]));
-    localStorage.setItem("braveli-onboarded", "yes");
-    localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace));
+    localStorage.setItem("pitwall-projects", JSON.stringify([project]));
+    localStorage.setItem("pitwall-onboarded", "yes");
+    localStorage.setItem("pitwall-workspace-state", JSON.stringify(workspace));
   }, { project, workspace });
   await page.reload({ waitUntil: "domcontentloaded" });
   await openProject(page, "repo");

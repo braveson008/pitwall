@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { FEED_PREFIX, PRODUCT } from "./release-identity.mjs";
+import { FEED_PREFIX, PRODUCT, downloadsUrl } from "./release-identity.mjs";
 /**
  * Puts a built release in R2.
  *
@@ -82,7 +82,7 @@ function checkMac() {
   // downstream can recover from.
   if (manifest) {
     const manifestText = readFileSync(path.join(releaseDir, manifest), "utf8");
-    if (!/^braveliSigned:\s*true\s*$/m.test(manifestText)) {
+    if (!/^pitwallSigned:\s*true\s*$/m.test(manifestText)) {
       problems.push("latest-mac.yml is not a verified signed-release manifest — rebuild with npm run dist:release");
     }
     if (zip) {
@@ -220,5 +220,5 @@ for (const name of files) {
   console.log("done");
 }
 
-const base = (process.env.BRAVELI_UPDATE_URL ?? "").replace(/\/$/, "");
+const base = downloadsUrl();
 console.log(`\nUploaded. ${base ? `${base}/${FEED_PREFIX}${primary}` : primary}`);

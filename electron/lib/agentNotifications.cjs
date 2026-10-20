@@ -122,7 +122,7 @@ function codexCompletionArgs(endpoint) {
       "/bin/sh",
       "-c",
       `/usr/bin/curl -fsS --max-time 2 -X POST -H Content-Type:application/json --data-binary \"$1\" '${endpoint}' >/dev/null 2>&1 || true`,
-      "braveli",
+      "pitwall",
     ];
   return ["-c", `notify=${JSON.stringify(command)}`];
 }
@@ -146,7 +146,7 @@ function geminiCompletionSettings(baseSettings, endpoint) {
           matcher: "*",
           hooks: [
             {
-              name: "braveli-turn-complete",
+              name: "pitwall-turn-complete",
               type: "command",
               command: curlCompletionCommand(endpoint),
               timeout: 5,

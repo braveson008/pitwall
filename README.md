@@ -51,17 +51,6 @@ npm run dist     # an unsigned local build in release/
 
 `npm run test:electron` runs the end-to-end smokes against the built app with stubbed agent CLIs. `npm run icons` redraws the app icon from `scripts/make-icons.mjs`.
 
-## What this build leaves out
-
-Two features need a server, and the public build ships without one:
-
-- **Credits**, which run open models through a paid gateway instead of your own logins.
-- **Pitwall Cloud**, end-to-end encrypted sync of projects and agent history between your computers.
-
-Without a gateway Pitwall does not offer either. Everything else runs locally.
-
-Analytics are off too: the app can report anonymous usage counts only when it is built with a PostHog key, and the public build has none.
-
 ## Privacy
 
 Projects, tasks, sessions and terminal history stay on your Mac. Agents talk to their own providers with your own accounts. GitHub and GitLab tokens are encrypted with macOS safe storage. See [SECURITY.md](SECURITY.md) for what an unattended agent can do.

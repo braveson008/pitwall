@@ -1,0 +1,4403 @@
+/* =========================================================================
+   Pitwall design tokens
+   =========================================================================
+
+   The governing idea is that structure should be felt, not seen. An earlier
+   pass drew every relationship with a border, so a screen holding three
+   projects and four sessions showed roughly forty boxes — and because each
+   one carried the same weight, none of them read as more important than the
+   rest. That is what "cluttered" was. Grouping is now carried by space,
+   alignment and a single hairline where two regions genuinely meet.
+
+   Two consequences worth stating, because they explain values that would
+   otherwise look arbitrary:
+
+   - Chrome recedes, content advances. The rails (`--panel`) sit a step
+     darker than the working surface (`--surface`) rather than being white
+     boxes floating on a tinted page. The eye finds the work first.
+   - Colour is spent, not sprinkled. Saturation belongs to exactly two
+     things: the one primary action on screen, and the status dots. Status
+     stopped being coloured *text* — five green "Ready" labels made the least
+     actionable fact on screen the loudest thing on it.
+
+   Greys are warm. The old ramp was blue-tinted (#e8ebf3), which reads cold
+   next to a code editor and fights every accent placed on it.
+   ========================================================================= */
+
+:root {
+  color-scheme: light;
+  /* DM Sans replaces IBM Plex Sans. Plex is a technical grotesque — flat
+     terminals, tight apertures, a squared-off feel that reads as hard next to
+     this much small text. DM Sans is low-contrast and rounded, so it stays
+     legible at 11px while feeling considerably softer.
+     Negative tracking went with the old face; it made dense text feel clenched.
+     Letters now sit at their natural width. */
+  /* The system face. Pitwall ships for one platform, so the most minimal
+     typeface available is the one the platform already draws better than any
+     webfont: correctly hinted at every size, familiar enough to disappear, and
+     nothing to download. A display face was giving the interface a voice it
+     does not need. */
+  --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: Lilex, ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Mono", Consolas, monospace;
+  /* The app's own face, not the canvas's. The canvas draws every frame in
+     JetBrains Mono, which made the whole interface a terminal; the reading
+     face stays the system one and mono is kept for what is actually a
+     character grid — times, counts, branch names, code.
+
+     Tabular figures stay everywhere: they are what lets a column of numbers
+     line up without being told to, and the system face has them. */
+  font-family: var(--font-sans);
+  /* 13/20. Set here and inherited, so the whole interface moves together
+     rather than a screen at a time. */
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+
+  /* ---- Scale ----------------------------------------------------------
+     One radius ramp instead of the eight literal values that had accreted
+     (5/6/7/8/9/10/12px), which is most of why controls never looked like a
+     set. Small controls take the small radius: a 10px corner on a 26px
+     button eats the button. */
+  --r-xs: 3px;
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-pill: 999px;
+
+  /* Elevation is for things that genuinely float. A static panel that casts
+     a shadow is claiming to be above a surface it is level with. */
+  /* Zed's elevation: modals get the four-layer shadow, popovers the small one. */
+  --shadow: 0 2px 3px rgba(0, 0, 0, 0.06), 0 3px 6px rgba(0, 0, 0, 0.06), 0 6px 12px rgba(0, 0, 0, 0.04), 0 1px 0 rgba(0, 0, 0, 0.04);
+  --shadow-popover: 0 2px 3px rgba(0, 0, 0, 0.12), 0 1px 0 rgba(0, 0, 0, 0.03);
+
+  /* ---- Light -----------------------------------------------------------
+     Values from the canvas, where every frame declares the same ten. The
+     greys are a ladder with a job each: ink is work not yet done, muted is
+     what is finished or secondary, faint is a label you read only when you
+     go looking. Colour never fills — blue is the one action on a row, amber
+     says blocked or missed, green says running, and each repeats a word
+     that is already there. */
+  --page: #fafafa;
+  --window: #fafafa;
+  --panel: #ebebec;
+  --surface: #f3f3f4;
+  --surface-soft: #f5f5f6;
+  --elevated: #ebebec;
+  --chrome: #dcdcdd;
+  --line: #dfdfe0;
+  --line-strong: #c9c9ca;
+  --text: #242529;
+  --ink: var(--text);
+  --muted: #58585a;
+  --faint: #6c6e74; /* Zed's placeholder (#7e8086) darkened to 4.6:1 so text set in it stays legible */
+  --blue: #5c78e2;
+  --blue-soft: rgba(92, 120, 226, 0.14);
+  --accent-rgb: 92, 120, 226;
+  --accent-ink: #ffffff;
+  --green: #4f8a43;
+  --green-soft: rgba(102, 159, 89, 0.16);
+  --amber: #8a7212;
+  --amber-soft: rgba(164, 136, 25, 0.16);
+  --danger: #c4503f;
+
+  --syntax-keyword: #a449ab;
+  --syntax-string: #4f8a43;
+  --syntax-comment: #6c6e74;
+  --syntax-number: #ad6e25;
+  --syntax-type: #3882b7;
+  --syntax-function: #5b79e3;
+  --syntax-property: #d3604f;
+  --syntax-punctuation: #4d4f52;
+}
+
+/* --- Dark ---------------------------------------------------------------
+   The same ten values the canvas declares on every dark frame. Muted and
+   faint are further apart here than they were: on a dark ground the old
+   pair (#9b978f, #8b8780) were a shade of each other, so the ladder that
+   separates a finished run from a project name had nothing to stand on. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d1016;
+  --window: #0d1016;
+  --panel: #1f2127;
+  --surface: #161920;
+  --surface-soft: #12151b;
+  --elevated: #1f2127;
+  --chrome: #313337;
+  --line: #2d2f34;
+  --line-strong: #3f4043;
+  --text: #bfbdb6;
+  --muted: #8a8986;
+  --faint: #7a7a77; /* Zed's placeholder (#696a6a) lifted to 4.6:1 */
+  --blue: #5ac1fe;
+  --blue-soft: rgba(90, 193, 254, 0.14);
+  --accent-rgb: 90, 193, 254;
+  --accent-ink: #0d1016;
+  --green: #aad84c;
+  --green-soft: rgba(170, 216, 76, 0.14);
+  --amber: #feb454;
+  --amber-soft: rgba(254, 180, 84, 0.14);
+  --danger: #ef7177;
+
+  --syntax-keyword: #ff8f3f;
+  --syntax-string: #aad84c;
+  --syntax-comment: #8a8986;
+  --syntax-number: #d2a6ff;
+  --syntax-type: #59c2ff;
+  --syntax-function: #ffb454;
+  --syntax-property: #5ac1fe;
+  --syntax-punctuation: #a6a5a0;
+  --shadow: 0 2px 3px rgba(0, 0, 0, 0.12), 0 3px 6px rgba(0, 0, 0, 0.08), 0 6px 12px rgba(0, 0, 0, 0.04), 0 1px 0 rgba(0, 0, 0, 0.12);
+  --shadow-popover: 0 2px 3px rgba(0, 0, 0, 0.12), 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* The terminal and conversation surfaces are dark in both appearances — the
+   CLIs in them are drawn for a dark ground — in the app's own dark window
+   colours, matching the canvas (src/terminal/terminalTheme.ts). */
+:root {
+  --t-accent: #5ac1fe;
+  --t-success: #aad84c;
+  --t-bg: #0d1016;
+  --t-panel: #1f2127;
+  --t-card: #161920;
+  --t-inset: #0a0c11;
+  --t-line: #2d2f34;
+  --t-card-line: #3f4043;
+  --t-fg: #bfbdb6;
+  --t-muted: #8a8986;
+  --t-hover: rgba(255, 255, 255, 0.06);
+  --t-pressed: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 0;
+  min-height: 100vh;
+  background: var(--page);
+  color: var(--text);
+  /* The root sets the scale and body must not quietly put back a different
+     one — which is what it was doing, silently, before either was stated. */
+  font-size: 13px;
+  line-height: 20px;
+  overflow: hidden;
+}
+
+/* Native controls default to the operating system's blue, which is a colour
+   this interface does not otherwise contain — three checked boxes were
+   competing with the one action the user is meant to take. */
+/* An explicit `display` in a class rule outranks the `hidden` attribute, so
+   anything laid out as grid/flex stays visible when marked hidden. This is the
+   one place !important earns its keep. */
+[hidden] {
+  display: none !important;
+}
+
+/* The project's setup surfaces, sitting beside the work they configure
+   instead of in a rail down the far side of the window. Quiet by default —
+   they are doors, not actions — with a count only where a number is worth
+   knowing before you open one. */
+
+.project-tools-menu {
+  position: relative;
+  z-index: 4;
+}
+
+.project-tools-menu[open] {
+  z-index: 45;
+}
+
+.project-tools-menu > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  list-style: none;
+}
+
+.project-tools-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.project-tools-menu > summary:hover,
+.project-tools-menu[open] > summary {
+  border-color: var(--line);
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.project-tools-menu > summary em {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 10px;
+  font-style: normal;
+  line-height: 17px;
+  text-align: center;
+}
+
+.project-tools-caret {
+  transition: transform 150ms ease;
+}
+
+.project-tools-menu[open] .project-tools-caret {
+  transform: rotate(180deg);
+}
+
+/* The one case where a count is not just informative: something is waiting on
+   the user, and they should see that without opening the door. */
+
+/* Inside a modal the lists have the whole dialog to themselves, so the rail's
+   height caps would only reintroduce a scrollbar within a scrollbar. */
+
+/* The MCP manager is a full panel inside a modal, so it needs more width than
+   the agent picker it borrows its chrome from. */
+
+input[type="checkbox"],
+input[type="radio"] {
+  /* The UA margin (3px 3px 3px 4px) knocks every checkbox 4px out of line
+     with the labels above it, which is most of what reads as sloppy padding. */
+  margin: 0;
+  accent-color: var(--muted);
+}
+
+/* Keyboard focus must stay visible now that most controls have lost their
+   resting border. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), 0.55);
+  outline-offset: 1px;
+  border-radius: var(--r-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+select {
+  color: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+button:focus {
+  outline: none;
+}
+
+button:focus-visible {
+  box-shadow: 0 0 0 3px var(--blue-soft);
+}
+
+.app-shell {
+  display: grid;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--window);
+  box-shadow: var(--shadow);
+  animation: appEnter 180ms ease-out;
+}
+
+/* A project with no GitHub account of its own takes whichever account is active
+   on the machine, and anything else can change that out from under it. The dot
+   is the only sign the user gets before an agent hits a confusing "repository
+   not found". */
+
+/* ---------------------------------------------------------------------------
+   Custom dropdown — replaces native <select> for consistent styling + arrow
+--------------------------------------------------------------------------- */
+
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Titlebar theme picker — compact variant */
+
+/* Offered on a finished council: the roster is warm, so the next task
+   starts here rather than in a fresh setup. */
+.council-next-task { margin-left: auto; flex: none; }
+
+/* What the council is for, stated above who is in it. */
+.council-task-pick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.council-task-pick > .mono { color: var(--faint); flex: none; }
+
+/* Council member rows — inline sizing */
+
+/* Narrower than the role, and allowed to shrink: a model name is short, and
+   the agent it belongs to is the thing worth reading first. */
+
+.session-card,
+.inspector,
+.session-facts div,
+.task-block,
+.palette {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.session-top span,
+.session-meta,
+.session-facts dt {
+  color: var(--faint);
+}
+
+.project-nav-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+}
+
+.project-pulse {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-pill);
+  background: var(--surface-soft);
+  position: relative;
+}
+
+.project-pulse::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--green);
+}
+
+.session-top span,
+.session-meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 6px;
+  overflow: hidden;
+}
+
+.inspector h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+/* Sections of the mission rail, which used to be five bordered white cards
+   stacked on a white rail — a box drawn around content that was already
+   grouped by being adjacent. They are now separated by one hairline and the
+   space between them, so the rail reads as one continuous surface and the
+   rows inside it are what you see. */
+
+/* Side by side (the wide layout) the hairline has to move to the divider
+   between columns, or every panel underlines itself for no reason. */
+
+/* Sentence case, not letterspaced caps. Six stacked all-caps labels made
+   the navigation shout over the content it was labelling. */
+
+.task-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 7px;
+  border-radius: var(--r-pill);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 560;
+}
+
+.task-list,
+.activity-list {
+  display: grid;
+  gap: 5px;
+  max-height: 116px;
+  overflow: auto;
+}
+
+.task-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px;
+  min-height: 34px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--text);
+}
+
+.task-row + .task-row {
+  border-top: 1px solid var(--line);
+}
+
+.task-row:hover {
+  background: var(--surface-soft);
+}
+
+.task-row.active {
+  border-color: var(--line-strong);
+  background: var(--surface-soft);
+}
+
+.task-row-open {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 7px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.task-row-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+.task-row-delete:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+}
+
+.task-row strong,
+.task-row small,
+.task-row em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-row strong {
+  display: block;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.task-row small {
+  display: block;
+  color: var(--faint);
+}
+
+.task-row em {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 540;
+  text-transform: capitalize;
+}
+
+/* On is a filled chip, off is an outline. The checkbox stays in the DOM for
+   keyboard and screen-reader users but stops taking visual weight — a 20px
+   control per item was the heaviest thing in the panel. */
+
+/* The label inherits the chip's weight instead of setting its own, so the
+   selected and unselected states differ by fill rather than by boldness. */
+
+/* The secondary actions are alternatives to the primary one, not rivals of
+   it. They read as text until you go looking for them. */
+
+.task-start-destinations {
+  display: grid;
+  gap: 8px;
+  max-height: min(440px, 56vh);
+  overflow-y: auto;
+}
+
+.task-start-destinations > button {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-start-destinations > button:hover:not(:disabled) {
+  border-color: rgba(var(--accent-rgb), 0.42);
+  background: var(--surface-soft);
+  color: var(--blue);
+}
+
+.task-start-destinations > button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.task-start-destinations > button span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.task-start-destinations > button strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-start-destinations > button small {
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 8px;
+  min-height: 26px;
+  align-items: start;
+  color: var(--muted);
+}
+
+.activity-row span {
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.activity-row strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 480;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-column {
+  order: 1;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.inspector h2 {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.session-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+  max-height: 84px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 1px 2px 3px 0;
+}
+
+.session-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  flex: 1 1 250px;
+  max-width: 360px;
+  gap: 8px;
+  min-width: 0;
+  min-height: 50px;
+  padding: 7px 8px 7px 10px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.session-grid .session-card:nth-child(3) {
+  grid-column: auto;
+  min-height: 50px;
+}
+
+.session-card.selected {
+  border-color: var(--line-strong);
+  background: var(--surface-soft);
+}
+
+:root[data-theme="dark"] .session-card.selected {
+  background: var(--surface-soft);
+}
+
+.session-card:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-soft);
+}
+
+.session-card.selected:hover {
+  border-color: rgba(var(--accent-rgb), 0.62);
+  background: var(--surface-soft);
+}
+
+.session-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.session-top > div {
+  min-width: 0;
+}
+
+.session-top h3,
+.session-name-button,
+.session-name-input {
+  margin: 0 0 3px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.session-top h3,
+.session-name-button,
+.session-top > div > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-name-button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: text;
+  text-align: left;
+}
+
+.session-name-input {
+  width: 100%;
+  min-width: 0;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid rgba(var(--accent-rgb), 0.34);
+  border-radius: var(--r-sm);
+  outline: 0;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.session-top > div > span {
+  color: var(--faint);
+}
+
+.session-card p,
+.task-block p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.session-card p {
+  display: none;
+}
+
+.session-meta {
+  display: none;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  color: #99a1ad;
+}
+
+.session-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* No colour change on hover. `--accent-ink` is the text colour for something
+   sitting ON the accent — white, in a light theme — and this button lost its
+   accent fill when it became a quiet text button. The hover was painting the
+   label white onto a near-white background and erasing it. */
+
+/* This button is conditionally disabled — without this it stays fully
+   saturated and reads as clickable while doing nothing. */
+
+.workbench-panel {
+  display: grid;
+  /* Must track .workbench-tabs' height exactly. When the tab bar shrank to an
+     underline bar this row kept its old 48px, leaving an 8px dead strip and
+     giving the terminal a container taller than the space it was laid out in. */
+  grid-template-rows: 40px minmax(0, 1fr);
+  order: 2;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.workbench-tabs {
+  display: flex;
+  gap: 2px;
+  height: 40px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.workbench-tabs button,
+.workbench-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 39px;
+  min-width: 0;
+  padding: 0 13px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-weight: 450;
+  text-transform: capitalize;
+}
+
+.workbench-tabs button:hover:not(.active) {
+  color: var(--text);
+}
+
+.workbench-tabs button.active {
+  border-bottom-color: var(--text);
+  background: none;
+  color: var(--text);
+  font-weight: 540;
+}
+
+.workbench-pane {
+  display: none;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workbench-pane.active {
+  display: block;
+  height: 100%;
+}
+
+.terminal-workbench {
+  /* Shared by the terminal and the composer beneath it: both sit on the same
+     near-black chrome, so both highlight selections the same way. */
+  --terminal-selection: color-mix(in srgb, var(--t-accent) 34%, transparent);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 34px minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--t-line);
+  background: var(--t-bg);
+  color: var(--t-fg);
+  box-shadow:
+    inset 0 0 0 1px var(--t-line);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.terminal-workbench.active {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 34px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--t-line);
+  background: #121720;
+  color: #9aa6b8;
+}
+
+.terminal-header strong {
+  display: block;
+  color: #eef2f7;
+  font-size: 12px;
+}
+
+.terminal-header span {
+  color: #7e8a9b;
+  font-size: 12px;
+}
+
+.terminal-header code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.xterm-host {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--t-bg);
+}
+
+/* Room below the last row, not just above the first.
+   The bottom padding was 0, so the fit handed the CLI exactly as many rows as
+   the pane could show and the last of them sat against an edge the host clips.
+   Every one of these agents draws its input box on that last row, which is why
+   it could not be seen and why scrolling could not reach it. The addon
+   subtracts both paddings when it proposes a size, so this is also the one
+   place that decides how many rows the CLI is told it has. */
+.xterm-host .xterm {
+  width: 100%;
+  height: 100%;
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+
+.xterm-host .xterm-helpers {
+  position: absolute;
+}
+
+.xterm-host .xterm-viewport {
+  background: var(--t-bg) !important;
+}
+
+.xterm-host .xterm-cursor-layer {
+  opacity: 0.94;
+}
+
+.xterm-host .xterm-selection div {
+  background-color: var(--terminal-selection) !important;
+}
+
+/* Both surfaces occupy the same row and only one is shown, so switching is a
+   change of view rather than a teardown. */
+.session-surfaces {
+  position: relative;
+  min-height: 0;
+}
+
+.session-surface {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  min-height: 0;
+}
+
+.session-surface.is-hidden,
+.composer-slot.is-hidden {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Native agent transcript — the same session as the terminal beside it, drawn
+   from the agent's protocol instead of from a screen it painted.
+--------------------------------------------------------------------------- */
+
+/* A turn is the unit of a conversation. Saying whose it is once, at the top, is
+   what lets everything inside it be plain — the alternative is marking every
+   line, which is how a chat ends up reading like a log. */
+
+/* Sticky, because an agent turn can run for dozens of steps: attribution that
+   scrolls out of sight tells a reader nothing about whose words they are on. */
+
+/* A said thing has a body. Prose lying flat on the pane background is what made
+   an utterance indistinguishable from the log around it — the boundary is what
+   turns a stream of text into a message someone sent. */
+
+/* The user's own message is the warmer of the two: it is the half of the
+   exchange they wrote, and the accent is the same one their turn label uses. */
+
+/* A small mark rather than a full avatar: enough to read as someone speaking,
+   without pretending to be a brand. */
+
+/* Inline code carries identity — a file, a branch, a commit — so it is tinted
+   rather than boxed. A border on every span makes prose look perforated. */
+
+/* The live menu. Pinned at the end of the transcript because it is the only
+   thing on screen that the agent is actually blocked on. */
+
+/* Where the terminal's own highlight is sitting. */
+
+/* A pending choice is the one thing in a transcript that is waiting on the
+   reader, so it is the one thing given a frame. */
+
+/* The agent's handoff, which used to arrive as a line of escaped JSON at the
+   end of a turn. Same information, read rather than decoded. */
+
+/* Paths, wrapped as chips: a list of forty files should scan, not scroll. */
+
+/* The part worth reading, set as what it is: a command in mono, a path tinted
+   like the identifiers in the prose above it. */
+
+/* Waiting, not said: dimmed and marked, so it is not mistaken for a turn the
+   agent has already taken. */
+
+/* Activity where the reading eye already is. */
+
+@keyframes transcript-pulse {
+  0%,
+  70%,
+  100% {
+    opacity: 0.28;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+@keyframes transcript-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Both destinations stay visible with the current one marked, so the control
+   cannot be read as either "where I am" or "where this takes me". */
+
+/* The composer carries the terminal's colours rather than the app's: it sits
+   inside the terminal's chrome, and a light card bolted under a dark pane reads
+   as a different surface rather than the same one. */
+
+/* The app's ::selection is derived from the accent, which is picked to read on
+   the app's own light surfaces. Over the terminal's near-black chrome a dark
+   accent at 22% composites to roughly rgb(26,27,56) against rgb(11,13,16):
+   the selection is really there, it just cannot be seen. Anything sitting on
+   that chrome states its own highlight instead of inheriting one. */
+
+/* Only seen once a message outgrows the box. The platform default is a light
+   thumb, which on this surface reads as a stray mark rather than a control. */
+
+.project-root-label {
+  overflow: hidden;
+  padding: 0 8px 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 540;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+kbd {
+  padding: 2px 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.inspector {
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--panel);
+}
+
+.session-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+.session-facts div {
+  min-height: 68px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+}
+
+.session-facts dt {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.session-facts dd {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.task-block {
+  padding: 24px 0 20px;
+  border-width: 1px 0 0;
+}
+
+/* A confirmation raised from inside another modal has to sit above the modal
+   that raised it. Every backdrop shares one stacking level, so with equal
+   z-index the later element in the DOM wins — and the panels that own a list
+   (Tasks, Sessions) render after the confirmations they open, which left the
+   confirm dialog visible but underneath, with the panel's backdrop swallowing
+   every click on it. */
+
+/* One panel, one hairline, no radius and no shadow — the canvas rule, and it
+   lands here because every modal in the app is an .agent-picker. A raised
+   panel used to be a card floating over the page; it is now the same page,
+   bounded. The border goes to line-strong so the panel still separates from
+   the backdrop without a shadow doing it. */
+
+/* Field rhythm in the session/task dialogs.
+   Three distances, deliberately different, because one uniform gap made the
+   caption under a control look like the label of the next field:
+     label -> control    9px   (bound together)
+     control -> caption  5px   (caption hugs what it describes)
+     field -> field     20px   (fields visibly separate) */
+
+/* Captions belong to the control above them, not to the field below. */
+
+/* Side-by-side fields already carry the row's spacing on the grid itself;
+   letting each column add its own would push them out of alignment with
+   anything single-column above. */
+
+.task-id-field > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.task-id-field > span em {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.task-id-field input {
+  border-color: rgba(var(--accent-rgb), 0.38);
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.055), transparent 72%);
+}
+
+.task-id-field.invalid input {
+  border-color: var(--danger);
+}
+
+/* Free text typed by a person renders in the reading face; only the derived
+   folder slug below it stays monospace, because that one really is an
+   identifier the user will see on disk. */
+.project-flow-description {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.task-branch-preview,
+.task-field-error {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
+}
+
+.task-branch-preview {
+  color: var(--green);
+}
+
+.task-field-error {
+  color: var(--danger);
+}
+
+@keyframes model-refresh-spin {
+  to { transform: rotate(360deg); }
+}
+
+.session-model-select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.task-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.session-model-select {
+  min-height: 28px;
+  padding: 0 8px;
+}
+
+/* The title was set bolder than the dialog's own heading. It is a row in a
+   list of three, and the tick beside it already says which ones are coming. */
+
+.palette {
+  width: min(620px, calc(100vw - 48px));
+  padding: 10px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+
+
+@keyframes appEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+:root[data-theme="dark"] .workspace,
+:root[data-theme="dark"] .inspector,
+:root[data-theme="dark"] .palette,
+:root[data-theme="dark"] .session-card,
+:root[data-theme="dark"] .workbench-panel {
+  background: var(--surface);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .session-strip {
+  background: transparent;
+}
+
+:root[data-theme="dark"] .task-row.active,
+:root[data-theme="dark"] .session-card.active {
+  border-color: var(--line-strong);
+  background: var(--surface-soft);
+}
+
+:root[data-theme="dark"] .workbench-tabs button.active {
+  border-bottom-color: var(--text);
+  background: none;
+  color: var(--text);
+}
+
+@media (max-width: 1320px) {
+  body {
+    min-width: 0;
+  }
+
+  .app-shell {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+  }
+
+  .workspace {
+    padding: 6px;
+  }
+
+  .workbench-panel,
+  .workbench-tabs,
+  .council-view {
+    min-width: 0;
+  }
+
+  .workbench-tabs {
+    gap: 5px;
+  }
+
+  .workbench-tabs > button {
+    min-width: 0;
+    flex: 0 0 auto;
+    padding: 0 7px;
+  }
+
+  .council-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .council-bar-actions {
+    width: 100%;
+  }
+
+  .council-bar-actions button {
+    flex: 1 1 0;
+    justify-content: center;
+    min-width: 0;
+    padding: 0 6px;
+  }
+
+  .session-grid .session-card:nth-child(3) {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 1080px) {
+  .session-card {
+    flex-basis: 220px;
+  }
+}
+
+@media (min-width: 1321px) and (max-width: 1580px) {
+
+  .workspace {
+    padding: 6px;
+  }
+
+  .session-card {
+    padding: 7px 8px 7px 10px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   MCP servers panel (real discovery + management)
+--------------------------------------------------------------------------- */
+
+/* Row affordances, not buttons in their own right: outlining every one of
+   them put two extra boxes on every server. */
+
+/* An empty state is a sentence, not a container. */
+
+@keyframes mcp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Council Mode — real parallel agents, side by side
+--------------------------------------------------------------------------- */
+
+/* A column rather than a fixed three-row grid: the number of status bars varies
+   (settings, routing, pause notice), and a template with a fixed row count hands
+   the 1fr row to whichever bar happens to land on it, so the bars stretch over
+   each other and the terminals get squeezed out. */
+.council-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.council-view > .council-bar,
+.council-view > .council-composer,
+.council-view > .council-config-bar,
+.council-view > .council-route-bar,
+.council-view > .council-relay-note-bar {
+  flex: none;
+}
+
+/* The one row here that may give way. `flex: none` meant it always took its
+   full content height, and the members' panes take what is left — in a short
+   window that left them a sliver each and their terminals rendered nothing.
+   It shrinks instead, and its log scrolls inside whatever it gets. */
+
+
+/* A backstop, and only for this bar. The note is bounded where it is built, but
+   it has taken a wall of an agent's prose before and pushed the interface off
+   screen. Applied to the whole row above, it also cut the conductor lane down
+   to a couple of lines and hid the rest of its log with no way to reach it. */
+.council-view > .council-relay-note-bar {
+  max-height: 4.4em;
+  overflow: hidden;
+}
+
+/* Whichever view is showing takes the space between the bar and the composer,
+   and keeps a floor: the conductor lane above it may shrink, but it must never
+   squeeze the panes down to a sliver where their terminals render nothing. */
+.council-view > .council-grid,
+.council-view > .council-thread {
+  flex: 1 1 auto;
+  min-height: 240px;
+}
+
+.council-broadcast {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--faint);
+}
+
+.council-broadcast input {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  outline: 0;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+}
+
+.council-broadcast input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue-soft);
+}
+
+.council-broadcast button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 78px;
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--blue);
+  border-radius: var(--r-sm);
+  background: var(--blue);
+  color: var(--accent-ink);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 540;
+}
+
+.council-broadcast button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.council-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.council-bar-title {
+  display: grid;
+  gap: 2px;
+  /* Was shrinking to nothing whenever the actions wanted room, wrapping a task
+     title down a sixty-pixel column. It takes the space that is left and
+     truncates, which is what a title does. */
+  flex: 1 1 auto;
+  min-width: 150px;
+}
+
+.council-bar-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.council-bar-title strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.council-bar-title span {
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.council-bar-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.council-bar-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-soft);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 540;
+}
+
+/* Six identical buttons made the toolbar a wall: nothing said which one you
+   probably want or which one stops the work. One primary, one destructive,
+   everything else quiet. */
+.council-bar-actions .council-primary {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: var(--accent-ink);
+}
+
+/* Same as the empty workbench's primary: no fill any more, so no ink for one. */
+.council-bar-actions .council-primary:hover {
+  border-color: var(--blue);
+  filter: brightness(1.07);
+}
+
+.council-bar-actions .council-danger {
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
+  color: var(--danger);
+}
+
+.council-bar-actions .council-danger:hover {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+
+/* ── the council read as a conversation ─────────────────────────────
+   The grid answers "what is each agent doing". This answers "what did they
+   decide, and why did the work go there", which is the part a Council has and
+   three agents run side by side do not. */
+.council-view-toggle {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-soft);
+  margin-right: 4px;
+}
+
+.council-view-toggle button {
+  min-height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: calc(var(--r-md) - 3px);
+  background: none;
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 560;
+}
+
+.council-view-toggle button.is-on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(15, 20, 30, 0.14);
+}
+
+.council-thread {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Where the work has been. The strip is the conductor's output made legible:
+   without it, routing is a claim on the pricing page. */
+.turn-strip {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+  padding: 10px 14px;
+  list-style: none;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.turn-strip li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 4px 10px 4px 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 540;
+}
+
+.turn-strip li + li::before {
+  content: "";
+  width: 10px;
+  height: 1px;
+  margin-left: -12px;
+  margin-right: 2px;
+  background: var(--line-strong, var(--line));
+}
+
+.turn-strip li.is-current {
+  border-color: color-mix(in srgb, var(--blue) 46%, var(--line));
+  background: var(--blue-soft);
+  color: var(--text);
+}
+
+.turn-strip-n {
+  display: inline-grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--faint);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.turn-strip li.is-current .turn-strip-n {
+  background: var(--blue);
+  color: var(--accent-ink);
+}
+
+.council-thread-log {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 16px 18px 22px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.council-thread-empty {
+  margin: 0;
+  color: var(--faint);
+  font-size: 13px;
+}
+
+.thread-open {
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xs, 6px);
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 560;
+}
+
+.thread-open:hover { border-color: var(--line-strong); color: var(--text); }
+
+/* Prose the agent wrote, meant to be read rather than skimmed.
+
+   It was `--muted` at 13px running the full width of whatever pane it was
+   in — grey on dark, ninety characters to a line, and paragraphs with no
+   more weight than the tool output above them. Three things at once, each
+   of which alone makes text hard work. */
+
+/* The body is `.md`, which sets its own colour and size — so the rule above
+   never reached it, and the paragraphs stayed muted grey at 12.8px however
+   the card was styled. Overridden here, scoped to a thread.
+
+   The measure matters as much as the contrast: seventy-odd characters is
+   where the eye stops having to hunt for the start of the next line, and a
+   wide pane was giving these a hundred and twenty. */
+
+/* The agent speaking, marked on its name rather than with a stripe down the
+   card. The name is where you look to find out who is talking anyway, and a
+   second edge on a card that already has four is one more line than the
+   layout needs. */
+
+/* The user outranks member opinion, and a council ruling is not a member's
+   claim about who won the argument — both are marked so they cannot be read
+   as one more agent talking. */
+
+/* ── reading the thread ─────────────────────────────────────────────
+   Agents write documents, not remarks: a handoff is a heading, a ticket
+   reference, numbered criteria and several hundred lines of reasoning. Folded
+   by default, rendered rather than shown as raw markup, and set at a width
+   prose is readable at. */
+
+/* Rendered agent prose. Sized down from the app's body text: this is a
+   transcript of someone else's document, not the interface speaking. */
+.md { display: grid; gap: 9px; color: var(--muted); font-size: 12.8px; line-height: 1.62; }
+.md > :first-child { margin-top: 0; }
+.md p { margin: 0; }
+.md ul, .md ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.md li { margin: 0; }
+
+.md code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--surface-soft);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.92em;
+  color: var(--text);
+}
+
+.md a { color: var(--blue); }
+
+/* Agents quote the ticket they were handed; it is not their own words and
+   should not read as them. */
+
+/* ── the composer ───────────────────────────────────────────────────
+   One input at the foot of the view, with a choice of who hears it. Replaces a
+   bar for the members and a second form buried in the conductor panel. */
+.council-composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.council-composer-to {
+  display: inline-flex;
+  flex: 0 0 auto;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-soft);
+}
+
+.council-composer-to button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: calc(var(--r-md) - 3px);
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 560;
+}
+
+.council-composer-to button.is-on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(15, 20, 30, 0.14);
+}
+
+.council-composer input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--page);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.council-composer input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--blue) 55%, transparent);
+  outline-offset: -1px;
+  border-color: var(--blue);
+}
+
+.council-composer button[type="submit"],
+.council-composer-instruct {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-soft);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 560;
+}
+
+/* The !important here was winning against the redesign, which is what an
+   !important in a stylesheet this size eventually always does. Send is a blue
+   word now, like every other confirming action. */
+.council-composer-send {
+  border-color: transparent;
+  background: none;
+  color: var(--blue);
+}
+
+.council-composer-send:disabled,
+.council-composer-instruct:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.council-composer-send:not(:disabled):hover { filter: brightness(1.07); }
+.council-composer-instruct:not(:disabled):hover { border-color: var(--line-strong); color: var(--text); }
+
+/* The action a notice names, in the notice. */
+.council-note-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  min-height: 24px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--amber) 48%, var(--line));
+  border-radius: var(--r-xs, 6px);
+  background: none;
+  color: var(--amber);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 560;
+}
+
+.council-note-action:hover { background: color-mix(in srgb, var(--amber) 12%, transparent); }
+
+/* ── the agents grid ────────────────────────────────────────────────
+   Who is speaking, and one member given the width when you want to read it. */
+.council-relay.turn {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.council-solo { color: var(--t-faint, #7c869a); }
+/* The members this mode will not actually cover. Named rather than implied:
+   silently covering three of four is how you come back to a council that
+   stopped on turn two. */
+.council-autoapprove-gap {
+  display: block;
+  margin-top: 4px;
+  color: var(--amber);
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.council-swap-open { color: var(--t-faint, #7c869a); }
+.council-restart { color: var(--green); }
+.council-swap-open[aria-pressed="true"] { color: var(--blue); }
+
+/* The picker sits at the top of the pane it will change, so there is no doubt
+   about which seat is being handed over. */
+.council-swap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2, rgba(0, 0, 0, 0.02));
+}
+
+.council-swap-lede {
+  font-size: 12px;
+  color: var(--t-muted, #5b6478);
+}
+
+.council-swap-confirm {
+  border: 1px solid var(--blue);
+  background: var(--blue);
+  color: #fff;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 540;
+}
+
+.council-swap-confirm:disabled { opacity: 0.5; }
+
+.council-swap-cancel {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--t-muted, #5b6478);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+/* Its own line: it explains what survives the swap, which is the whole
+   question anyone hesitating over this button is asking. */
+.council-swap-note {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--t-faint, #7c869a);
+}
+
+/*
+ * Members as tabs, one terminal below.
+ *
+ * The grid gave every member an equal share of the width: four across a
+ * workbench is about 340 pixels each, narrower than any CLI assumes, so a file
+ * path wrapped three times and none of the four could be read. Stacking them
+ * instead put four headers and four "open" rows above the single terminal
+ * anyone was actually looking at — roomier and no clearer.
+ *
+ * A row of names, and the one being read underneath it.
+ */
+.council-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: none;
+  padding: 10px 10px 8px;
+}
+
+.council-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm, 8px);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+.council-tab:hover { border-color: var(--line-strong); color: var(--text); }
+
+/* The one you are reading, said plainly. A one-pixel border change was not
+   enough to find at a glance among four of them. */
+.council-tab.is-open {
+  border-color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 12%, var(--surface));
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--blue);
+}
+
+.council-tab strong { font-size: 12px; font-weight: 540; }
+.council-tab em { font-style: normal; font-family: var(--font-mono); font-size: 10.5px; color: var(--faint); }
+
+/* Whoever is speaking says so on the tab, so the strip doubles as the answer
+   to "who is working" without opening anything. */
+/* What the council is doing, above what each member is doing. */
+.council-status {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: none;
+  padding: 10px 12px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.council-status-turn {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.council-status-main strong { color: var(--text); font-weight: 540; }
+.council-status-main.is-stopped { color: var(--amber); }
+
+/* Only appears when the member working and the member you are reading are not
+   the same, which is the pair that most often looks like a contradiction. */
+.council-status-reading {
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+  color: var(--faint);
+}
+
+/* The badges are the same ones the pane used to carry, so a member's state
+   reads identically wherever it appears. */
+.council-tab .council-relay { font-size: 9.5px; padding: 1px 6px; }
+.council-tab.is-speaking { border-color: color-mix(in srgb, var(--blue) 45%, transparent); }
+
+.council-grid.is-hidden { display: none; }
+
+.council-bar-actions button:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.council-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-auto-rows: minmax(260px, 1fr);
+  gap: 8px;
+  min-height: 0;
+  padding: 8px;
+  overflow: auto;
+}
+
+.council-cell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  border: 1px solid var(--t-line);
+  border-radius: var(--r-md);
+  background: var(--t-bg);
+  overflow: hidden;
+}
+
+.council-cell-header {
+  display: flex;
+  align-items: center;
+  /* Wraps rather than truncating the hand-off control: at three columns a
+     member with a role, an agent, a state and an action runs out of room, and
+     the action is the part you cannot reach any other way. */
+  flex-wrap: wrap;
+  row-gap: 5px;
+  gap: 8px;
+  padding: 6px 9px;
+  border-bottom: 1px solid var(--t-line);
+  background: #10141b;
+}
+
+.council-agent {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  color: #e7ecf4;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* The role identifies the member; the agent only says which CLI is doing it. */
+.council-agent strong {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.council-agent em {
+  flex: 0 0 auto;
+  color: var(--t-faint, #7c869a);
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.council-cell-header code {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  color: #788496;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.council-cell-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  border: 1px solid #29313d;
+  border-radius: var(--r-md);
+  background: var(--t-line);
+  color: #aab3c2;
+  cursor: pointer;
+}
+
+.council-cell-header button:hover {
+  border-color: rgba(229, 100, 107, 0.4);
+  color: var(--danger);
+}
+
+.council-cell-header .council-member-delete:hover {
+  border-color: rgba(229, 100, 107, 0.55);
+  background: rgba(229, 100, 107, 0.12);
+  color: var(--danger);
+}
+
+.github-account-options {
+  display: grid;
+  gap: 4px;
+}
+
+/* Manual relay: per-stage handoff button + status badges */
+.council-cell-header .council-handoff {
+  width: auto;
+  gap: 5px;
+  padding: 0 9px;
+  border-color: var(--blue);
+  background: var(--surface-soft);
+  color: var(--blue);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 540;
+}
+
+.council-cell-header .council-handoff:hover {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: var(--accent-ink);
+}
+
+.council-relay {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.council-relay.waiting {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.council-relay.handed {
+  background: rgba(93, 179, 122, 0.16);
+  color: #4c9a68;
+}
+
+.council-relay.active {
+  background: rgba(var(--accent-rgb), 0.16);
+  color: var(--blue);
+}
+
+.council-bar-actions .council-auto-toggle.on {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: rgba(var(--accent-rgb), 0.1);
+}
+
+.council-cost {
+  color: var(--muted);
+}
+
+.council-turn-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.council-turn-label strong {
+  font-size: 12px;
+}
+
+.council-turn-label em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.council-turn-custom {
+  flex: 0 0 86px;
+  width: 86px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}
+
+/* Sits inside the pause notice, so it reads as the answer to it. */
+.council-extend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex: none;
+}
+
+.council-extend button {
+  padding: 3px 9px;
+  border: 1px solid var(--amber);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.council-extend button:hover {
+  background: var(--amber-soft);
+}
+
+/* A suite can take minutes; without a cue the council looks hung. */
+.council-testing {
+  color: var(--amber);
+}
+
+/* The three status bars share one rhythm: inset to match the grid's 8px
+   padding, and spaced above rather than below so the first one clears the
+   broadcast band and the grid's own top padding closes the last gap. */
+.council-config-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 8px 8px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-soft);
+  font-size: 11.5px;
+}
+
+.council-config-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  cursor: pointer;
+}
+
+/* `.dropdown` defaults to width:100%, so a flex child needs an explicit width. */
+
+.council-config-hint {
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* ---------------------------------------------------------- conductor lane */
+
+/* The only surface that reaches the conductor alone, so it is visibly its own
+   thing rather than another variant of the broadcast box above it. */
+/* The lane grows with its log, but the members' panes take what is left, so an
+   unbounded lane leaves them a sliver each and their terminals render nothing.
+   It stops at a share of the window and scrolls its log inside that. */
+
+/* Standing instructions are the run's binding state, not chat history — listed
+   apart from the log so they stay visible after the exchange scrolls away. */
+
+.conductor-note {
+  display: grid;
+  gap: 2px;
+}
+
+.conductor-note span {
+  color: var(--faint);
+  font-size: 10.5px;
+  font-weight: 540;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.conductor-note p {
+  margin: 0;
+  min-width: 0;
+  color: var(--text);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  /* A ticket URL or a deep source path has nowhere to break, so without this it
+     is laid out wider than what holds it and runs out through the side. */
+  overflow-wrap: anywhere;
+}
+
+.conductor-note.you p {
+  color: var(--muted);
+}
+
+.conductor-note.conductor span {
+  color: var(--blue);
+}
+
+/* Pitwall's own notes are not the conductor talking, and must not read as it. */
+.conductor-note.system p {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.conductor-note.pending {
+  color: var(--faint);
+}
+
+/* Instructing binds the rest of the run; asking does not. The weaker treatment
+   is the one that changes nothing. */
+
+/* Count of standing instructions on the bar's Conductor button. */
+.council-count {
+  min-width: 15px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--blue);
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.council-route-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 8px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-soft);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.council-route-bar svg {
+  flex: none;
+  color: var(--blue);
+}
+
+.council-route-hop {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+.council-route-hop strong {
+  color: var(--text);
+}
+
+.council-route-source {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.council-route-source.conductor {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+/* Rotation means the conductor did not decide this hop — worth distinguishing,
+   since it is the signal that routing fell back. */
+.council-route-source.rotation {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.council-route-reason {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.council-conductor {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* Narrow windows stack the control under its label rather than pushing it
+     out past the modal edge. */
+  flex-wrap: wrap;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-soft);
+}
+
+.council-conductor-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  /* min-width:0 lets the copy wrap inside the row instead of forcing it wider. */
+  flex: 1 1 240px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+/* The browser's own checkbox, on a dark panel, is a grey box with a grey tick
+   — you cannot tell at a glance which of five options are on, which is the
+   only thing this list is for. Drawn explicitly instead. */
+.council-conductor-toggle input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin: 1px 0 0;
+  /* Not --line-strong: measured at 1.37:1 against the panel, which is why an
+     unticked box was invisible — and unticked is the state you are scanning
+     for. 55% of --text measures 3.54:1, past the 3:1 a UI control needs. */
+  border: 1.5px solid color-mix(in srgb, var(--text) 55%, var(--surface));
+  border-radius: 5px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.council-conductor-toggle:hover input[type="checkbox"]:not(:disabled) {
+  border-color: var(--blue);
+}
+
+.council-conductor-toggle input[type="checkbox"]:checked {
+  border-color: var(--blue);
+  background: var(--blue);
+  /* The tick is drawn rather than a glyph: a font-rendered ✓ sits differently
+     in every theme and at every zoom, and this one has to read at 17px. */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-6.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 15px 15px;
+}
+
+.council-conductor-toggle input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-soft);
+}
+
+.council-conductor-toggle input[type="checkbox"]:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+/* An unavailable option should read as unavailable, not as merely unticked. */
+.council-conductor-toggle:has(input:disabled) strong,
+.council-conductor-toggle:has(input:disabled) em {
+  opacity: 0.6;
+}
+
+.council-conductor-toggle span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.council-conductor-toggle strong {
+  font-size: 12px;
+}
+
+.council-conductor-toggle em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* `.dropdown` is width:100% by default, so a flex child needs both the class
+   specificity and an explicit width or it swallows the whole row. */
+
+.council-relay-note-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 8px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--amber);
+  border-radius: var(--r-md);
+  background: var(--amber-soft);
+  color: var(--text);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.council-relay-note-bar svg {
+  flex: none;
+  color: var(--amber);
+}
+
+/* A council that finished the work is the outcome the screen exists for. It
+   had been sharing the amber warning bar with every kind of failure. */
+.council-relay-note-bar.is-done {
+  border-color: color-mix(in srgb, var(--green) 50%, var(--line));
+  background: color-mix(in srgb, var(--green) 10%, var(--surface));
+}
+
+.council-relay-note-bar.is-done svg { color: var(--green); }
+
+/* A decision waiting on someone, which is neither a finish nor a fault. */
+.council-relay-note-bar.is-attention {
+  border-color: color-mix(in srgb, var(--blue) 46%, var(--line));
+  background: color-mix(in srgb, var(--blue) 9%, var(--surface));
+}
+
+.council-relay-note-bar.is-attention svg { color: var(--blue); }
+
+.council-relay-note {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  margin: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* Council trust/sign-in gate — overlays the pane so xterm sizing is untouched */
+.council-cell-body {
+  position: relative;
+  min-height: 0;
+}
+
+/* Above the pane's own furniture. The image button is pinned to the same
+   top-right corner and sat on a higher layer, covering the right third of
+   "Send task" — the one control that clears a gated pane — and the terminal's
+   link layer covered the rest of it. A banner saying a pane needs answering
+   has to be the thing you can reach. */
+.council-gate {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(226, 180, 93, 0.16);
+  border-bottom: 1px solid rgba(226, 180, 93, 0.4);
+  color: #e2b45d;
+  font-size: 11px;
+  line-height: 1.35;
+  backdrop-filter: blur(2px);
+}
+
+.council-gate svg {
+  flex: 0 0 auto;
+}
+
+.council-gate span {
+  flex: 1;
+  min-width: 0;
+}
+
+.council-gate button {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border: 1px solid rgba(226, 180, 93, 0.5);
+  border-radius: var(--r-md);
+  background: rgba(226, 180, 93, 0.18);
+  color: #e2b45d;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 540;
+}
+
+.council-gate button:hover {
+  background: rgba(226, 180, 93, 0.28);
+}
+
+/* ---------------------------------------------------------------------------
+   Global minimal polish — quiet scrollbars, accent selection
+--------------------------------------------------------------------------- */
+/* Zed's scrollbar: a 6px pill that shows while the region is pointed at. The
+   standard scrollbar-width/-color properties are left unset on purpose: where
+   Chromium sees them it ignores these rules. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  min-height: 25px;
+  border: 2px solid transparent;
+  border-radius: var(--r-pill);
+  background: transparent;
+  background-clip: padding-box;
+}
+
+:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text) 30%, transparent);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--text) 45%, transparent);
+  background-clip: padding-box;
+}
+
+::selection {
+  background: rgba(var(--accent-rgb), 0.22);
+}
+
+/* ---------------------------------------------------------------------------
+   Agent readiness bar — replaces the tall "usage" strip with one honest,
+   thin row (ready / sign-in / not-installed / working). Reclaims height for
+   the workbench below.
+--------------------------------------------------------------------------- */
+/* The agent bar answers "are my CLIs there?", which is a question you ask
+   once a session and then stop caring about. It used to answer it with five
+   bordered boxes and five green "Ready" labels across the full width of the
+   window — permanent chrome, in the loudest colour available, for the least
+   actionable fact on screen. It is now a status line: names in a row, state
+   carried by the dot, and words only when there is something to do. */
+
+/* Sits beside the agents themselves. `margin-left: auto` moved to this one,
+   so the pair stays together at the right-hand end of the bar. */
+
+/* The selected agent is marked by weight, not by a filled chip. */
+
+/* "Ready" is the resting state of every agent, so saying it five times says
+   nothing. The dot already carries it. Words are reserved for the states
+   that ask something of you. */
+
+/* The status dot is the signature of this interface: in a screen that is
+   otherwise greyscale plus one accent, the dots are the only saturated
+   pixels, so live work is the thing your eye lands on. Sized to read at a
+   glance without becoming a bullet point. */
+
+/* A column being dragged over says so, so a drop is not a guess until you let
+   go of the card. */
+
+/* Visible, not hover-only. A control nobody can find is one that does not
+   exist — this one was hidden until hover and got looked for in a menu. */
+
+/* Only shown when the column does not already say it — a card sitting in the
+   tracker's Backlog while Pitwall has a run going is the case worth marking. */
+
+@keyframes notice-in {
+  from { transform: translateY(6px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Something that needs reading but did not fail. The interrupted-shutdown
+   notice used the error tone, which said the recovery had gone wrong when it
+   had gone right — and, because errors deliberately never auto-dismiss, left
+   it on screen indefinitely. */
+
+/* One control is primary in this row — the surface choice. Everything else
+   (transcript, attach, the boot command) is reference material and reads at
+   reduced weight so six controls stop competing. */
+
+/* Role summary under the create-session role picker */
+/* Describes the Role dropdown above it, so it hugs the grid rather than
+   floating midway to the next field. */
+
+/* Council agent selection */
+.council-agent-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.council-agent-option {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.council-agent-option:hover {
+  border-color: var(--line-strong);
+}
+
+.council-agent-option.missing {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.council-agent-option input {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.council-agent-option span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.council-agent-option strong {
+  font-size: 13px;
+  font-weight: 540;
+}
+
+.council-agent-option small {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+/* Custom (user-defined) agents in the picker */
+
+/* ---------------------------------------------------------------------------
+   Session chips — compact single-row session list (replaces bulky cards)
+--------------------------------------------------------------------------- */
+.session-chip-list {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  /* A box that scrolls sideways clips the other axis, so the chips need room
+     inside it — 2px of top padding was cutting their border off. */
+  max-height: 54px;
+  padding: 7px 2px 8px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Overflow cues: fade the edge that has more chips scrolled off-screen */
+.session-chip-strip {
+  position: relative;
+  min-width: 0;
+}
+
+.session-chip-strip::before,
+.session-chip-strip::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 6px;
+  width: 32px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 2;
+}
+
+.session-chip-strip::before {
+  left: 0;
+  background: linear-gradient(to right, var(--window), transparent);
+}
+
+.session-chip-strip::after {
+  right: 0;
+  background: linear-gradient(to left, var(--window), transparent);
+}
+
+.session-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* All-sessions modal */
+
+.session-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  max-width: 230px;
+  height: 30px;
+  padding: 0 8px 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.session-chip:hover {
+  background: var(--surface-soft);
+}
+
+.session-chip.selected {
+  border-color: var(--line-strong);
+  background: var(--surface);
+}
+
+.session-chip-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+.session-chip-dot.running,
+.session-chip-dot.starting {
+  background: var(--green);
+  box-shadow: 0 0 0 3px var(--green-soft);
+}
+.session-chip-dot.waiting {
+  background: var(--amber);
+  box-shadow: 0 0 0 3px var(--amber-soft);
+}
+.session-chip-dot.failed,
+.session-chip-dot.disconnected {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px rgba(229, 100, 107, 0.16);
+}
+.session-chip-dot.completed {
+  background: var(--faint);
+}
+
+/* A live agent has to be distinguishable at a glance from a finished one. Colour
+   alone was doing that job and losing: "running" and "completed" read as two
+   shades of dot. Motion is unambiguous — if it is breathing, it is working. */
+.session-chip.working .session-chip-dot {
+  animation: session-working-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes session-working-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--green-soft);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 0 5px transparent;
+    opacity: 0.55;
+  }
+}
+
+/* Motion is the only cue some users get, and it must not be the only cue for
+   users who cannot see it — the chip's title attribute says "· working" too. */
+@media (prefers-reduced-motion: reduce) {
+  .session-chip.working .session-chip-dot {
+    animation: none;
+    box-shadow: 0 0 0 3px var(--green-soft);
+  }
+}
+
+/* Sits directly above the Task dropdown, so it borrows the trigger's metrics
+   rather than the 22px header-rename input that shares a similar name. */
+/* Selector carries `input` deliberately: the shared `.model-picker input` rule
+   is (0,1,1) and would otherwise win, forcing this field to mono 12px at 34px
+   tall. That mono is right for the fields it was written for — branch and task
+   identifiers — but this one holds a human sentence and sits directly above the
+   Task dropdown, so it matches the dropdown trigger's metrics instead. */
+
+/* Which agent owns the chip: the thing you scan for once several are open. */
+.session-chip-agent {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 540;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+.session-chip.selected .session-chip-agent {
+  background: rgba(var(--accent-rgb), 0.2);
+}
+
+/* Drop target while reordering. */
+.session-chip[draggable="true"] {
+  cursor: grab;
+}
+
+.session-chip-name {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-chip-input {
+  width: 130px;
+  min-width: 0;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
+  border-radius: var(--r-sm);
+  outline: 0;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.session-chip-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  width: 46px;
+  flex: 0 0 46px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.session-chip:hover .session-chip-actions,
+.session-chip.selected .session-chip-actions,
+.session-chip:focus-within .session-chip-actions {
+  opacity: 1;
+}
+
+.session-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+.session-chip-btn:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.council-session-chip {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 226px;
+  flex: 0 0 226px;
+  margin-left: 4px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
+
+.council-session-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+.council-session-delete:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+}
+
+/* Council role-per-agent picker */
+.council-agent-option {
+  justify-content: space-between;
+  cursor: default;
+}
+
+.council-agent-check {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.council-agent-option.missing .council-agent-check {
+  cursor: not-allowed;
+}
+
+.council-role-select {
+  flex: 0 0 auto;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-soft);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.council-role-select:disabled {
+  opacity: 0.5;
+}
+
+/* Flexible council member rows — provider + role, duplicates allowed */
+.council-member-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.council-member-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.council-member-row.missing {
+  opacity: 0.55;
+}
+
+.council-member-index {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.council-member-remove {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.council-member-remove:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.council-member-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 540;
+  cursor: pointer;
+}
+
+.council-member-add:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+/* ---------------------------------------------------------------------------
+   Redesigned agent selector — a clean compact list, not chunky cards
+--------------------------------------------------------------------------- */
+
+/* A grouped list, not a tray. The filled container wrapped rows that were
+   themselves outlined — a box drawn around content that a shared heading and
+   adjacency had already grouped. */
+
+/* Selection is a neutral surface. An accent wash here competes with the one
+   accent the screen is allowed — the button that actually creates the session. */
+/* Which agent is chosen is already said twice — the name turns blue and the
+   row is the one you clicked. A filled tray behind it was a third time. */
+
+/* Per-project remove control (reveals on hover, replaces the session count) */
+
+.session-list-empty {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--r-md);
+  color: var(--faint);
+  font-size: 11px;
+  text-align: center;
+}
+
+.session-list-empty {
+  width: 100%;
+  min-height: 32px;
+}
+
+@keyframes project-notification-pulse {
+  0%, 55% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--blue) 25%, transparent); }
+  100% { box-shadow: 0 0 0 6px transparent; }
+}
+
+/* First-run onboarding */
+
+/* Consent, stated plainly and where it is first relevant. */
+
+/* The command, and one click to take it away. */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Each step now names itself and then says why it matters. The heading has to
+   survive being skimmed on its own — someone reading four bold phrases should
+   still come away with the shape of the thing. */
+
+/* The guide is long enough to scroll now, which is fine for a guide and not
+   fine for the way out of one: the primary action was below the fold on a
+   laptop, so the first thing a new user saw had no visible button. Pinned to
+   the bottom of the dialog instead, with a ground of its own so the content
+   does not read through it. */
+
+/* The three things that are not the loop: reached when the loop is not enough,
+   so laid out as choices rather than as further steps. */
+
+/* Project connection diagnostics */
+
+.connection-github-row,
+.connection-detail,
+.connection-provider-name,
+.connection-mcp button {
+  display: flex;
+  align-items: center;
+}
+
+.connection-github-row {
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-soft);
+}
+
+.connection-github-row > div {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+}
+
+.connection-github-row span,
+.connection-detail small,
+.connection-mcp small {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.connection-github-row button,
+.connection-mcp button {
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 540;
+}
+
+.connection-provider-row {
+  display: grid;
+  grid-template-columns: 145px minmax(220px, 1.15fr) minmax(210px, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.connection-provider-row {
+  min-height: 82px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.connection-provider-row:last-child {
+  border-bottom: 0;
+}
+
+.connection-provider-row.focused {
+  background: var(--surface-soft);
+  box-shadow: inset 3px 0 var(--blue);
+}
+
+.connection-provider-name,
+.connection-detail {
+  min-width: 0;
+  gap: 9px;
+}
+
+.connection-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.connection-mark.ready {
+  border-color: color-mix(in srgb, var(--green) 38%, var(--line));
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.connection-mark.attention,
+.connection-detail:not(.completion-native) > svg {
+  color: var(--amber);
+}
+
+.connection-detail > span,
+.connection-mcp {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.connection-detail > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connection-cli-detail {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.connection-cli-detail.is-ready > svg {
+  color: var(--green);
+}
+
+.connection-detail-action {
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 540;
+}
+
+.connection-setup-command {
+  max-width: 116px;
+  overflow: hidden;
+  padding: 4px 7px;
+  border-radius: var(--r-xs);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connection-project-tools {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.connection-diagnostics {
+  color: var(--faint);
+  font-size: 10.5px;
+}
+
+.connection-diagnostics > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.connection-diagnostics > summary::-webkit-details-marker {
+  display: none;
+}
+
+.connection-diagnostics > summary:hover {
+  color: var(--text);
+}
+
+.connection-diagnostics:not(.completion-native) > summary svg {
+  color: var(--amber);
+}
+
+.connection-diagnostics p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Description-first project flow */
+
+.project-flow-description {
+  min-height: 132px;
+  resize: vertical;
+}
+
+/* Prose helper text. `.task-branch-preview` next to it is green mono on
+   purpose — that one shows the literal folder name, this one is a sentence. */
+.project-flow-hint {
+  color: var(--faint);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 450;
+  letter-spacing: 0;
+  line-height: 1.45;
+  text-transform: none;
+}
+
+.project-flow-pipeline {
+  display: grid;
+  gap: 10px;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.project-flow-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 46px;
+  color: var(--faint);
+}
+
+.project-flow-stage {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.project-flow-stage-head {
+  display: grid;
+  gap: 3px;
+  padding: 0 2px;
+}
+
+.project-flow-stage-head strong {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+
+.project-flow-stage-head small {
+  color: var(--faint);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.project-flow-error {
+  margin: 2px 0 0;
+}
+
+@media (max-width: 820px) {
+  .project-flow-pipeline {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-flow-arrow {
+    padding-top: 0;
+    transform: rotate(90deg);
+  }
+}
+
+@media (max-width: 1180px) {
+
+  .inspector {
+    position: fixed;
+    z-index: 9;
+    top: 34px;
+    right: 0;
+    bottom: 0;
+    width: min(360px, calc(100vw - 220px));
+    box-shadow: -12px 0 32px rgba(18, 23, 35, 0.14);
+  }
+}
+
+@media (max-width: 820px) {
+
+  .inspector {
+    width: min(350px, calc(100vw - 180px));
+  }
+
+  .connection-provider-row {
+    grid-template-columns: 130px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .connection-project-tools {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 620px) {
+  .connection-github-row {
+    align-items: flex-start;
+  }
+
+  .connection-provider-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .connection-project-tools {
+    grid-column: 1;
+    padding-left: 37px;
+  }
+}
+
+/* ---------------------------------------------------------------- Voice HUD
+
+   A floating panel rather than a docked pane: voice is an overlay on whatever
+   the user is already doing, and taking layout space from the editor to show a
+   transcript would make the feature feel like a cost. It sits bottom-right,
+   above the workbench, and collapses to its header when idle.
+
+   Every colour is a token so the panel follows both theme axes (light/dark ×
+   indigo/violet/zinc) without a second set of overrides. */
+
+/* Modal work takes precedence over the assistant transcript. Keep voice
+   reachable, but reduce it to the two controls that cannot obscure the form. */
+
+/* Minimised means out of the way, which a 340px bar is not — it sat on top of
+   the right-hand council pane whether or not it had anything to say. Put away,
+   it is a pill: the microphone toggle, which already carries listening state in
+   its own styling, and the control that brings the panel back.
+   A pending confirmation is the deliberate exception below: a destructive
+   action waiting on an answer must never be the thing that got tucked away. */
+
+/* Buttons in the header are, in order: the microphone toggle, push-to-talk
+   (or stop), voice settings, and the collapse control. Put away, only the
+   first and last are useful — the rest are things you reach for once the
+   panel is open anyway. */
+
+/* The meter is the only always-moving element, so it is the thing that tells
+   someone at a glance whether the microphone is actually live. */
+
+/* Destructive actions get a visually distinct block with real buttons: saying
+   "yes" out loud must not be the only way to approve one. */
+
+/* Voice settings popover — voice, tone, and the silence window. */
+
+/* The compact-voices warning: without it the user concludes the feature is
+   poor, rather than that a better voice is one download away. */
+
+/* The endpoint countdown, shown inline with the live transcript. */
+
+/* ------------------------------------------------------------ editor launcher
+
+   What the Editor tab became once the workbench moved out of the app. It is a
+   single decision — open this project, in this editor — so it is centred and
+   sparse rather than laid out like a panel with tools in it. */
+
+
+
+
+
+
+/* The project's local server, sitting with the sessions that produced it. */
+
+.task-preview-menu summary > span {
+  display: grid;
+  min-width: 0;
+  text-align: left;
+}
+
+.task-preview-menu strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-preview-menu small {
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.task-preview-menu {
+  position: relative;
+}
+
+.task-preview-menu summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.task-preview-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.task-preview-menu > div {
+  position: absolute;
+  z-index: 45;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  width: min(330px, calc(100vw - 32px));
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: 0 16px 44px rgba(20, 19, 17, 0.18);
+}
+
+.task-preview-menu > div button {
+  display: grid;
+  gap: 3px;
+  min-height: 46px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.task-preview-menu > div button:hover {
+  background: var(--surface-soft);
+}
+
+.task-preview-menu > div code {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.session-chip {
+  max-width: 320px;
+  height: 36px;
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+.session-chip-agent {
+  font-size: 11px;
+}
+
+.session-chip-name {
+  font-size: 13px;
+}
+
+.session-chip-actions {
+  width: 58px;
+  flex-basis: 58px;
+  opacity: 1;
+}
+
+.session-chip-btn {
+  width: 28px;
+  height: 28px;
+}
+
+/* ---------------------------------------------------------------------------
+   Session rail — replaces the tab strip.
+
+   A strip of equal-width chips answers "switch to session X". At ten sessions
+   the question is "which one needs me?", and the rail is ordered to answer it:
+   anything waiting on you is at the top, anything finished sinks. Triage is
+   reading downward until the rows stop being interesting.
+--------------------------------------------------------------------------- */
+
+/* The rail is only rendered once a project has a session. Without it the pane
+   becomes the first grid child, auto-placement drops it into the rail's 236px
+   column, and the 1fr column sits empty — so every empty state in the app was
+   squeezed into a sidebar with two thirds of the pane blank beside it. A
+   project with no sessions is exactly when those empty states show, so this was
+   the only way anyone ever saw them.
+
+   No rail, no rail column. */
+
+.session-rail {
+  display: grid;
+  /* Header, the sessions that scroll, then the Council pinned under them. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* Explicit, because an implicit `auto` column is sized to its widest item and
+     is free to exceed the container. Session names do not wrap, so that width
+     is the longest name in full — which is how a selected row ended up drawn
+     past the rail's edge. `min-width: 0` on the rows cannot fix this: it lets
+     the item shrink, but the track it sits in is what was too wide. */
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  border-right: 1px solid var(--line);
+}
+
+.session-rail > header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  /* Left pad lands on the same column the row titles start in: the list's own
+     8px, 10px of row padding, the 7px status mark, and the 9px gap after it.
+     The top pad keeps the count off the tab bar's border above it. */
+  padding: 10px 12px 8px 34px;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.session-rail > header em {
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--blue) 16%, transparent);
+  color: var(--blue);
+  font-style: normal;
+  font-weight: 560;
+}
+
+.session-rail ol {
+  margin: 0;
+  grid-template-columns: minmax(0, 1fr);
+  /* Symmetric: with no left padding a selected row's border sat flush against
+     the rail's edge, reading as a card stuck to the panel rather than resting
+     inside it. */
+  padding: 0 8px 8px;
+  list-style: none;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.session-rail li {
+  position: relative;
+}
+
+/* Reordering.
+   A rail this narrow cannot spare width for a drag handle — the titles already
+   truncate — so the grip is absolutely positioned over the status dot and
+   trades places with it on hover. It sits above the row button rather than
+   inside it, so pressing it arms a drag without also counting as a click. */
+.session-rail-grip {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  display: flex;
+  transform: translateY(-50%);
+  color: var(--faint);
+  opacity: 0;
+  cursor: grab;
+  transition: opacity 90ms ease;
+}
+
+.session-rail li:hover .session-rail-grip,
+.session-rail-row:focus-visible ~ .session-rail-grip {
+  opacity: 1;
+}
+
+/* The dot steps aside for the grip rather than sharing the space. The row it
+   belongs to is the one under the cursor, whose state is spelled out in words
+   directly beneath the title. */
+.session-rail li:hover .session-rail-mark,
+.session-rail-row:focus-visible .session-rail-mark {
+  opacity: 0;
+}
+
+.session-rail li.is-dragging {
+  opacity: 0.4;
+}
+
+.session-rail li.is-dragging .session-rail-row {
+  cursor: grabbing;
+}
+
+/* Where it will land, drawn in the 2px gap between rows rather than on either
+   of them — a highlight on a row reads as "this row", not "between these two". */
+
+@media (prefers-reduced-motion: reduce) {
+  .session-rail-grip {
+    transition: none;
+  }
+}
+
+.session-rail-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 30px 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.session-rail-row:hover {
+  background: var(--surface-soft);
+}
+
+.session-rail-row.is-selected {
+  border-color: color-mix(in srgb, var(--blue) 38%, var(--line));
+  background: var(--blue-soft);
+}
+
+/* A dot, not a bar down the side. The state is carried by colour and by the
+   words next to it; a column of coloured edges reads as decoration. */
+.session-rail-mark {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+.session-rail-row.working .session-rail-mark {
+  background: var(--green);
+}
+
+.session-rail-row.quiet .session-rail-mark {
+  background: var(--amber);
+}
+
+.session-rail-row.failed .session-rail-mark {
+  background: var(--danger);
+}
+
+.session-rail-row.done .session-rail-mark {
+  background: color-mix(in srgb, var(--faint) 60%, transparent);
+}
+
+.session-rail-row.needs-you .session-rail-mark {
+  background: var(--blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 22%, transparent);
+}
+
+.session-rail-body {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.session-rail-title {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 540;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.session-rail-state {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.session-rail-row.needs-you .session-rail-state {
+  color: var(--blue);
+  font-weight: 540;
+}
+
+.session-rail-row.failed .session-rail-state {
+  color: var(--danger);
+}
+
+/* The number that earns the rail its keep: an agent that is working produces
+   output, so a long gap is the session worth walking over to. Tabular so the
+   column reads as a column. */
+.session-rail-quiet {
+  margin-left: auto;
+  color: var(--faint);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-rail-row.quiet .session-rail-quiet {
+  color: var(--amber);
+  font-weight: 560;
+}
+
+.session-rail-delete {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-sm);
+  color: var(--faint);
+  background: none;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-50%);
+}
+
+.session-rail li:hover .session-rail-delete,
+.session-rail-delete:focus-visible {
+  opacity: 1;
+}
+
+.session-rail-delete:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+/* A Council is one piece of work carried out by several sessions, so its
+   members sit together under the run they belong to rather than scattering
+   through a list sorted by who needs you. */
+.session-rail-council {
+  display: grid;
+  /* The list beneath is not a scroll container, so unlike the rail's own list
+     nothing else clamps this track. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  margin: 0 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.session-rail-council > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Flush with the rows below it. A 26px indent put the run's name adrift in
+     the middle of the rail, lined up with nothing — not the rows' left edge,
+     not their status dots, and not their names. */
+  padding: 2px 4px 5px 8px;
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 560;
+}
+
+/*
+ * The council's delete button, which was never visible.
+ *
+ * It borrowed the row button's styling, and that one is revealed by
+ * `.session-rail li:hover` — this one lives in a header, not a row, so nothing
+ * ever revealed it. It sat at opacity 0 permanently, which is indistinguishable
+ * from a feature that was never built.
+ *
+ * Shown rather than revealed on hover: a control you cannot see is one nobody
+ * finds, and this is the only way to remove a council. Quiet by default and
+ * red on approach, which is the weight a destructive action should carry.
+ */
+.session-rail-council > header .session-rail-delete {
+  position: static;
+  flex: none;
+  opacity: 1;
+  transform: none;
+  color: var(--faint);
+}
+.session-rail-council > header .session-rail-delete:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.session-rail-council > header span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The rail shows each member's state; the routing between them is only
+   legible in the Council tab, so the group offers the way there. `margin-left`
+   pushes it and the delete control to the right of the run's name. */
+.session-rail-open {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 3px 7px 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xs, 6px);
+  background: none;
+  color: var(--faint);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 560;
+  cursor: pointer;
+}
+
+.session-rail-open:hover {
+  border-color: color-mix(in srgb, var(--blue) 42%, var(--line));
+  color: var(--blue);
+}
+
+/* The run's own control, not a row's, so it stays put and stays visible. */
+.session-rail-council > header .session-rail-delete {
+  position: static;
+  flex: none;
+  margin-left: auto;
+  opacity: 1;
+  transform: none;
+}
+
+.session-rail-council ol {
+  padding-bottom: 0;
+  overflow: visible;
+}
+
+.session-rail-empty {
+  padding: 10px 8px 10px 10px;
+  color: var(--faint);
+  font-size: 11.5px;
+}
+
+/* ── licence ─────────────────────────────────────────────────────────
+   Three surfaces, and the restraint matters more than the styling: a
+   chip that appears only when something is running out, a banner only
+   once work is actually blocked, and the dialog. A licensed app shows
+   none of them. */
+
+/* minmax(0,1fr) rather than 1fr: a grid item will not shrink below its
+   min-content width, and a long key would otherwise push the button out. */
+
+/* An install that cannot update itself. Not an error to retry — somebody has to
+   move the app — so it reads as instruction rather than failure. */
+
+/* ── task changeset ──────────────────────────────────────────────────
+   The evidence behind a review card: what the agent actually changed.
+   Collapsed by default — a review page lists several tasks and each can
+   touch tens of files. */
+
+/* Appears on hover so a list of twenty files is not twenty buttons, but stays
+   visible once focused so it is reachable from the keyboard. */
+
+/* minmax(0,1fr) on the path: a long path must be allowed to ellipsis rather
+   than widen the row and push the counts out of the panel. */
+
+/* The directory truncates, the filename never does. Done with two elements
+   rather than `direction: rtl`, which truncates from the left correctly but
+   runs the string through the bidi algorithm — and a leading dot is a neutral
+   character, so `.braveli/x.md` came out as `braveli/x.md.`. */
+
+/* ── version footer ──────────────────────────────────────────────────
+   Pitwall updates weekly and a stale copy looks identical to a current
+   one, so the version is always on screen rather than behind a menu.
+   Doubles as the update control: the honest answer to "which version am
+   I on" often includes "and a newer one is waiting". */
+
+/* Always present. The resting line reads as muted help text rather than an
+   alert; the tinted states below make it the loudest thing in the sidebar. */
+
+/* The icon is what makes it read as a control before it is hovered — the row
+   is otherwise two lines of grey text in a corner. */
+
+@keyframes version-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* An update waiting is news. It gets the tint, the colour and the weight —
+   the whole point of the change is that this stopped being findable. */
+
+/* ── diff syntax colours ─────────────────────────────────────────────
+   Read on top of the green and red change backgrounds, so these are
+   chosen for contrast against a tint rather than against the panel.
+   Muted on purpose: the change is the subject, the syntax is context. */
+
+.tok-keyword    { color: var(--syntax-keyword); }
+.tok-string     { color: var(--syntax-string); }
+.tok-comment    { color: var(--syntax-comment); font-style: italic; }
+.tok-number     { color: var(--syntax-number); }
+.tok-type       { color: var(--syntax-type); }
+.tok-function   { color: var(--syntax-function); }
+.tok-property   { color: var(--syntax-property); }
+.tok-tag        { color: var(--syntax-keyword); }
+.tok-attribute  { color: var(--syntax-property); }
+.tok-punctuation { color: var(--syntax-punctuation); }
+.tok-plain      { color: inherit; }
+
+/* ── change requests ─────────────────────────────────────────────────
+   Under the changeset, because that is the order the judgement happens
+   in: read what changed, then say what is wrong with it. Collapsed by
+   default so accepting good work stays one button. */
+
+/* ── update control ──────────────────────────────────────────────────
+   Same chrome as every other button on the row — same height, border,
+   radius and background — because a toolbar whose buttons each have
+   their own shape stops reading as a toolbar. State is carried by the
+   text and icon colour only, which is enough to notice without turning
+   one control into a different species from its neighbours. */
+
+/* In progress: no colour at all. Nothing is being asked of anyone, and
+   the percentage is the whole message. */
+
+/* Needs a decision somewhere else — moving the app, or a connection. */
+
+/* ── Pitwall's own files, and per-file requests ──────────────────────
+   Grouped rather than hidden. A file visible in `git status` and absent
+   from the review raises the opposite question to the one hiding it
+   answers. */
+
+/* Asking for a change to one file, from the row it is about. */
+
+/* A file that already has a request keeps its marker visible. */
+
+/* ── what the Council is doing ───────────────────────────────────────
+   A Council with two agents working showed an empty thread until the
+   first one spoke. The rail said "Working"; the panel whose whole job is
+   to make the work legible said nothing, for minutes at a time.
+
+   The card sits at the end of the log, where the message it is about to
+   become will appear, and is shaped like that message — so the thread
+   grows into the answer instead of jumping from empty to full. */
+
+/* Three dots that travel. The point is not decoration: a static badge
+   reading "Working" is indistinguishable from a badge left behind by a
+   process that died. Something has to be moving for the claim to be
+   worth anything. */
+
+@keyframes thread-thinking {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
+
+/* The agent's own recent output, oldest at the top. Monospace because it
+   is output; each line truncated because some of it is very long. */
+
+/* The newest line is the one that answers "what is it doing"; the ones
+   above it are there to show that answer keeps changing. */
+
+/* The one control in the thread that unblocks something. */
+
+/* ── what happened to the run, said in the thread ────────────────────
+   The bar above the thread carries the controls and stays put. This is
+   the same news where you are actually reading, and it stays in the
+   transcript instead of being overwritten by whatever happens next. */
+
+/* Three tones, and each has to be readable as its own thing at a glance —
+   that is the entire job. */
+
+/* ── the extensions catalogue ────────────────────────────────────────
+   What each agent can be given. Three tabs because those are the three
+   things people go looking for — but only plugins are a unit of
+   installation, and the skill and server rows say so rather than
+   pretending otherwise. */
+
+.extensions {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+/* The list is the screen. Several thousand rows scroll here and nowhere
+   else, so the header and tabs stay put while it moves. */
+
+/* A grid, not a list of full-width rows.
+
+   Every card built its own layout before, stretched the description across the
+   whole window, and put the action a screen away from the name — while a
+   plugin with no description collapsed to a thin strip beside neighbours three
+   times its height. Nothing lined up, so nothing could be compared, which is
+   the only thing a catalogue is for. */
+
+/* What you already have, marked without shouting — it is the answer to the
+   question people open this screen with. */
+
+/* The card opens the detail; only the button installs. */
+
+/* Two letters give the eye something to aim at, and beat one generic icon
+   repeated three hundred times. */
+
+/* Three lines, always occupied. A card that says nothing still holds its shape
+   rather than collapsing beside one that does. */
+
+/* Chips rather than a run-on grey sentence: four facts separated by spaces
+   read as one. */
+
+/* Facts, not decoration: what it is, whether you have it, and what it will
+   ask for. Small, quiet, and never more than three to a card. */
+
+/* The one thing the screen is for. */
+
+/* Deliberately quieter than Install: removing is a thing you go looking for,
+   never a thing you should hit on the way past. */
+
+/* Pushed to the foot, so the action is in the same place on every card
+   whatever the description did above it. */
+
+.is-spinning { animation: version-spin 1.1s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .is-spinning { animation: none; }
+}
+
+/* ── the transport picker in Add MCP server ─────────────────────────
+   `.source-tabs` had no rules at all, so the three transports rendered
+   as the browser's default buttons: no selected state, no grouping, and
+   nothing to say which one you were on. Matches the segmented control
+   used everywhere else rather than inventing a fourth. */
+
+/* ── the MCP catalogue ───────────────────────────────────────────────
+   Browsing, rather than a form you type `npx -y …` into. */
+
+/* What will actually be run, before it is run — a hosted URL or the exact
+   command. Nobody should have to install something to find out what it does
+   to their machine. */
+
+/* Two ways in from a provider row: what it has now, and what it could have. */
+/* Two ways in from a provider row: what it has now, and what it could have. */
+.connection-mcp-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.connection-mcp-actions > button { flex: 1 1 160px; white-space: nowrap; }
+
+/* ── extension details ───────────────────────────────────────────────
+   The rows stay shallow so several hundred stay scannable. Everything
+   worth knowing before putting something into every future session
+   lives here: what it contains, what it costs on every prompt, and the
+   exact command about to run on this machine. */
+
+/* Exactly what is about to execute, before it executes. */
+
+/* ── a session, read back ────────────────────────────────────────────
+   The Council reads as a thread because Pitwall writes down what each
+   member says. A solo session had nowhere equivalent to look: everything
+   the agent said existed only as characters on a screen.
+
+   This is the CLI's own session file, so it cannot disagree with the
+   terminal beside it — which is exactly what the older protocol-reading
+   chat surface could do, and why that one is still switched off. */
+
+.session-conversation {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: var(--surface);
+}
+
+/* Says where this came from. A reader who does not know it is a file has
+   no way to tell it from a live view that has fallen behind. */
+.session-conversation-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--faint);
+  font-size: 10.5px;
+}
+
+.session-conversation-bar span { display: inline-flex; align-items: center; gap: 6px; }
+
+.session-conversation-bar button {
+  margin-left: auto;
+  display: inline-flex;
+  border: 0;
+  padding: 3px;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+.session-conversation-bar button:hover { background: var(--surface); color: var(--muted); }
+
+/* A grid, so the live cards below the thread are spaced like the messages
+   inside it. They are siblings of the thread rather than children of it —
+   the thread comes from the session file and they come from the screen — so
+   without this they sat flush against whatever was above them. */
+.session-conversation-log {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 16px 18px;
+}
+
+.session-conversation-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px auto;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.session-conversation-note.error { color: var(--amber); }
+
+/* ── what happened between the sentences ─────────────────────────────
+   A turn is a handful of sentences and a hundred tool calls. Shown one
+   line each, the calls are the transcript and the conversation is lost
+   in them — and the terminal is already a better log than this could be.
+   So a run of work folds into one line saying how much of it there was. */
+
+.session-thread { display: grid; gap: 10px; }
+
+/* The agent's own reasoning summary — its words, so it reads as prose
+   rather than as another mechanical step. */
+
+/* ── the agent is asking ─────────────────────────────────────────────
+   Read off the live screen rather than the session file: the file
+   records a question after it has been answered, and a prompt you can
+   only read once it no longer applies is worse than none. */
+
+/* Whatever the CLI has highlighted. Pressing Return in the terminal takes
+   this one, so the thread has to agree about which it is. */
+
+/* A pasted command is one long line. Without this the card grows to fit it
+   and takes the whole thread — and the page — sideways with it. */
+.session-thread pre {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.session-thread :not(pre) > code {
+  overflow-wrap: anywhere;
+}
+
+/* ── the agent's protocol, shown as what it is ───────────────────────
+   The agent addresses two audiences in one message: the reader, and
+   Pitwall. Its completion summary is JSON and its previews are URLs —
+   left in the prose they are a wall of machine text mid-sentence, which
+   is exactly how they read before this. */
+
+/* The attach control sits with the send button, so the two things you can
+   do with a message are in one place. */
+
+/* ── the import preview, laid out like the board ─────────────────────
+   Eighteen tickets from nine columns across two sprints and a backlog
+   arrived as one flat list — and folded shut, the shape of it fits on
+   one screen instead of three and a half thousand pixels of scrolling. */
+
+/* The whole heading is the fold, so it is a big target rather than a
+   chevron you have to aim at. */
+
+/* The columns, which are what say whether a sprint is starting or nearly
+   finished. */
+
+/* Real work, and it belongs in the list — it just does not belong first,
+   above the sprint being worked on this week. */
+/* A theme's name tells you nothing about it. Three colours — the ground,
+   the accent and the text — say more than "Kanagawa" ever will, and mean
+   you can choose without picking each one and looking. */
+
+/* Which branch the review was measured from. Quiet, but present: a changeset of
+   an unexpected size is only questionable if you can see what it was compared
+   against. */
+
+/* Images attached to a task description. A bug report is usually a screenshot,
+   so this sits directly under the textarea rather than behind a menu. */
+.task-attachments {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-soft);
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.task-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task-attachment-list li {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--window);
+}
+
+.task-attachment-list img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Always visible rather than on hover: on a touchpad a remove control you have
+   to find by hovering is one most people never find at all. */
+.task-attachment-list li > button {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  cursor: pointer;
+}
+
+.task-attachment-list li > button:hover {
+  background: rgba(0, 0, 0, 0.82);
+}
+
+.task-attachment-add {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  justify-self: start;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--window);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.task-attachment-add:hover:not(:disabled) { border-color: var(--line-strong); }
+.task-attachment-add:disabled { color: var(--faint); cursor: progress; }
+
+.task-attachment-add small {
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 420;
+}
+
+.task-attachment-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 11px;
+}
+
+
+/* Windows: the caption buttons are drawn over the top-right corner of the
+   window (titleBarOverlay), and there are no traffic lights on the left.
+   env(titlebar-area-*) describes the free strip beside those buttons. */
+:root[data-platform="win32"] .dk-tsb-titlebar {
+  padding-left: 12px;
+}
+
+:root[data-platform="win32"] .dk-header-bar {
+  padding-right: calc(12px + 100vw - env(titlebar-area-x, 100vw) - env(titlebar-area-width, 0px));
+}

@@ -1,0 +1,15 @@
+import { _electron as electron } from "playwright";
+import os from "node:os"; import path from "node:path"; import { mkdtemp, mkdir, writeFile } from "node:fs/promises"; import { execFileSync } from "node:child_process";
+const out = process.argv[2]; const theme = process.argv[3] || "light";
+const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-shot-"));
+const dir = path.join(temp, "payments"); await mkdir(dir); execFileSync("git", ["init","-q","-b","main"], { cwd: dir }); await writeFile(path.join(dir,"a.md"),"x"); execFileSync("git",["add","."],{cwd:dir}); execFileSync("git",["-c","user.email=a@b","-c","user.name=t","commit","-qm","i"],{cwd:dir});
+const now = new Date().toISOString();
+const project = { id: "payments", name: "payments", path: dir, branch: "main", status: "active", accent: "#5368dc", health: 100, openSessions: 0, queuedTasks: 0, lastCommit: "now", ci: "pending", sessions: [], queue: [], timeline: [] };
+const tasks = [["t1","PAY-7","Add the step helpers","review"],["t2","PAY-11","Cursor paging for orders","running"],["t3","PAY-14","Export refunds as CSV","ready"],["t4","PAY-5","Idempotency keys on charges","completed"],["t5","PAY-9","Retry failed webhooks","running"]].map(([id,identifier,title,status]) => ({ id, projectId: "payments", identifier, title, description: "", status, priority: "medium", assignedAgent: identifier === "PAY-9" ? "codex" : "claude", ...(identifier === "PAY-7" ? { pair: { reviewer: "hermes", maxRounds: 2, round: 2, state: "approved" } } : {}), ...(identifier === "PAY-11" ? { pair: { reviewer: "hermes", maxRounds: 2, round: 1, state: "reviewing" } } : {}), relatedFiles: [], createdAt: now, updatedAt: now }));
+const workspace = { version: 1, projects: [{ id: "payments", name: "payments", path: dir, defaultBranch: "main", providerIds: [], createdAt: now, updatedAt: now }], tasks, contextEntries: [], contextSnapshots: [], sessions: [], activity: [], taskRuns: [], councilRuns: [], compareRuns: [] };
+const app = await electron.launch({ args: [process.cwd()], cwd: process.cwd(), env: { ...process.env, BRAVELI_E2E: "1", BRAVELI_USER_DATA_DIR: path.join(temp, "profile") } });
+const page = await app.firstWindow(); await page.setViewportSize({ width: 1440, height: 900 }); await page.waitForTimeout(1500);
+await page.evaluate(({ project, workspace, theme }) => { localStorage.clear(); localStorage.setItem("braveli-projects", JSON.stringify([project])); localStorage.setItem("braveli-onboarded", "yes"); localStorage.setItem("braveli-theme", theme); localStorage.setItem("braveli-workspace-state", JSON.stringify(workspace)); }, { project, workspace, theme });
+await page.reload({ waitUntil: "domcontentloaded" }); await page.waitForTimeout(3000);
+await page.getByRole("button", { name: "Project", exact: true }).click(); await page.getByRole("option", { name: "payments", exact: true }).click(); await page.waitForTimeout(1500);
+await page.screenshot({ path: out }); await app.close();

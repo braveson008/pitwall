@@ -1,0 +1,187 @@
+{
+  "name": "braveli",
+  "version": "0.1.34",
+  "private": true,
+  "description": "Local-first multi-agent workspace for software engineering.",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && BRAVELI_DEV_SERVER=http://127.0.0.1:5173 electron .\"",
+    "web": "vite --host 127.0.0.1",
+    "build": "tsc && vite build",
+    "build:voice": "node scripts/build-voice-sidecar.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "start": "npm run build && electron .",
+    "package": "node scripts/prepare-release.mjs --unsigned && npm run build:voice -- --optional && npm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --dir",
+    "test": "vitest run && node --test tests/*.node.cjs",
+    "test:electron": "npm run build && node tests/launch-args-smoke.mjs && node tests/analytics-smoke.mjs && node tests/model-tuning-smoke.mjs && node tests/electron-smoke.mjs && node tests/electron-crash-recovery.mjs && node tests/session-process-leak-smoke.mjs && node tests/worktree-lifecycle-smoke.mjs && node tests/project-flow-smoke.mjs && node tests/release-failure-smoke.mjs && node tests/council-relay-smoke.mjs && node tests/council-opening-debate-smoke.mjs && node tests/project-memory-smoke.mjs && node tests/code-host-smoke.mjs && node tests/watch-smoke.mjs && node tests/watch-ticket-start-smoke.mjs && node tests/notification-jump-smoke.mjs && node tests/mcp-auth-smoke.mjs && node tests/untasked-session-smoke.mjs && node tests/session-swap-smoke.mjs && node tests/add-reviewer-smoke.mjs && node tests/pair-smoke.mjs && node tests/files-panel-smoke.mjs && node tests/session-switch-smoke.mjs && node tests/session-memory-smoke.mjs && node tests/pair-interactions-smoke.mjs && node tests/hermes-overseer-smoke.mjs && node tests/terminal-replay-smoke.mjs && node tests/terminal-late-pane-smoke.mjs && node tests/cli-update-smoke.mjs && node tests/voice-smoke.mjs && node tests/zed-shell-smoke.mjs && node tests/task-board-smoke.mjs && node tests/shell-navigation-smoke.mjs && node tests/settings-smoke.mjs",
+    "test:compat": "node tests/provider-compatibility-smoke.mjs",
+    "test:all": "npm run test && npm run test:compat && npm run test:workspace && npm run test:electron",
+    "test:workspace": "node tests/workspace-review-smoke.mjs && node tests/project-knowledge-ui-smoke.mjs",
+    "test:watch": "vitest",
+    "dist": "npm run dist:unsigned",
+    "dist:unsigned": "node scripts/prepare-release.mjs --unsigned && npm run build:voice -- --optional && npm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg zip && node scripts/write-update-manifest.mjs --unsigned",
+    "dist:release": "node scripts/prepare-release.mjs && npm run build:voice && npm run build && node scripts/with-env.mjs electron-builder --mac dmg zip --publish never && node scripts/write-update-manifest.mjs",
+    "test:package": "node tests/packaged-smoke.mjs",
+    "audit:runtime": "npm audit && node scripts/audit-runtime-dependencies.mjs",
+    "release:upload": "node scripts/with-env.mjs node scripts/upload-release.mjs",
+    "release": "npm run dist:release && npm run release:upload",
+    "perf:switch": "node tests/perf-project-switch.mjs",
+    "perf:council": "node tests/perf-council.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "dist:win": "node scripts/prepare-release.mjs --windows && npm run build && node scripts/build-windows.mjs",
+    "release:win:upload": "node scripts/with-env.mjs node scripts/upload-release.mjs --windows"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/language-data": "^6.5.2",
+    "@codemirror/search": "^6.7.2",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.13",
+    "@fontsource/dm-sans": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/lilex": "^5.3.0",
+    "@fontsource/open-sans": "^5.3.0",
+    "@lezer/highlight": "^1.2.5",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-unicode11": "^0.9.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/addon-webgl": "^0.19.0",
+    "@xterm/headless": "^6.0.0",
+    "@xterm/xterm": "^6.0.0",
+    "electron-updater": "^6.8.9",
+    "lucide-react": "^0.468.0",
+    "node-pty": "^1.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1116.0",
+    "@types/node": "^22.10.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "electron": "^44.2.0",
+    "electron-builder": "^26.15.3",
+    "playwright": "^1.61.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vitest": "^4.1.10",
+    "wait-on": "^8.0.1"
+  },
+  "overrides": {
+    "basic-ftp": "5.3.1",
+    "brace-expansion": "5.0.9",
+    "dompurify": "3.4.12",
+    "ip-address": "10.7.0",
+    "js-yaml": "4.3.1",
+    "qs": "6.15.3",
+    "ws": "8.21.1"
+  },
+  "build": {
+    "appId": "app.pitwall.desktop",
+    "productName": "Pitwall",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "!electron/**/*.test.*",
+      "package.json",
+      "!node_modules/@xterm/**/*",
+      "!node_modules/react/**/*",
+      "!node_modules/react-dom/**/*",
+      "!node_modules/lucide-react/**/*",
+      "!node_modules/@fontsource/**/*",
+      "!node_modules/@vitejs/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "build/update-config.json",
+        "to": "update-config.json"
+      },
+      {
+        "from": "build/analytics-config.json",
+        "to": "analytics-config.json"
+      },
+      {
+        "from": "build/licence-config.json",
+        "to": "licence-config.json"
+      },
+      {
+        "from": "build/credits-config.json",
+        "to": "credits-config.json"
+      },
+      {
+        "from": "LICENSE",
+        "to": "LICENSE"
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.md",
+        "to": "THIRD_PARTY_NOTICES.md"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.inherit.plist",
+      "notarize": true,
+      "binaries": [
+        "Contents/Resources/voice/braveli-voice",
+        "Contents/Resources/voice/braveli-observe"
+      ],
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Pitwall listens for the wake word and your spoken requests. Speech is transcribed on this Mac and is never uploaded.",
+        "NSSpeechRecognitionUsageDescription": "Pitwall converts your speech to text on-device so it can act on what you ask for.",
+        "NSAppleEventsUsageDescription": "Pitwall opens and switches between the applications you ask it to."
+      },
+      "extraResources": [
+        {
+          "from": "electron/voice/bin",
+          "to": "voice"
+        }
+      ]
+    },
+    "afterPack": "./scripts/adhoc-sign.cjs",
+    "afterAllArtifactBuild": "./scripts/notarize-dmg.cjs",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "files": [
+        "!node_modules/node-pty/build/**",
+        "!node_modules/node-pty/prebuilds/darwin-*/**",
+        "!node_modules/node-pty/prebuilds/win32-arm64/**",
+        "!node_modules/node-pty/third_party/conpty/*/win10-arm64/**"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-${version}-${arch}-setup.${ext}",
+      "shortcutName": "Pitwall"
+    }
+  },
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=24.15.0"
+  }
+}

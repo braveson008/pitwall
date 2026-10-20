@@ -1,0 +1,213 @@
+/* Pitlane's three themes, carried into Pitwall ----------------------------
+   Each one sits on the light or dark base (set by App from the theme) and
+   replaces every token the window uses, so no surface keeps Zed's colours.
+   Shared rules: a monospace face, square corners, no decorative gradients,
+   and no side bars on the selected row. */
+
+:root[data-color-theme="vt220"] {
+  --page: #0a0a08;
+  --window: #0a0a08;
+  --panel: #14120d;
+  --surface: #100f0b;
+  --surface-soft: #0d0c09;
+  --elevated: #1a1710;
+  --chrome: #120f0a;
+  --line: #2a2010;
+  --line-strong: #4a3818;
+  --text: #e8a33c;
+  --muted: #c08a3e;
+  --faint: #9a7434;
+  --blue: #6fd3e8;
+  --blue-soft: rgba(111, 211, 232, 0.14);
+  --accent-rgb: 111, 211, 232;
+  --accent-ink: #0a0a08;
+  --green: #9be37a;
+  --green-soft: rgba(155, 227, 122, 0.14);
+  --amber: #ffd38a;
+  --amber-soft: rgba(255, 211, 138, 0.14);
+  --danger: #ff6b4a;
+  --hover: #1d1810;
+  --pressed: #2b2212;
+  --chip: #1a1610;
+  --selected: #3a2a0e;
+  --syntax-keyword: #d7a6ff;
+  --syntax-string: #9be37a;
+  --syntax-comment: #9a7434;
+  --syntax-number: #ffd38a;
+  --syntax-type: #6fd3e8;
+  --syntax-function: #ffb000;
+  --syntax-property: #ff8f73;
+  --syntax-punctuation: #b08a4a;
+  --t-accent: #ffd38a;
+  --t-success: #9be37a;
+  --t-bg: #0a0a08;
+  --t-panel: #14120d;
+  --t-card: #100f0b;
+  --t-inset: #070705;
+  --t-line: #2a2010;
+  --t-card-line: #4a3818;
+  --t-fg: #e8a33c;
+  --t-muted: #9a7434;
+  --t-hover: rgba(255, 176, 0, 0.06);
+  --t-pressed: rgba(255, 176, 0, 0.1);
+}
+
+:root[data-color-theme="acme"] {
+  --page: #ffffea;
+  --window: #ffffea;
+  --panel: #eaffff;
+  --surface: #ffffea;
+  --surface-soft: #fbfbe0;
+  --elevated: #eaffff;
+  --chrome: #eaffff;
+  --line: #d4d4b4;
+  --line-strong: #8888cc;
+  --text: #1a1a1a;
+  --muted: #45453c;
+  /* Acme's dim #8a8a7a is under 4:1 on the paper; darkened so secondary text stays readable. */
+  --faint: #66665a;
+  --blue: #1d3fa0;
+  --blue-soft: rgba(29, 63, 160, 0.12);
+  --accent-rgb: 29, 63, 160;
+  --accent-ink: #ffffea;
+  --green: #2c7a33;
+  --green-soft: rgba(44, 122, 51, 0.14);
+  --amber: #8a6d00;
+  --amber-soft: rgba(138, 109, 0, 0.14);
+  --danger: #b0261c;
+  --hover: #f2f2c4;
+  --pressed: #e4e49a;
+  --chip: #f0f0cc;
+  --selected: #eeee9e;
+  --syntax-keyword: #7a2e8f;
+  --syntax-string: #2c7a33;
+  --syntax-comment: #66665a;
+  --syntax-number: #8a6d00;
+  --syntax-type: #0f6e7a;
+  --syntax-function: #1d3fa0;
+  --syntax-property: #b0261c;
+  --syntax-punctuation: #45453c;
+  --t-accent: #1d3fa0;
+  --t-success: #2c7a33;
+  --t-bg: #ffffea;
+  --t-panel: #eaffff;
+  --t-card: #fbfbe0;
+  --t-inset: #f4f4d8;
+  --t-line: #d4d4b4;
+  --t-card-line: #8888cc;
+  --t-fg: #1a1a1a;
+  --t-muted: #66665a;
+  --t-hover: rgba(0, 0, 0, 0.04);
+  --t-pressed: rgba(0, 0, 0, 0.08);
+  --shadow: none;
+  --shadow-popover: 0 0 0 1px #8888cc;
+}
+
+:root[data-color-theme="night-city"] {
+  --page: #07080b;
+  --window: #07080b;
+  --panel: #0e1016;
+  --surface: #0b0d12;
+  --surface-soft: #090a0e;
+  --elevated: #12151c;
+  --chrome: #0b0d12;
+  --line: #2b2810;
+  --line-strong: #6b6214;
+  --text: #d9f9ff;
+  --muted: #9fbfc7;
+  --faint: #7d8a96;
+  --blue: #05d9e8;
+  --blue-soft: rgba(5, 217, 232, 0.14);
+  --accent-rgb: 5, 217, 232;
+  --accent-ink: #07080b;
+  --green: #3cf2a0;
+  --green-soft: rgba(60, 242, 160, 0.14);
+  --amber: #fcee0a;
+  --amber-soft: rgba(252, 238, 10, 0.14);
+  --danger: #ff2a6d;
+  --hover: rgba(5, 217, 232, 0.07);
+  --pressed: rgba(5, 217, 232, 0.2);
+  --chip: #12151c;
+  --selected: rgba(5, 217, 232, 0.14);
+  --syntax-keyword: #ff2a6d;
+  --syntax-string: #3cf2a0;
+  --syntax-comment: #7d8a96;
+  --syntax-number: #fcee0a;
+  --syntax-type: #05d9e8;
+  --syntax-function: #c86bff;
+  --syntax-property: #5ceaf4;
+  --syntax-punctuation: #9fbfc7;
+  --t-accent: #fcee0a;
+  --t-success: #3cf2a0;
+  --t-bg: #07080b;
+  --t-panel: #0e1016;
+  --t-card: #0b0d12;
+  --t-inset: #050608;
+  --t-line: #2b2810;
+  --t-card-line: #6b6214;
+  --t-fg: #d9f9ff;
+  --t-muted: #7d8a96;
+  --t-hover: rgba(5, 217, 232, 0.07);
+  --t-pressed: rgba(5, 217, 232, 0.14);
+}
+
+/* Shared by all three: the terminal look. */
+:root[data-color-theme="vt220"],
+:root[data-color-theme="acme"],
+:root[data-color-theme="night-city"] {
+  --font-sans: "JetBrains Mono", "SF Mono", Menlo, monospace !important;
+  --r-xs: 0;
+  --r-sm: 0;
+  --r-md: 0;
+  --r-lg: 0;
+}
+
+:root[data-color-theme="vt220"] body { text-shadow: 0 0 2px rgba(255, 176, 0, 0.35); }
+:root[data-color-theme="vt220"] .xterm { text-shadow: none; }
+
+/* No decorative gradients anywhere; the checkbox tick (a data URL) is left alone. */
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .project-hub,
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .task-inspector,
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .task-id-field input,
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .dk-request-description.is-waiting,
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .dk-request-message.is-waiting { background-image: none; }
+:root[data-color-theme="vt220"] .project-hub,
+:root[data-color-theme="acme"] .project-hub,
+:root[data-color-theme="night-city"] .project-hub { background: transparent; }
+
+/* The selected row is a flat fill, never a coloured bar on its edge. */
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .dk-tsb-row.is-current,
+:root:is([data-color-theme="vt220"], [data-color-theme="acme"], [data-color-theme="night-city"]) .dk-tsb-group .dk-session.is-current { border-right-color: transparent; }
+
+/* Acme: commands and project chrome read as its pale blue tag line. */
+:root[data-color-theme="acme"] .dk-tsb-titlebar,
+:root[data-color-theme="acme"] .dk-workbench-bar { background: #eaffff; border-bottom: 1px solid #8888cc; }
+
+/* Night City: the yellow bar, uppercase headings, neon glow, scanlines and a glitch on the project name. */
+:root[data-color-theme="night-city"] .dk-statusbar { background: #fcee0a; color: #07080b; border-top: 0; }
+:root[data-color-theme="night-city"] .dk-statusbar * { color: #07080b; }
+:root[data-color-theme="night-city"] .dk-tsb-heading,
+:root[data-color-theme="night-city"] .dk-section-title,
+:root[data-color-theme="night-city"] .dk-label { color: #fcee0a; text-transform: uppercase; letter-spacing: 0.08em; text-shadow: 0 0 6px rgba(252, 238, 10, 0.5); }
+:root[data-color-theme="night-city"] .dk-tsb-project { text-transform: uppercase; letter-spacing: 0.12em; text-shadow: 1.5px 0 #ff2a6d, -1.5px 0 #05d9e8; }
+:root[data-color-theme="night-city"] .dk-btn--primary { border-color: #fcee0a; background: #fcee0a; color: #07080b; }
+:root[data-color-theme="night-city"] .dk-btn--primary:hover { background: #fff35c; }
+:root[data-color-theme="night-city"] .dk-card,
+:root[data-color-theme="night-city"] .dk-popover,
+:root[data-color-theme="night-city"] .dk-dialog {
+  border-color: #6b6214;
+  /* The window itself stays rectangular; the cut corner lives on cards and popovers. */
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+:root[data-color-theme="night-city"] .dk-shell { position: relative; }
+:root[data-color-theme="night-city"] .dk-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px);
+}
+
+/* Night City's hover is a see-through tint; the row's actions need a solid ground or the counts show through them. */
+:root[data-color-theme="night-city"] .dk-livechanges-actions { background: #0e1016; }

@@ -1,0 +1,599 @@
+/* The workspace column and the Work view's frame: the session header, the
+   Terminal / Editor / Council bar and the panes under it. The panes' contents
+   are styled in session.css and council.css. */
+
+.dk-workspace {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--page);
+}
+
+.dk-content {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ---- Sheet ------------------------------------------------------------------ */
+
+.dk-sheet-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  padding: 0 24px 24px;
+  background: color-mix(in srgb, var(--page) 55%, transparent);
+  animation: dk-sheet-fade 140ms ease-out;
+}
+
+.dk-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(920px, 100%);
+  max-height: 100%;
+  overflow: hidden;
+  border: 0.5px solid var(--line);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background: var(--window, var(--page));
+  box-shadow: var(--shadow);
+  outline: none;
+  animation: dk-sheet-drop 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dk-sheet-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 10px 0 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dk-sheet-head h2 { margin: 0; color: var(--text); font-size: 14px; font-weight: 600; }
+
+.dk-sheet-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+@keyframes dk-sheet-fade { from { opacity: 0; } }
+@keyframes dk-sheet-drop { from { transform: translateY(-12px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .dk-sheet-scrim, .dk-sheet { animation: none; }
+}
+
+/* ---- Session header -------------------------------------------------------- */
+
+/* A summary that opens a popover. */
+.dk-menu { position: relative; }
+.dk-menu > summary { list-style: none; }
+.dk-menu > summary::-webkit-details-marker { display: none; }
+
+.dk-menu-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  min-width: 220px;
+}
+
+/* ---- Workbench ------------------------------------------------------------- */
+
+.dk-workbench {
+  display: grid;
+  flex: 1;
+  grid-template-rows: 32px minmax(0, 1fr);
+  min-height: 0;
+  padding: 0;
+}
+
+.dk-workbench.dk-hidden { display: none; }
+
+/* Zed's tab bar: the view tabs on the left, the session's tools on the right. */
+.dk-workbench-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  padding: 0 4px 0 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.dk-workbench-bar > button:not(.dk-btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  margin-bottom: -1px;
+  padding: 0 12px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.dk-workbench-bar > button:not(.dk-btn):hover { color: var(--text); }
+.dk-workbench-bar > button.is-current { background: var(--page); color: var(--text); }
+.dk-workbench-bar > .dk-spacer,
+.dk-workbench-bar > .dk-toolbar,
+.dk-workbench-bar > :not(button) { align-self: center; }
+.dk-workbench-tools { flex-wrap: nowrap; gap: 2px; }
+.dk-workbench-bar .dk-badge { height: 18px; padding: 0 6px; font-size: 10.5px; }
+.dk-tab-count { color: var(--faint); font-size: 12px; font-weight: 400; }
+
+.dk-workbench-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.dk-pane {
+  position: relative;
+  display: none;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: var(--t-bg);
+}
+
+.dk-pane.is-active { display: block; height: 100%; }
+.dk-workbench-body.is-council .dk-pane { border: 0; border-radius: 0; background: transparent; overflow: visible; }
+
+/* ---- One session's terminal ------------------------------------------------ */
+
+.dk-terminal {
+  --terminal-selection: color-mix(in srgb, var(--t-accent) 34%, transparent);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 32px minmax(0, 1fr) auto;
+  min-height: 0;
+  background: var(--t-bg);
+  color: var(--t-fg);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* Every session stays mounted so none loses its scrollback; only the
+   selected one is shown. The others sit just outside the pane, which clips
+   them: xterm sees them as off screen and stops drawing, while their size —
+   and so their grid — stays exactly the pane's. */
+.dk-terminal:not(.is-active) { transform: translateX(calc(100% + 64px)); }
+.dk-terminal.is-active { opacity: 1; pointer-events: auto; visibility: visible; }
+
+.dk-terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 6px;
+  border-bottom: 1px solid var(--t-line);
+  background: var(--t-panel);
+}
+
+.dk-terminal-bar .dk-btn--ghost { color: var(--t-muted); }
+.dk-terminal-bar .dk-btn--ghost:hover { background: var(--t-hover); color: var(--t-fg); }
+.dk-terminal-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--t-fg);
+  font: 500 12.5px/1 var(--font-sans);
+  cursor: pointer;
+}
+.dk-terminal-switch:hover { background: var(--t-hover); color: var(--t-fg); }
+.dk-terminal-switch:focus-visible { outline: 2px solid var(--t-accent, var(--blue)); outline-offset: -2px; }
+.dk-terminal-switch svg { flex-shrink: 0; color: var(--t-muted); }
+.dk-terminal-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dk-terminal-bar .dk-toolbar { flex-shrink: 0; }
+.dk-terminal-command { max-width: 360px; overflow: hidden; color: var(--t-muted); text-overflow: ellipsis; white-space: nowrap; }
+
+.dk-surfaces { position: relative; min-height: 0; }
+.dk-surface { position: absolute; inset: 0; display: grid; min-height: 0; }
+.dk-surface.is-hidden,
+.dk-composer-slot.is-hidden { display: none; }
+
+/* ---- No session yet ------------------------------------------------------ */
+
+.dk-work-empty { position: absolute; inset: 0; display: grid; place-items: center; background: var(--surface); }
+.dk-work-empty .dk-empty { max-width: 420px; }
+.dk-work-empty .dk-empty > span { font-size: 12px; }
+.dk-work-empty .dk-empty p { margin: 0 0 8px; color: var(--muted); line-height: 1.5; }
+
+/* ---- Editor launcher ------------------------------------------------------ */
+
+.dk-editor-launch { display: grid; height: 100%; place-items: center; padding: 24px; }
+
+.dk-editor-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: min(460px, 100%);
+}
+
+.dk-editor-card .dk-btn--lg { margin-top: 6px; }
+.dk-editor-card .dk-field { width: 100%; }
+.dk-editor-card .dk-hint { margin: 0; }
+
+/* ── Files panel ─────────────────────────────────────────────────────
+   The session's worktree, in the column task details use. One view at a
+   time: the tree, or the file opened from it. */
+
+.inspector.dk-files-aside {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+}
+.dk-files { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.dk-files-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 8px 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+.dk-files-switch { display: inline-flex; gap: 2px; }
+.dk-files-switch > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.dk-files-switch > button:hover { background: var(--hover); color: var(--text); }
+.dk-files-switch > button.is-current { background: var(--pressed); color: var(--text); font-weight: 500; }
+.dk-files-crumbs {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
+.dk-files-crumbs > * { direction: ltr; unicode-bidi: isolate; }
+.dk-files-crumbs strong { font-weight: 600; }
+.dk-files-dirty {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--text);
+  vertical-align: 1px;
+}
+
+.dk-files-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  contain: strict;
+  outline: none;
+}
+.dk-files-list:focus-visible { box-shadow: inset 0 0 0 2px var(--focus-ring); }
+.dk-files-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding-right: 10px;
+  color: var(--muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.dk-files-row:hover { background: var(--hover); color: var(--text); }
+.dk-files-row.is-focused { background: var(--pressed); color: var(--text); }
+.dk-files-row > svg { flex: none; color: var(--faint); }
+.dk-files-caret { flex: none; width: 12px; transition: transform 120ms ease; }
+.dk-files-caret.is-open { transform: rotate(90deg); }
+.dk-files-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dk-files-dir { min-width: 0; overflow: hidden; color: var(--faint); font-size: 11.5px; text-overflow: ellipsis; direction: rtl; }
+.dk-files-mark { flex: none; width: 6px; height: 6px; margin-left: auto; border-radius: 50%; background: var(--amber); }
+.dk-files-kind { flex: none; margin-left: auto; font: 600 10.5px/1 var(--font-mono); }
+.dk-files-row.is-modified .dk-files-name,
+.dk-files-row.is-modified .dk-files-kind { color: var(--amber); }
+.dk-files-row.is-untracked .dk-files-name,
+.dk-files-row.is-added .dk-files-name,
+.dk-files-row.is-untracked .dk-files-kind,
+.dk-files-row.is-added .dk-files-kind { color: var(--green); }
+.dk-files-row.is-renamed .dk-files-kind { color: var(--blue); }
+.dk-files-row.is-deleted .dk-files-name { color: var(--danger); text-decoration: line-through; }
+.dk-files-row.is-deleted .dk-files-kind { color: var(--danger); }
+.dk-files-empty { margin: 0; padding: 16px; color: var(--faint); font-size: 12.5px; }
+
+.dk-files-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--amber-soft);
+  color: var(--text);
+  font-size: 12.5px;
+}
+.dk-files-note.is-error { background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.dk-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.dk-files-editor { position: relative; flex: 1; min-height: 0; }
+.dk-code-editor { position: absolute; inset: 0; }
+.dk-files-ask {
+  position: absolute;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  animation: dk-files-ask-in 120ms ease-out;
+}
+.dk-files-ask:hover { background: var(--panel); }
+@keyframes dk-files-ask-in { from { opacity: 0; transform: translateY(-3px); } }
+
+.dk-panel-resizer {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.dk-panel-resizer:hover,
+.dk-panel-resizer:focus-visible { background: rgba(var(--accent-rgb), 0.35); outline: none; }
+.dk-panel-guide {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: rgb(var(--accent-rgb));
+  pointer-events: none;
+}
+.dk-btn.is-pressed { background: var(--pressed); color: var(--text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dk-files-caret, .dk-files-ask { transition: none; animation: none; }
+}
+
+/* ── update banner ─────────────────────────────────────────────────── */
+.dk-update-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 10px 16px 0;
+  padding: 8px 10px 8px 14px;
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  border-radius: 10px;
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--text);
+  font-size: 13px;
+  animation: dk-update-in 160ms ease-out;
+}
+.dk-update-banner > svg { flex: none; color: rgb(var(--accent-rgb)); }
+.dk-update-text { min-width: 0; color: var(--muted); }
+.dk-update-text strong { color: var(--text); font-weight: 600; }
+.dk-update-notes { font-weight: 500; }
+@keyframes dk-update-in { from { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .dk-update-banner { animation: none; } }
+
+/* ── pair: implementer and reviewer, one tab each ──────────────────────
+   The reviewer covers the terminal below the session's header, so both
+   keep the full width and switching tabs refits nothing. */
+.dk-pair-reviewer {
+  position: absolute;
+  /* Above everything the implementer's terminal draws, its image button included. */
+  z-index: 5;
+  top: 32px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--t-bg);
+  color: var(--t-fg);
+}
+.dk-pair-reviewer.is-hidden { visibility: hidden; pointer-events: none; }
+.dk-pane.shows-split .dk-terminal.is-active { right: 50%; }
+.dk-pane.shows-split .dk-pair-reviewer { top: 0; left: 50%; border-left: 1px solid var(--t-line); }
+.dk-pair-tabs { display: inline-flex; gap: 2px; margin-left: 8px; }
+.dk-pair-tabs > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--t-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.dk-pair-tabs > button:hover { background: var(--t-hover); color: var(--t-fg); }
+.dk-pair-tabs > button.is-current { background: var(--t-pressed); color: var(--t-fg); font-weight: 500; }
+.dk-pair-tab-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); animation: dk-pair-pulse 1.4s ease-in-out infinite; }
+@keyframes dk-pair-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .dk-pair-tab-dot { animation: none; } }
+.dk-pair-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--t-line);
+  color: var(--t-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.dk-pair-strip > span { overflow: hidden; text-overflow: ellipsis; }
+.dk-pair-strip .is-turn { color: var(--t-fg); font-weight: 600; }
+.dk-pair-strip > svg { flex: none; }
+.dk-pair-reviewer-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 8px 12px;
+}
+.dk-pair-reviewer-title { color: var(--t-fg); font-size: 12.5px; font-weight: 600; }
+.dk-pair-reviewer-head .dk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 7px;
+  border-color: var(--t-pressed);
+  background: var(--t-hover);
+  color: var(--t-muted);
+  font-size: 11px;
+}
+.dk-pair-reviewer-head .dk-icon-btn { color: var(--t-muted); }
+.dk-pair-reviewer-head .dk-icon-btn:hover { background: var(--t-hover); color: var(--t-fg); }
+.dk-pair-why {
+  margin: 0 10px 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--t-line);
+  border-radius: 8px;
+  background: var(--t-hover);
+  color: #c5ccd8;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.dk-pair-why p { margin: 0 0 8px; }
+.dk-pair-latest {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 30%;
+  margin: 0 10px 8px;
+  padding: 8px 10px;
+  overflow: auto;
+  border-left: 2px solid var(--t-muted);
+  background: var(--t-hover);
+  color: #c5ccd8;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.dk-pair-latest strong { color: var(--t-fg); font-weight: 600; }
+.dk-pair-latest.is-approve { border-left-color: var(--green); }
+.dk-pair-latest.is-request_changes { border-left-color: var(--amber); }
+.dk-pair-latest ul { margin: 2px 0 0; padding-left: 16px; }
+.dk-pair-latest code { color: var(--t-fg); }
+.dk-pair-reviewer-body { position: relative; flex: 1; min-height: 0; }
+.dk-pair-reviewer-body > * { position: absolute; inset: 0; }
+.dk-pair-reviewer-empty { margin: 0; padding: 16px 14px; color: var(--t-muted); font-size: 12.5px; line-height: 1.55; }
+/* It takes no input, so nothing to attach. */
+.dk-pair-reviewer .dk-xterm-attach { display: none; }
+
+/* ---- Waiting on your review, above its session --------------------------- */
+
+.dk-workbench:has(> .dk-review-strip) { grid-template-rows: 38px auto minmax(0, 1fr); }
+.dk-review-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 10px 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--blue) 35%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--blue) 6%, var(--window));
+}
+.dk-review-strip-text { display: flex; flex: 1; flex-direction: column; gap: 1px; min-width: 0; }
+.dk-review-strip-text strong { color: var(--text); font-size: 13px; font-weight: 600; }
+.dk-review-strip-text span { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- What the agent has changed, live --------------------------------------- */
+
+.dk-pane--changes.is-active { display: flex; flex-direction: column; overflow: hidden; }
+.dk-livechanges { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.dk-livechanges-bar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.dk-livechanges-bar .dk-branchdiff-total { padding: 0; border: 0; }
+.dk-livechanges-error { overflow: hidden; color: var(--danger); text-overflow: ellipsis; white-space: nowrap; }
+.dk-livechanges-panes { flex: 1; min-height: 0; border: 0; border-radius: 0; }
+.dk-livechanges-row { position: relative; }
+.dk-livechanges-actions { position: absolute; top: 4px; right: 4px; display: none; gap: 2px; padding-left: 8px; background: var(--hover); }
+.dk-livechanges-row:hover .dk-livechanges-actions,
+.dk-livechanges-row:focus-within .dk-livechanges-actions { display: flex; }
+.dk-livechanges-hunk { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.dk-livechanges-hunk .dk-link { flex: none; font-size: 11.5px; opacity: 0; }
+.dk-livechanges-hunk:hover .dk-link,
+.dk-livechanges-hunk .dk-link:focus-visible { opacity: 1; }
+.dk-pane--changes > .dk-changeset-note { padding: 16px; }
+
+.dk-inspector-changes { display: flex; flex-direction: column; gap: 1px; margin: 4px 0 6px; padding: 0; list-style: none; }
+.dk-inspector-change { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 3px 6px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--text); font-size: 12px; text-align: left; cursor: pointer; }
+.dk-inspector-change:hover { background: var(--hover); }
+.dk-inspector-change .dk-mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (hover: none) { .dk-livechanges-actions { display: flex; } .dk-livechanges-hunk .dk-link { opacity: 1; } }

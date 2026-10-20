@@ -1,0 +1,500 @@
+/* App-level overlays owned by App.tsx: the command palette, the New task and
+   New note dialogs, confirmations and the MCP manager. */
+
+/* ---- Command palette ------------------------------------------------------ */
+
+/* Zed's command palette: 608px, 80px from the top, no dimmed backdrop. */
+.dk-palette-backdrop { padding-top: 80px; background: transparent; }
+
+.dk-palette {
+  display: flex;
+  flex-direction: column;
+  width: min(608px, 100%);
+  max-height: min(436px, 70vh);
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--elevated);
+  box-shadow: var(--shadow);
+  animation: dk-rise 120ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) { .dk-palette { animation: none; } }
+
+.dk-palette-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--faint);
+}
+
+.dk-palette-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.dk-palette-input input::placeholder { color: var(--faint); }
+.dk-palette-results { padding: 4px; overflow-y: auto; }
+
+.dk-palette-row {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dk-palette-row:focus-visible { outline: none; }
+.dk-palette-row.is-selected { background: var(--selected); }
+.dk-palette-row svg { color: var(--faint); }
+.dk-palette-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dk-palette-row small { overflow: hidden; color: var(--faint); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- New task --------------------------------------------------------------- */
+
+.dk-new-task-row { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 12px; }
+.dk-new-task-row + .dk-hint,
+.dk-new-task-row + .dk-error { margin-top: -10px; }
+.dk-dialog-body > .dk-new-task-row:last-child { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dk-new-task-row .dk-dropdown { width: 100%; }
+
+/* ---- Notice toast ----------------------------------------------------------
+   Bottom-left, over the sidebar footer: pinned top-right it covered the page
+   header's actions, and an error stays until dismissed. */
+
+/* Bottom right, clear of the sidebar's foot (which holds the controls a
+   notice usually points to) and of the header and a sheet's own controls. */
+.dk-toast {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 90;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  width: min(400px, calc(100% - 28px));
+  padding: 12px 10px 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--window);
+  box-shadow: var(--shadow-popover);
+  animation: dk-rise 160ms ease;
+}
+
+.dk-toast > svg { margin-top: 2px; color: var(--blue); }
+.dk-toast.is-error > svg { color: var(--danger); }
+.dk-toast.is-warn > svg { color: var(--amber); }
+.dk-toast > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dk-toast strong { color: var(--text); font-size: 13px; font-weight: 600; }
+.dk-toast span { color: var(--muted); font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
+
+/* ---- Banners: something about the app itself, above the page ------------- */
+
+.dk-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px var(--page-pad) 0;
+  padding: 10px 12px 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.dk-banner p { flex: 1; margin: 0; }
+.dk-banner.is-warn { border-color: color-mix(in srgb, var(--amber) 35%, var(--line)); background: var(--amber-soft); }
+.dk-banner.is-warn > svg { color: var(--amber); }
+
+/* ---- A scheduled run, inside its Schedule row ------------------------------ */
+
+.dk-schedule-terminal {
+  height: 280px;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--t-bg);
+}
+
+.dk-schedule-history { display: flex; flex-direction: column; gap: 6px; }
+.dk-schedule-history p { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 12.5px; }
+
+/* ---- Image attachments, in the New task dialog ------------------------------ */
+
+.dk-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: -6px;
+  padding: 10px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+}
+
+.dk-attachments.is-dragging { border-color: var(--blue); background: var(--blue-soft); }
+.dk-attachment-bar { display: flex; align-items: center; gap: 10px; }
+.dk-attachment-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.dk-attachment-list li { position: relative; }
+.dk-attachment-list img { display: block; width: 72px; height: 72px; object-fit: cover; border: 1px solid var(--line); border-radius: var(--r-sm); }
+
+.dk-attachment-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--window);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.dk-attachment-spin { animation: dk-spin 0.9s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .dk-attachment-spin { animation: none; } }
+
+/* Task sidebar ------------------------------------------------------------
+   One list across every project, grouped by what each item needs from the
+   person, read like Mail: a title line and a quiet second line. Emphasis is
+   type, never colour fills — the only blue text is a "Needs you" status. */
+
+/* The sidebar's share of the title bar: traffic lights, then search and new work. */
+.dk-tsb-titlebar {
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 0 6px 0 78px;
+  border-bottom: 1px solid var(--line);
+  background: var(--chrome);
+  -webkit-app-region: drag;
+}
+
+.dk-tsb-titlebar .dk-icon-button { width: 24px; height: 24px; }
+
+.dk-tsb-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 32px;
+  padding: 0 6px 0 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dk-tsb-project { min-width: 0; }
+
+.dk-tsb-list { flex: 1; min-height: 0; overflow: auto; padding: 2px 0 8px; }
+
+.dk-tsb-empty { margin: 20px; color: var(--muted); font-size: 12px; line-height: 17px; }
+
+.dk-tsb-heading {
+  height: 26px;
+  margin: 6px 0 0;
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.dk-tsb-heading-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  padding: 0 8px 0 6px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.dk-tsb-heading-toggle:hover { background: var(--hover); color: var(--text); }
+.dk-tsb-heading-toggle:focus-visible { outline: 1px solid var(--blue); outline-offset: -1px; }
+.dk-tsb-heading-toggle .dk-tsb-count { margin-left: auto; }
+.dk-tsb-chevron { flex-shrink: 0; transform: rotate(90deg); transition: transform 120ms ease-out; }
+.dk-tsb-group.is-collapsed .dk-tsb-chevron { transform: none; }
+@media (prefers-reduced-motion: reduce) { .dk-tsb-chevron { transition: none; } }
+
+.dk-tsb-count { color: var(--faint); font-weight: 400; font-variant-numeric: tabular-nums; }
+
+/* Zed's project panel row: square, flush to the panel, and the selected row
+   marked by an accent edge on the right as well as its fill. */
+.dk-tsb-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  margin: 0;
+  padding: 4px 10px 5px 22px;
+  border: 0;
+  border-right: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: default;
+}
+
+.dk-tsb-row:hover { background: var(--hover); }
+.dk-tsb-row:focus-visible { outline: 1px solid var(--blue); outline-offset: -1px; }
+
+.dk-tsb-line { display: flex; align-items: baseline; gap: 8px; width: 100%; }
+
+.dk-tsb-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dk-tsb-row.is-needs-you .dk-tsb-title { font-weight: 600; }
+
+.dk-tsb-when { flex-shrink: 0; color: var(--faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.dk-tsb-meta {
+  width: 100%;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dk-tsb-row.is-needs-you .dk-tsb-status { color: var(--blue); }
+
+.dk-tsb-row.is-current { border-right-color: var(--blue); background: var(--selected); }
+
+
+
+
+
+
+.dk-tsb-plan {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dk-tsb-plan:hover { color: var(--text); }
+
+.dk-tsb-project .dk-dropdown-trigger {
+  height: 26px;
+  padding: 0 6px 0 8px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 500;
+}
+.dk-tsb-project .dk-dropdown-trigger:hover { background: var(--hover); }
+
+.dk-tsb-item { position: relative; }
+.dk-tsb-delete {
+  position: absolute;
+  top: 6px;
+  right: 14px;
+  width: 22px;
+  height: 22px;
+  opacity: 0;
+  background: var(--panel);
+  transition: opacity 120ms ease-out;
+}
+.dk-tsb-delete.is-on-selection { background: var(--selected); }
+.dk-tsb-item:hover .dk-tsb-when,
+.dk-tsb-item:focus-within .dk-tsb-when { visibility: hidden; }
+.dk-tsb-item:hover .dk-tsb-delete,
+.dk-tsb-delete:focus-visible { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .dk-tsb-delete { transition: none; } }
+.dk-toast .dk-toast-action { align-self: flex-start; margin-top: 8px; }
+.dk-tsb-open {
+  position: absolute;
+  top: 6px;
+  right: 40px;
+  width: 22px;
+  height: 22px;
+  opacity: 0;
+  background: var(--panel);
+  transition: opacity 120ms ease-out;
+}
+.dk-tsb-open.is-on-selection { background: var(--selected); }
+.dk-tsb-item:hover .dk-tsb-open,
+.dk-tsb-open:focus-visible { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .dk-tsb-open { transition: none; } }
+
+/* ---- Hermes, at the foot of the sidebar ------------------------------------- */
+
+.dk-tsb-hermes { min-width: 0; }
+.dk-tsb-seal {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+.dk-tsb-hermes-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dk-tsb-hermes.is-quiet { color: var(--muted); }
+.dk-tsb-hermes.is-working .dk-tsb-seal { color: var(--blue); }
+.dk-tsb-hermes.is-attention { color: var(--amber); }
+@media (prefers-reduced-motion: no-preference) {
+  .dk-tsb-hermes.is-working .dk-tsb-seal { animation: dk-hermes-breathe 1.8s ease-in-out infinite; }
+}
+@keyframes dk-hermes-breathe { 50% { opacity: 0.45; } }
+
+/* ---- Hermes panel ----------------------------------------------------------- */
+
+.dk-hermes { display: flex; flex-direction: column; gap: 24px; width: 100%; max-width: 720px; margin: 0 auto; padding: 24px; }
+.dk-hermes-status { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.dk-hermes-status > div { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
+.dk-hermes-status strong { color: var(--text); font-size: 14px; font-weight: 600; }
+.dk-hermes-status p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.dk-hermes-status .dk-seal.is-working { border-color: var(--blue); color: var(--blue) !important; }
+.dk-hermes-status .dk-seal.is-attention { border-color: var(--amber); color: var(--amber) !important; }
+.dk-hermes-project { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.dk-hermes-label { color: var(--text); font-size: 13px; font-weight: 500; }
+.dk-hermes-hint { color: var(--muted); font-size: 12px; }
+.dk-hermes-list { display: flex; flex-direction: column; gap: 2px; }
+.dk-hermes-list h3 { margin: 0 0 6px; color: var(--text); font-size: 13px; font-weight: 600; }
+.dk-hermes-list-head { display: flex; align-items: baseline; justify-content: space-between; }
+.dk-hermes-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.dk-hermes-row:hover { background: var(--hover); }
+.dk-hermes-row.is-static { cursor: default; }
+.dk-hermes-row.is-static:hover { background: transparent; }
+.dk-hermes-row-main { display: flex; flex: 1; flex-direction: column; gap: 1px; min-width: 0; }
+.dk-hermes-row-title { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.dk-hermes-row-meta { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.dk-hermes-row-meta.is-attention { color: var(--amber); }
+.dk-hermes-row-meta.is-approved { color: var(--green); }
+.dk-hermes-when { flex-shrink: 0; color: var(--faint); font-size: 12px; }
+.dk-hermes-record h3 { margin: 0 0 8px; color: var(--text); font-size: 13px; font-weight: 600; }
+.dk-hermes-figures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 0 8px; }
+.dk-hermes-figures > div { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.dk-hermes-figures dt { color: var(--muted); font-size: 12px; }
+.dk-hermes-figures dd { margin: 2px 0 0; color: var(--text); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.dk-hermes-figures dd.is-attention { color: var(--amber); }
+.dk-hermes-models { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 12.5px; }
+.dk-hermes-models .dk-mono { color: var(--text); margin-right: 6px; }
+@media (max-width: 720px) { .dk-hermes-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Braveli's session rows, inside the sidebar's group gutter. */
+.dk-tsb-group .dk-session-rows { padding: 0; }
+.dk-tsb-group .dk-session { width: 100%; padding: 0 10px 0 16px; border-right: 2px solid transparent; border-radius: 0; }
+.dk-tsb-group .dk-session.is-current { border-right-color: var(--blue); }
+
+.dk-session-swap-chip { gap: 6px; color: var(--muted); }
+.dk-session-swap { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+.dk-session-swap-lede { color: var(--muted); }
+.dk-session-starting { color: var(--muted); cursor: progress; }
+.dk-session-starting:hover { background: transparent; }
+
+.dk-notes { position: relative; }
+.dk-notes-badge {
+  position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 4px;
+  border-radius: 999px; background: var(--blue); color: var(--accent-ink, #fff);
+  font-size: 10px; font-weight: 700; line-height: 15px; text-align: center; pointer-events: none;
+}
+.dk-notes-panel {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; width: 360px; max-height: min(520px, 70vh);
+  display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.45); overflow: hidden;
+}
+.dk-notes-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.dk-notes-empty { margin: 0; padding: 18px 14px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.dk-notes-list { flex: 1; min-height: 0; margin: 0; padding: 4px 0; overflow: auto; list-style: none; }
+.dk-notes-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; }
+.dk-notes-item + .dk-notes-item { border-top: 1px solid var(--line); }
+.dk-notes-text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.dk-notes-title { overflow: hidden; color: var(--muted); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.dk-notes-item.is-unseen .dk-notes-title { color: var(--text); font-weight: 600; }
+.dk-notes-item.is-unseen .dk-notes-title::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--blue); vertical-align: 1px; }
+.dk-notes-item.is-error .dk-notes-title::before { background: var(--danger); }
+.dk-notes-item.is-warn .dk-notes-title::before { background: var(--amber); }
+.dk-notes-body { overflow: hidden; color: var(--faint); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.dk-notes-when { color: var(--faint); font-size: 11px; }
+.dk-notes-sound { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
+
+/* ---- Status bar ---------------------------------------------------------------
+   Zed's status bar: one line along the foot of the window. The agents' state
+   leads, because it is the thing worth a glance; places and app facts follow. */
+
+.dk-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 28px;
+  padding: 0 6px;
+  border-top: 1px solid var(--line);
+  background: var(--chrome);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.dk-statusbar-group { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.dk-statusbar-group:last-child { flex-shrink: 0; }
+.dk-statusbar-divider { width: 1px; height: 14px; margin: 0 4px; background: var(--line-strong); }
+
+.dk-status-item {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+button.dk-status-item { cursor: pointer; }
+button.dk-status-item:hover { background: var(--hover); color: var(--text); }
+.dk-status-item.is-current { background: var(--selected); color: var(--text); }
+.dk-status-item.is-working { color: var(--green); }
+.dk-status-item.is-needs { color: var(--amber); }
+.dk-status-item.is-quiet { color: var(--faint); }
+.dk-status-item svg { flex-shrink: 0; }
+.dk-status-count { color: var(--amber); font-weight: 600; font-variant-numeric: tabular-nums; }
+.dk-statusbar .dk-tsb-plan { flex: 0 1 auto; max-width: 220px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.dk-statusbar .dk-tsb-seal { width: 14px; height: 14px; font-size: 8px; }

@@ -1,0 +1,860 @@
+/* Desktop shell ------------------------------------------------------------
+   The window as a desktop app draws it: a sidebar one tone off the canvas
+   holding the window's own controls, a header with the project and its
+   sections, and the work below. Replaces the titlebar, the old sidebar, the
+   topbar and the agent strip; their rules were removed, not overridden. */
+
+.dk-shell {
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr) var(--inspector-w, 340px);
+  grid-template-rows: minmax(0, 1fr) auto;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--page);
+  color: var(--text);
+}
+
+.dk-shell.is-inspector-hidden { grid-template-columns: 272px minmax(0, 1fr) 0; }
+.dk-shell.is-inspector-hidden > .inspector { display: none; }
+
+.dk-shell > .dk-sidebar { grid-column: 1; grid-row: 1; }
+.dk-shell > .dk-workspace { grid-column: 2; grid-row: 1; }
+.dk-shell > .inspector { grid-column: 3; grid-row: 1; }
+.dk-shell > .dk-statusbar { grid-column: 1 / -1; grid-row: 2; }
+
+/* ==========================================================================
+   Building blocks. Every surface is assembled from these; a page adds layout,
+   never its own button, field or dialog. Spec: docs/design/desktop-system.md
+   ========================================================================== */
+
+:root {
+  --hover: #dfdfe0;
+  --pressed: #cacaca;
+  --chip: #e4e4e5;
+  --selected: #cacaca;
+  --scrim: rgba(36, 37, 41, 0.18);
+  --focus-ring: 0 0 0 1px var(--blue);
+  --page-pad: 16px;
+  --measure: 760px;
+  --row-h: 26px;
+  --bar-h: 32px;
+}
+
+:root[data-theme="dark"] {
+  --hover: #2d2f34;
+  --pressed: #3e4043;
+  --chip: #262930;
+  --selected: #3e4043;
+  --scrim: rgba(0, 0, 0, 0.55);
+}
+
+/* ---- Buttons ------------------------------------------------------------- */
+
+.dk-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.dk-btn:hover { background: var(--hover); }
+.dk-btn:active { background: var(--pressed); }
+.dk-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.dk-btn:disabled { opacity: 0.5; cursor: default; }
+.dk-btn svg { flex-shrink: 0; }
+
+/* Zed's tinted accent button: the one action on a view, without a slab of colour. */
+.dk-btn--primary { border-color: color-mix(in srgb, var(--blue) 45%, transparent); background: color-mix(in srgb, var(--blue) 16%, var(--page)); color: var(--blue); font-weight: 500; }
+.dk-btn--primary:hover { background: color-mix(in srgb, var(--blue) 24%, var(--page)); }
+.dk-btn--ghost { border-color: transparent; background: transparent; color: var(--muted); font-weight: 400; }
+.dk-btn--ghost:hover { background: var(--hover); color: var(--text); }
+.dk-btn--danger { color: var(--danger); }
+.dk-btn--danger.dk-btn--primary { border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 16%, var(--page)); color: var(--danger); }
+.dk-btn--attention { border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); background: transparent; color: var(--amber); }
+.dk-btn--sm { height: 24px; padding: 0 8px; font-size: 12px; }
+.dk-btn--lg { height: 32px; padding: 0 14px; font-size: 13px; }
+.dk-btn--block { width: 100%; }
+
+.dk-icon-btn,
+.dk-icon-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.dk-icon-btn:hover,
+.dk-icon-button:hover,
+.dk-icon-btn.is-current,
+.dk-icon-button.is-current { background: var(--hover); color: var(--text); }
+.dk-icon-btn.is-current,
+.dk-icon-button.is-current { background: var(--selected); }
+.dk-icon-btn:focus-visible,
+.dk-icon-button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.dk-icon-btn--sm { width: 22px; height: 22px; }
+
+/* A text link that acts, inside prose or a row. */
+.dk-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font: inherit;
+  cursor: pointer;
+}
+
+.dk-link:hover { text-decoration: underline; }
+
+/* ---- Fields -------------------------------------------------------------- */
+
+.dk-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.dk-label { color: var(--muted); font-size: 12px; font-weight: 500; }
+.dk-hint { color: var(--faint); font-size: 12px; line-height: 1.45; }
+.dk-error { color: var(--danger); font-size: 12px; }
+
+.dk-input,
+.dk-textarea,
+.dk-select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.dk-input,
+.dk-select { height: 28px; padding: 0 8px; }
+.dk-textarea { padding: 6px 8px; line-height: 1.5; resize: vertical; }
+.dk-select { padding-right: 30px; }
+.dk-input::placeholder,
+.dk-textarea::placeholder { color: var(--faint); opacity: 1; }
+.dk-input:focus,
+.dk-textarea:focus,
+.dk-select:focus { outline: none; border-color: var(--blue); }
+
+.dk-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--faint);
+}
+
+.dk-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; }
+.dk-search input::placeholder { color: var(--faint); }
+.dk-search:focus-within { border-color: var(--blue); }
+
+.dk-check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.dk-check input { margin: 0; accent-color: var(--blue); }
+
+/* ---- Surfaces ------------------------------------------------------------ */
+
+.dk-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.dk-card--pad { padding: 10px 12px; }
+
+.dk-list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.dk-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+  padding: 5px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.dk-list-row:first-child { border-top: 0; }
+button.dk-list-row { width: 100%; border-right: 0; border-bottom: 0; border-left: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+button.dk-list-row:hover { background: var(--hover); }
+
+.dk-row-main { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.dk-row-title { overflow: hidden; color: var(--text); font-size: 13px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.dk-row-sub { overflow: hidden; color: var(--faint); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- Pages --------------------------------------------------------------- */
+
+.dk-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding: 12px var(--page-pad) 20px;
+  overflow-y: auto;
+}
+
+/* Cards and lists use the whole width; only running prose is held to a
+   readable measure (.dk-prose). */
+.dk-page--narrow > * { width: 100%; }
+
+.dk-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dk-spacer { flex: 1; }
+
+.dk-section { display: flex; flex-direction: column; gap: 10px; }
+.dk-section-head { display: flex; align-items: flex-end; gap: 12px; padding: 0 2px; }
+.dk-section-head > div { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.dk-section-title { margin: 0; color: var(--text); font-size: 13px; font-weight: 600; }
+.dk-section-desc { margin: 0; color: var(--muted); font-size: 12.5px; }
+
+.dk-title { margin: 0; color: var(--text); font-size: 18px; font-weight: 600; line-height: 1.3; }
+.dk-prose { max-width: var(--measure); color: var(--text); font-size: 14px; line-height: 1.6; }
+.dk-muted { color: var(--muted); }
+.dk-faint { color: var(--faint); }
+.dk-mono { font-family: var(--font-mono); font-size: 12px; }
+
+.dk-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 16px;
+  color: var(--faint);
+  font-size: 13px;
+  text-align: center;
+}
+
+.dk-empty strong { color: var(--text); font-size: 14px; font-weight: 600; }
+
+/* ---- Chips, badges, status ------------------------------------------------ */
+
+.dk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* A popup button, the way a Mac toolbar has them: words until pointed at. */
+.dk-chip:hover { background: var(--hover); color: var(--text); }
+.dk-chip.is-on { background: var(--selected); color: var(--text); }
+
+/* Status is a coloured word, not a capsule. */
+.dk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dk-badge--green { color: var(--green); }
+.dk-badge--amber { color: var(--amber); }
+.dk-badge--red { color: var(--danger); }
+.dk-badge--accent { color: var(--blue); }
+
+.dk-status { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.dk-status.is-working { color: var(--green); }
+.dk-status.is-needs { color: var(--amber); }
+.dk-status.is-failed { color: var(--danger); }
+
+.dk-kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 5px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--chip);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+}
+
+/* ---- Segmented control and in-page tabs ----------------------------------- */
+
+.dk-segmented { display: inline-flex; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); }
+
+.dk-segmented > button {
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.dk-segmented > button + button { border-left: 1px solid var(--line); }
+.dk-segmented > button:hover { background: var(--hover); color: var(--text); }
+
+.dk-segmented > button.is-current { background: var(--selected); color: var(--text); }
+
+.dk-subtabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); }
+
+.dk-subtabs > button {
+  height: 32px;
+  margin-bottom: -1px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-top: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.dk-subtabs > button:hover { color: var(--text); }
+
+/* The current tab opens into the page below it, as Zed's active tab does. */
+.dk-subtabs > button.is-current { border-color: var(--line); border-bottom-color: var(--page); background: var(--page); color: var(--text); }
+
+/* ---- Dialogs, sheets, popovers ------------------------------------------- */
+
+.dk-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 80px 24px 24px;
+  background: var(--scrim);
+  animation: dk-fade 140ms ease;
+}
+
+/* The window's drag strips run along the top of the sidebar and header, and
+   Electron hands every click inside one to the window, whatever is drawn over
+   it. Anything that floats above them has to opt out or its controls die. */
+.dk-backdrop,
+.dk-popover,
+.dk-dropdown-menu { -webkit-app-region: no-drag; }
+
+.dk-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(var(--dialog-width, 560px), 100%);
+  max-height: 82vh;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--elevated);
+  box-shadow: var(--shadow);
+  animation: dk-rise 160ms ease;
+}
+
+.dk-dialog--wide { --dialog-width: 760px; }
+.dk-dialog--narrow { --dialog-width: 440px; }
+
+.dk-dialog-header { display: flex; align-items: flex-start; gap: 8px; padding: 12px 8px 4px 16px; }
+.dk-dialog-header > div { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.dk-dialog-title { margin: 0; color: var(--text); font-size: 15px; font-weight: 600; line-height: 1.35; }
+.dk-dialog-desc { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.dk-dialog-body { display: flex; flex-direction: column; gap: 14px; padding: 10px 16px 16px; overflow-y: auto; }
+
+.dk-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px 12px 8px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.dk-dialog-footer > .dk-hint:first-child { flex: 1; }
+
+.dk-sheet-backdrop { align-items: stretch; justify-content: flex-end; padding: 12px; }
+.dk-sheet { width: min(540px, 100%); max-height: none; animation: dk-slide 180ms ease; }
+
+.dk-popover {
+  min-width: 180px;
+  padding: 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--elevated);
+  box-shadow: var(--shadow-popover);
+}
+
+/* Menus open with a short drop rather than appearing; the chevron that opened
+   one turns with it. Entrance only, so closing stays instant. */
+.dk-popover,
+.dk-dropdown-menu { transform-origin: top center; animation: dk-menu-in 150ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.dk-inspector-more > .dk-popover { transform-origin: bottom center; animation-name: dk-menu-in-up; }
+@keyframes dk-menu-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+@keyframes dk-menu-in-up { from { opacity: 0; transform: translateY(4px) scale(0.98); } }
+
+.dk-menu > summary .lucide-chevron-down { transition: transform 150ms ease; }
+.dk-menu[open] > summary .lucide-chevron-down { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dk-popover, .dk-dropdown-menu { animation: none; }
+  .dk-menu > summary .lucide-chevron-down, .dk-dropdown-caret { transition: none; }
+}
+
+.dk-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dk-menu-item:hover,
+.dk-menu-item.is-active { background: var(--hover); }
+
+@keyframes dk-fade { from { opacity: 0; } }
+@keyframes dk-rise { from { opacity: 0; transform: translateY(6px) scale(0.99); } }
+@keyframes dk-slide { from { opacity: 0; transform: translateX(16px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .dk-backdrop, .dk-dialog, .dk-sheet, .dk-palette { animation: none; }
+}
+
+/* ---- Sidebar -------------------------------------------------------------- */
+
+.dk-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.dk-sidebar-drag {
+  flex: 0 0 52px;
+  -webkit-app-region: drag;
+}
+
+.dk-sidebar button,
+.dk-header button {
+  -webkit-app-region: no-drag;
+}
+
+.dk-sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 10px 14px;
+}
+
+.dk-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dk-row:hover { background: var(--hover); }
+.dk-row.is-current { background: var(--selected); }
+.dk-row:focus-visible { outline: 1px solid var(--blue); outline-offset: -1px; box-shadow: none; }
+.dk-row-strong { font-weight: 500; }
+.dk-row-quiet { color: var(--muted); margin-top: 6px; }
+.dk-row-icon { flex-shrink: 0; color: var(--faint); }
+
+.dk-row-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dk-row kbd {
+  border: 0;
+  background: none;
+  color: var(--faint);
+  font: inherit;
+  font-size: 11.5px;
+}
+
+.dk-sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 12px 4px 20px;
+  color: var(--faint);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.dk-project-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 10px 12px;
+}
+
+.dk-sidebar-empty {
+  margin: 4px 10px;
+  color: var(--faint);
+  font-size: 12.5px;
+}
+
+.dk-project { display: flex; flex-direction: column; }
+.dk-project-line { position: relative; display: flex; align-items: center; }
+.dk-project.is-open > .dk-project-line .dk-row { font-weight: 500; }
+
+/* Removing a project is rare and destructive: there, but only when asked for. */
+.dk-project-remove {
+  position: absolute;
+  right: 4px;
+  opacity: 0;
+}
+
+.dk-project-line:hover .dk-project-remove,
+.dk-project-remove:focus-visible { opacity: 1; }
+.dk-project-line:hover .dk-count { visibility: hidden; }
+
+.dk-session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 8px 16px;
+}
+
+.dk-session-rows { display: flex; flex-direction: column; gap: 1px; margin: 0; padding: 0; list-style: none; }
+.dk-session-item { position: relative; }
+.dk-session-item.is-dragging { opacity: 0.45; }
+.dk-session-item.is-drop-before { box-shadow: 0 -2px 0 var(--blue); }
+.dk-session-item.is-drop-after { box-shadow: 0 2px 0 var(--blue); }
+
+.dk-session { gap: 8px; height: 26px; padding: 0 8px; font-size: 13px; }
+.dk-show-all { color: var(--muted); padding-left: 30px; }
+
+.dk-session-meta { flex-shrink: 0; color: var(--faint); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.dk-session-meta.is-needs { color: var(--amber); font-weight: 500; }
+.dk-session-meta.is-failed { color: var(--danger); }
+
+/* Delete takes the time's place on hover rather than sitting on the name. */
+.dk-session-delete { position: absolute; top: 50%; right: 3px; opacity: 0; transform: translateY(-50%); }
+.dk-session-item:hover .dk-session-delete,
+.dk-session-group-head:hover .dk-session-delete,
+.dk-session-delete:focus-visible { opacity: 1; }
+/* The time gives way to the delete button, and the name stops short of it. */
+.dk-session-item:is(:hover, :focus-within):has(.dk-session-delete) .dk-session-meta { display: none; }
+.dk-session-item:is(:hover, :focus-within):has(.dk-session-delete) > .dk-session { padding-right: 38px; }
+
+.dk-session-group { display: flex; flex-direction: column; gap: 1px; margin-top: 6px; }
+.dk-session-group-head { position: relative; }
+.dk-session-group-title { color: var(--faint); font-size: 11.5px; font-weight: 500; }
+.dk-session-group-title:hover { color: var(--text); }
+
+.dk-peek {
+  position: fixed;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 340px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--window);
+  box-shadow: var(--shadow-popover);
+  pointer-events: none;
+  transform: translateY(-50%);
+  animation: dk-peek-in 120ms ease-out;
+}
+.dk-peek-title { color: var(--text); font-size: 12.5px; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.dk-peek-meta { color: var(--faint); font-size: 11.5px; }
+.dk-peek-meta:empty { display: none; }
+@keyframes dk-peek-in { from { opacity: 0; transform: translate(-3px, -50%); } }
+@media (prefers-reduced-motion: reduce) { .dk-peek { animation: none; } }
+
+/* A session's state as a shape as well as a colour: spinning while it works,
+   ringed when it needs you, ticked when done, crossed when it failed. */
+.dk-glyph { position: relative; display: inline-grid; flex-shrink: 0; place-items: center; width: 14px; height: 14px; }
+.dk-glyph::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); }
+.dk-glyph.is-idle::before { background: transparent; box-shadow: inset 0 0 0 1.5px var(--faint); }
+.dk-glyph.is-working::before {
+  width: 10px;
+  height: 10px;
+  border: 1.6px solid var(--green-soft);
+  border-top-color: var(--green);
+  background: transparent;
+  animation: dk-glyph-spin 900ms linear infinite;
+}
+.dk-glyph.is-needs::before { background: var(--amber); box-shadow: 0 0 0 3px var(--amber-soft); }
+.dk-glyph.is-done::before {
+  width: 8px;
+  height: 4px;
+  border-bottom: 1.6px solid var(--green);
+  border-left: 1.6px solid var(--green);
+  border-radius: 0;
+  background: transparent;
+  transform: translate(0.5px, -1px) rotate(-45deg);
+}
+.dk-glyph.is-failed::before,
+.dk-glyph.is-failed::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 1.6px;
+  border-radius: 1px;
+  background: var(--danger);
+  transform: rotate(45deg);
+}
+.dk-glyph.is-failed::after { transform: rotate(-45deg); }
+@keyframes dk-glyph-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .dk-glyph.is-working::before { animation: none; } }
+
+/* The word beside it already says the state; the dot only added noise. */
+.dk-dot { display: none; }
+
+.dk-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dk-sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px 6px;
+  border-top: 1px solid var(--line);
+}
+
+.dk-agents {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dk-agents:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.dk-agent { display: inline-flex; align-items: center; gap: 6px; }
+.dk-agent.is-needs { color: var(--amber); }
+
+
+
+/* ---- Header --------------------------------------------------------------- */
+
+/* Zed's title bar: one 34px line, title then its context, the actions at the end. */
+.dk-header {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--chrome);
+}
+
+.dk-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 6px 0 12px;
+  -webkit-app-region: drag;
+}
+
+.dk-header-titles { display: flex; align-items: baseline; gap: 8px; min-width: 0; overflow: hidden; }
+
+.dk-header-bar h1 {
+  flex-shrink: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dk-header-subtitle {
+  flex-shrink: 2;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dk-more-menu .dk-dropdown-trigger { width: 24px; height: 24px; justify-content: center; padding: 0; border-color: transparent; background: transparent; font-size: 16px; letter-spacing: 0; }
+.dk-more-menu .dk-dropdown-trigger:hover { background: var(--pressed); }
+.dk-more-menu .dk-dropdown-caret { display: none; }
+
+.dk-header-spacer { flex: 1; }
+.dk-header-actions { display: flex; align-items: center; gap: 4px; }
+.dk-header-actions .dk-btn { height: 24px; padding: 0 8px; font-size: 12px; }
+.dk-header-actions .dk-icon-button,
+.dk-header-actions .dk-icon-btn { width: 24px; height: 24px; }
+
+
+.dk-tab-count { color: var(--faint); font-size: 12px; font-weight: 400; }
+.dk-tab-count.is-attention { color: var(--amber); }
+
+/* ---- Dropdown ------------------------------------------------------------- */
+
+.dk-dropdown { position: relative; display: inline-flex; min-width: 0; }
+
+.dk-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px 0 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dk-dropdown-trigger:hover { background: color-mix(in srgb, var(--text) 3%, var(--surface)); }
+.dk-dropdown-trigger:focus-visible,
+.dk-dropdown-trigger.is-open { outline: none; border-color: var(--blue); box-shadow: var(--focus-ring); }
+.dk-dropdown-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dk-dropdown-value.is-placeholder { color: var(--faint); }
+.dk-dropdown-caret { flex-shrink: 0; color: var(--faint); transition: transform 150ms ease; }
+.dk-dropdown-trigger.is-open .dk-dropdown-caret { transform: rotate(180deg); }
+
+/* Compact form, for a dropdown sitting in a toolbar or a composer. */
+.dk-dropdown--chip .dk-dropdown-trigger { height: 28px; padding: 0 8px 0 10px; border-color: var(--line); border-radius: 14px; background: transparent; color: var(--muted); font-size: 12px; }
+.dk-dropdown--chip .dk-dropdown-trigger:hover { background: var(--hover); color: var(--text); }
+.dk-dropdown--quiet .dk-dropdown-trigger { border-color: transparent; background: transparent; }
+
+.dk-dropdown-menu {
+  position: fixed;
+  z-index: 200;
+  max-width: 420px;
+  max-height: 320px;
+  padding: 4px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--window);
+  box-shadow: var(--shadow-popover);
+}
+
+.dk-dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dk-dropdown-option.is-active { background: var(--hover); }
+.dk-dropdown-option:disabled { color: var(--faint); cursor: default; }
+.dk-dropdown-option-copy { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.dk-dropdown-option-copy small { color: var(--faint); font-size: 11.5px; line-height: 1.35; }
+.dk-dropdown-check { flex-shrink: 0; color: var(--blue); }
+.dk-dropdown-swatch { display: inline-flex; gap: 2px; }
+.dk-dropdown-swatch i { width: 10px; height: 10px; border-radius: 3px; }
+
+/* Read aloud, not drawn. */
+.dk-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* A spinning icon, for work in progress. */
+.dk-spin { animation: dk-spin 0.9s linear infinite; }
+@keyframes dk-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .dk-spin { animation: none; } }

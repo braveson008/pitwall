@@ -1,0 +1,4 @@
+# One line ending in every checkout, Windows included: tests compare file
+# contents byte for byte and parse SQL migrations. Binaries are detected by
+# content (text=auto) and left alone.
+* text=auto eol=lf

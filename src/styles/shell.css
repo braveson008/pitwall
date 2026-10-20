@@ -1,0 +1,5 @@
+/* ── App shell ────────────────────────────────────────────────────────────
+   Rules the shell pass added rather than edited. Selection is the caret the
+   board and the pickers already use, drawn in a margin so nothing reflows. */
+
+/* 24px to hit, drawn at the size of the word: the margin gives the padding back. */

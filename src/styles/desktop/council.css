@@ -1,0 +1,781 @@
+/* Council: thread, members, summary, setup — built from the blocks in ../desktop.css. Spec: docs/design/desktop-system.md */
+
+.dk-council {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  background: var(--page);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+/* ---- Role marks: a letter tile per seat, tinted by its place in the roster -- */
+
+.dk-council-mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--chip);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.dk-council-mark.is-tint-0 { background: var(--blue-soft); color: var(--blue); }
+.dk-council-mark.is-tint-1 { background: var(--green-soft); color: var(--green); }
+.dk-council-mark.is-tint-2 { background: var(--amber-soft); color: var(--amber); }
+.dk-council-mark.is-tint-3 { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+
+.dk-council-pulse { animation: dk-council-pulse 1.6s ease-in-out infinite; }
+
+@keyframes dk-council-pulse {
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--green) 8%, transparent); }
+}
+
+.dk-dot.is-idle { background: var(--line-strong); }
+
+/* ---- Header bar ------------------------------------------------------------ */
+
+.dk-council-bar {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px 16px;
+  min-height: 42px;
+  padding: 4px 6px 4px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dk-council-heading {
+  display: flex;
+  flex: 1 1 0;
+  overflow: hidden;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dk-council-title {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dk-council-facts {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.dk-council-facts > span + span::before { content: "·"; margin: 0 6px; }
+.dk-council-testing { color: var(--green); }
+
+.dk-council-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.dk-council-turn { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.dk-council-unread { color: var(--faint); font-variant-numeric: tabular-nums; }
+.dk-council-view-toggle > button.is-needs,
+.dk-council-view-toggle > button.is-needs .dk-council-unread { color: var(--amber); }
+.dk-council .dk-btn.is-current { background: var(--pressed); color: var(--text); }
+
+/* Terminal type is set from the bar while the panes are on screen. */
+.dk-council-typography { position: relative; display: inline-flex; }
+
+.dk-council-typography .terminal-typography-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.dk-council-typography .terminal-typography-trigger:hover { background: var(--hover); color: var(--text); }
+.dk-council-typography .terminal-typography-trigger output { color: inherit; }
+
+.dk-council-more { position: relative; }
+.dk-council-more > summary { list-style: none; }
+.dk-council-more > summary::-webkit-details-marker { display: none; }
+.dk-council-more[open] > summary { background: var(--pressed); color: var(--text); }
+
+.dk-council-more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+}
+
+.dk-council-more-menu .dk-council-danger {
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 6px 6px;
+  color: var(--danger);
+}
+
+/* ---- Conductor, live settings, the latest hop, the status line ------------- */
+
+.dk-council-conductor {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 8px 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.dk-council-conductor-head { display: flex; align-items: center; gap: 12px; }
+.dk-council-conductor-head strong { flex-shrink: 0; font-size: 13px; font-weight: 600; }
+.dk-council-conductor-head span { flex: 1; min-width: 0; color: var(--muted); font-size: 12.5px; }
+
+.dk-council-directives {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dk-council-directives li {
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  background: var(--amber-soft);
+  color: var(--text);
+  font-size: 12.5px;
+}
+
+.dk-council-conductor-log {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: min(220px, 20vh);
+  overflow-y: auto;
+}
+
+.dk-council-note {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.dk-council-note > span { color: var(--faint); }
+.dk-council-note.is-conductor > span { color: var(--blue); }
+.dk-council-note > p { margin: 0; min-width: 0; color: var(--text); overflow-wrap: anywhere; }
+.dk-council-note.is-pending { display: block; color: var(--muted); }
+
+.dk-council-config {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 12.5px;
+}
+
+/* Who has the turn and why — inline at the start of the status line. */
+.dk-council-route {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--faint);
+  font-size: 12.5px;
+}
+
+.dk-council-route .dk-council-route-reason { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.dk-council-route-hop { display: inline-flex; flex-shrink: 0; align-items: center; gap: 5px; color: var(--muted); }
+.dk-council-route-hop strong { color: var(--text); font-weight: 500; }
+
+.dk-council-route-reason {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dk-council-status {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  max-height: 30vh;
+  padding: 6px 8px 6px 12px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+}
+
+.dk-council-status-word { flex-shrink: 0; color: var(--muted); font-weight: 600; }
+.dk-council-status-word::first-letter { text-transform: uppercase; }
+.dk-council-status.is-warn .dk-council-status-word,
+.dk-council-status.is-attention .dk-council-status-word { color: var(--amber); }
+.dk-council-status.is-done .dk-council-status-word { color: var(--green); }
+
+.dk-council-status-text {
+  display: -webkit-box;
+  flex: 1 1 240px;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.dk-council-status-tests { flex-shrink: 0; white-space: nowrap; }
+.dk-council-status-tests.is-passed { color: var(--green); }
+.dk-council-status-tests.is-failed { color: var(--danger); }
+.dk-council-status-actions,
+.dk-council-extend { display: flex; flex-shrink: 0; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+/* ---- The floor: the thread lies over the panes, so neither refits the other -- */
+
+.dk-council-floor {
+  position: relative;
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+.dk-council-floor > :is(.dk-council-grid, .dk-council-summary, .dk-council-thread-wrap) { grid-row: 1; grid-column: 1; }
+.dk-council-floor > .dk-council-thread-wrap { z-index: 5; background: var(--page); }
+.dk-council-floor > .dk-council-composer { grid-row: 2; grid-column: 1; }
+
+/* ---- Thread ----------------------------------------------------------------- */
+
+.dk-council-thread-wrap {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.dk-council-members {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 2px;
+  width: 208px;
+  padding: 12px 8px;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+}
+
+.dk-council-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dk-council-member:hover { background: var(--hover); }
+.dk-council-member.is-turn { background: var(--pressed); }
+.dk-council-member-text { display: flex; flex-direction: column; min-width: 0; }
+.dk-council-member-role { overflow: hidden; font-size: 13px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.dk-council-member-meta { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.dk-council-member.is-needs .dk-council-member-meta { color: var(--amber); }
+
+@media (max-width: 1100px) { .dk-council-members { display: none; } }
+
+.dk-council-thread {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.dk-council-turns {
+  display: flex;
+  flex-shrink: 0;
+  gap: 3px;
+  width: auto;
+  margin: 10px 12px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dk-council-turns li { flex: 1; max-width: 48px; height: 4px; border-radius: 2px; background: var(--faint); opacity: 0.55; }
+.dk-council-turns li.is-current { background: var(--green); opacity: 1; }
+
+.dk-council-thread-log {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  padding: 16px 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  outline: none;
+  mask-image: linear-gradient(to bottom, transparent, var(--text) 14px);
+}
+
+.dk-council-thread-log > * { box-sizing: border-box; }
+.dk-council-thread-log:focus-visible { box-shadow: inset var(--focus-ring); }
+.dk-council-thread-empty { margin: 0; color: var(--faint); }
+
+/* A message: the mark, then role, then agent · turn, then the prose. The card
+   itself belongs to ThreadMessage; here it is laid flat. */
+.dk-council-msg { position: relative; }
+.dk-council-msg > .dk-council-mark { position: absolute; top: 0; left: 0; }
+
+.dk-council-msg-meta { display: inline-flex; align-items: center; gap: 4px; color: var(--faint); font-size: 12px; }
+
+/* The fold reads as the collapsed tool row in a session. */
+
+.dk-council-msg .thread-summary,
+.dk-council-msg .thread-preview-chip { margin-top: 10px; }
+
+/* The user and the council's own ruling are not one more member talking. */
+
+/* The conductor's routing: one quiet, centred line between the turns. */
+.dk-council-routed {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.dk-council-routed-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.dk-council-routed-text::before,
+.dk-council-routed-text::after { content: ""; flex: 1 0 24px; height: 1px; background: var(--line); }
+.dk-council-routed-text::before { flex: 0 0 24px; }
+.dk-council-routed-source { color: var(--muted); }
+
+.dk-council-routed-directive {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 34px;
+  color: var(--amber);
+}
+
+/* The member at work right now. */
+.dk-council-live {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.dk-council-live.is-needs { border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); }
+.dk-council-live-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.dk-council-live-who { min-width: 0; overflow: hidden; color: var(--faint); text-overflow: ellipsis; white-space: nowrap; }
+.dk-council-live-who strong { color: var(--text); font-weight: 500; }
+.dk-council-live-row > .dk-dot { width: 7px; height: 7px; margin-left: 4px; }
+.dk-council-live-state { flex-shrink: 0; color: var(--muted); font-size: 12.5px; }
+.dk-council-live.is-needs .dk-council-live-state { color: var(--amber); }
+
+.dk-council-live-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0 0 0 32px;
+  list-style: none;
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.dk-council-live-steps li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dk-council-live-steps li.is-current { color: var(--muted); }
+.dk-council-live-quiet { margin: 0; padding-left: 32px; color: var(--faint); font-size: 12.5px; }
+
+.dk-council-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.dk-council-notice > svg { flex-shrink: 0; margin-top: 1px; }
+.dk-council-notice.is-done > svg { color: var(--green); }
+.dk-council-notice:is(.is-attention, .is-warn) > svg { color: var(--amber); }
+.dk-council-notice-text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.dk-council-notice-text strong { color: var(--text); font-weight: 500; }
+.dk-council-notice-meta { flex-shrink: 0; color: var(--faint); font-size: 12px; }
+
+.dk-council-new-activity {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-popover);
+}
+
+/* ---- Agents: every member's terminal ----------------------------------------- */
+
+.dk-council-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+  padding: 8px;
+  overflow: auto;
+  isolation: isolate;
+}
+
+.dk-council-grid.is-hidden { display: none; }
+
+/* Three or more members: the one holding the turn reads at full height, the
+   rest stay in view beside it. */
+.dk-council-grid.is-spotlight {
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  grid-template-rows: repeat(var(--council-side-rows, 2), minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.dk-council-grid.is-spotlight > .dk-council-pane { grid-column: 2; }
+.dk-council-grid.is-spotlight > .dk-council-pane.is-spotlit { grid-column: 1; grid-row: 1 / -1; }
+.dk-council-grid.is-focused > .dk-council-pane { display: none; }
+.dk-council-grid.is-focused > .dk-council-pane.is-focus { display: flex; grid-column: 1 / -1; grid-row: 1 / -1; }
+
+@media (max-width: 1100px) {
+  .dk-council-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.dk-council-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.dk-council-pane.is-turn { border-color: color-mix(in srgb, var(--green) 45%, var(--line)); }
+
+.dk-council-pane-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 2px 0 8px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.dk-council-pane-who { display: inline-flex; flex-shrink: 0; align-items: center; gap: 8px; max-width: 60%; overflow: hidden; }
+.dk-council-pane-who strong { overflow: hidden; font-weight: 500; text-overflow: ellipsis; }
+.dk-council-pane-who > span:last-child { color: var(--faint); font-size: 12px; }
+.dk-council-pane-state { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dk-council-pane-head .dk-council-mark { width: 20px; height: 20px; font-size: 10.5px; }
+
+/* The actions take the agent's name and the state's room while they show. */
+.dk-council-pane-head:is(:hover, :focus-within) .dk-council-pane-who > span:last-child { display: none; }
+
+.dk-council-pane-actions { display: flex; flex-shrink: 0; align-items: center; gap: 2px; }
+
+/* Swap, stop and delete are there when the pane is pointed at or tabbed into;
+   Focus stays, and is where F6 lands from the terminal. */
+.dk-council-pane-actions > :not(.dk-council-pane-focus, [aria-pressed="true"]) { display: none; }
+.dk-council-pane-head:is(:hover, :focus-within) .dk-council-pane-actions > * { display: inline-flex; }
+
+.dk-council-pane-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--t-bg);
+}
+
+.dk-council-pane-note {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 12.5px;
+}
+
+/* Above the terminal's own furniture: the one control that clears a gated
+   pane has to be reachable across its whole width. */
+.dk-council-gate {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--amber) 35%, var(--line));
+  background: color-mix(in srgb, var(--amber) 12%, var(--surface));
+  color: var(--amber);
+  font-size: 12.5px;
+}
+
+.dk-council-gate > span { flex: 1 1 24ch; min-width: 0; }
+
+.dk-council-swap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 12.5px;
+}
+
+.dk-council-swap > .dk-hint { flex-basis: 100%; margin: 0; }
+
+/* ---- Composer ----------------------------------------------------------------- */
+
+/* Beside the panes it is one line under them, so they keep their height. */
+.dk-council-composer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 8px 6px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--page);
+}
+
+.dk-council-composer-input {
+  flex: 1;
+  order: 2;
+  min-width: 0;
+  height: 32px;
+  padding: 0 4px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+}
+
+.dk-council-composer-input::placeholder { color: var(--faint); }
+.dk-council-composer-row { display: contents; }
+.dk-council-composer-row > .dk-segmented { order: 1; flex-shrink: 0; }
+.dk-council-composer-row > .dk-spacer { display: none; order: 2; }
+.dk-council-composer-row > .dk-btn { order: 3; }
+
+/* Under the thread it is the floating card the session composer is. */
+.dk-council-floor.is-thread > .dk-council-composer {
+  position: relative;
+  z-index: 6;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: auto;
+  max-width: none;
+  margin: 4px 12px 12px;
+  padding: 12px 12px 10px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.dk-council-floor.is-thread > .dk-council-composer:focus-within { border-color: var(--blue); }
+.dk-council-floor.is-thread .dk-council-composer-input { order: 0; height: 40px; padding: 0; font-size: 14px; }
+.dk-council-floor.is-thread .dk-council-composer-row { display: flex; align-items: center; gap: 6px; }
+.dk-council-floor.is-thread .dk-council-composer-row > .dk-spacer { display: block; }
+
+/* ---- Summary ----------------------------------------------------------------- */
+
+.dk-council-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 0;
+  padding: 16px 16px 24px;
+  overflow-y: auto;
+}
+
+.dk-council-summary p { margin: 0; }
+.dk-council-summary-objective,
+.dk-council-summary-text { max-width: var(--measure); }
+.dk-council-summary-objective { margin: 0; color: var(--text); font-size: 16px; font-weight: 500; line-height: 1.45; }
+.dk-council-summary-text { margin: 0; color: var(--text); font-size: 13px; line-height: 1.55; }
+
+.dk-council-summary-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.dk-council-summary-card { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dk-council-summary-card > p { margin: 0; }
+
+.dk-council-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.dk-council-summary-details {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.dk-council-summary-details > summary { padding: 9px 12px; color: var(--muted); cursor: pointer; }
+.dk-council-summary-details > :not(summary) { margin: 0 12px 12px; }
+.dk-council-summary-details pre { max-height: 280px; margin-top: 0; overflow: auto; white-space: pre-wrap; }
+.dk-council-summary-warning { margin: 0; color: var(--amber); font-size: 12.5px; }
+
+/* ---- Context receipts (also listed on the Memory page) ---------------------- */
+
+.dk-receipts { display: flex; flex-direction: column; gap: 10px; }
+.dk-receipts > .dk-hint { margin: 0; }
+.dk-receipt + .dk-receipt { border-top: 1px solid var(--line); }
+.dk-receipt > summary.dk-list-row { border-top: 0; list-style: none; cursor: pointer; }
+.dk-receipt > summary::-webkit-details-marker { display: none; }
+.dk-receipt > summary:hover { background: var(--hover); }
+
+.dk-receipt-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 16px 14px 44px;
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.dk-receipt-body p { margin: 0; }
+.dk-receipt-warning { color: var(--amber); }
+.dk-receipt-list { display: flex; flex-direction: column; gap: 4px; margin: 0; padding-left: 18px; }
+.dk-receipt-source { display: block; color: var(--faint); overflow-wrap: anywhere; }
+
+.dk-receipt-meta {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.dk-receipt-meta dt { color: var(--faint); }
+.dk-receipt-meta dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+
+/* ---- Empty ------------------------------------------------------------------- */
+
+.dk-council-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: var(--page-pad);
+}
+
+.dk-council-empty .dk-empty { max-width: 420px; }
+.dk-council-empty .dk-empty .dk-btn { margin-top: 8px; }
+
+/* ---- Setup dialog ------------------------------------------------------------ */
+
+.dk-council-setup { --dialog-width: 640px; }
+.dk-council-member { gap: 8px; min-height: 52px; padding: 8px 10px 8px 14px; }
+.dk-council-member.is-missing { opacity: 0.6; }
+
+.dk-council-member-index {
+  flex-shrink: 0;
+  width: 18px;
+  color: var(--faint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dk-council-member-agent { width: 150px; }
+.dk-council-member-model { width: 120px; }
+.dk-council-member-role { width: 150px; }
+
+button.dk-list-row.dk-council-member-add { gap: 8px; min-height: 44px; color: var(--muted); }
+button.dk-list-row.dk-council-member-add:hover { color: var(--text); }
+
+.dk-council-option { align-items: flex-start; gap: 12px; padding: 12px 14px; }
+.dk-council-option-label { flex: 1; align-items: flex-start; min-width: 0; }
+.dk-council-option-label > input { margin-top: 2px; }
+.dk-council-option .dk-row-title { white-space: normal; }
+.dk-council-option-desc { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.dk-council-option-desc.is-warn { color: var(--amber); }
+.dk-council-option-select { flex-shrink: 0; width: 150px; }
+.dk-council-turn-custom { flex-shrink: 0; width: 84px; }
+
+/* The council draws its own role tile, tinted by seat; the message's generic
+   agent tile would sit underneath it and the two letters overlap. */
+.dk-council-msg .dk-msg-tile { display: none; }
+.dk-council-msg .dk-msg-head { min-height: 22px; padding-left: 30px; }

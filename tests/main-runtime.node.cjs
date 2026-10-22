@@ -241,7 +241,7 @@ test("project GitHub tokens are encrypted and resolved without exposing them in 
   assert.equal(environment.PITWALL_GITHUB_TOKEN, "github-secret-token");
   assert.equal(environment.GIT_CONFIG_KEY_0, "credential.https://github.com.helper");
   assert.equal(environment.GIT_CONFIG_VALUE_0, "");
-  assert.match(environment.GIT_CONFIG_VALUE_1, /PITWALL_GITHUB_TOKEN/);
+  assert.match(environment.GIT_CONFIG_VALUE_1, /PITWALL_GIT_TOKEN/);
   const credential = spawnSync("git", ["credential", "fill"], {
     input: "protocol=https\nhost=github.com\npath=owner/repository.git\n\n",
     encoding: "utf8",

@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile, chmod } from "node:fs/promises
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { expandPromptPointers } from "./fixtures/councilPrompts.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
@@ -740,6 +740,6 @@ try {
 } finally {
   await app.close();
   if (process.env.PITWALL_KEEP_SMOKE_ARTIFACTS !== "1") {
-    await rm(tempRoot, { recursive: true, force: true });
+    await rm(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => undefined);
   }
 }

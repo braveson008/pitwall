@@ -1,18 +1,26 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm } from "node:fs/promises";
+import { chmod, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-release-failures-"));
 const projectPath = path.join(temp, "project");
 await mkdir(projectPath);
+// An installed agent to pick, whatever this machine has; it is never run.
+const fakeBin = path.join(temp, "bin");
+await mkdir(fakeBin);
+await writeFile(path.join(fakeBin, "claude"), `#!/bin/bash
+case "$1" in --version) echo "2.1.289 (Claude Code)"; exit 0 ;; --help) echo "  --settings <file-or-json>"; exit 0 ;; esac
+exit 0
+`);
+await chmod(path.join(fakeBin, "claude"), 0o755);
 const app = await electron.launch({
   args: [root], cwd: root,
-  env: { ...process.env, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
+  env: { ...process.env, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`, PITWALL_E2E: "1", PITWALL_USER_DATA_DIR: path.join(temp, "profile") },
   timeout: 30_000,
 });
 
@@ -113,7 +121,7 @@ try {
   await sessionDialog.getByRole("button", { name: "Add agent", exact: true }).click();
   const addAgent = page.getByRole("dialog", { name: "Add custom agent" });
   await addAgent.getByPlaceholder("e.g. Aider").fill("Missing Fixture");
-  await addAgent.getByPlaceholder("aider", { exact: true }).fill("/bin/sh");
+  await addAgent.getByPlaceholder("aider", { exact: true }).fill(process.platform === "win32" ? "cmd.exe" : "/bin/sh");
   await addAgent.getByRole("button", { name: "Add agent", exact: true }).click();
   await page.getByRole("dialog", { name: "New work" }).getByRole("button", { name: "Cancel", exact: true }).click();
   await page.getByRole("button", { name: "Attach CLI", exact: true }).click();
@@ -147,5 +155,5 @@ try {
   console.log("PASS terminal:closed crosses the preload bridge and clears attached state");
 } finally {
   await app.close();
-  await rm(temp, { recursive: true, force: true });
+  await rm(temp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => undefined);
 }

@@ -252,3 +252,11 @@ describe("Hermes launch", () => {
     expect(findHermesSessionId("Welcome to Hermes Agent!")).toBeNull();
   });
 });
+
+describe("a Claude session's name on its command line", () => {
+  it("is one line, since a line break ends the command under Windows' cmd and drops every argument after it", () => {
+    const launch = { command: "claude", args: ["--model", "opus"], display: "claude" };
+    const result = applyNativeSessionLaunch(launch, { agent: "Claude", nativeSessionId: "6523ae4d-67ec-4ef9-94ca-2bddac75e5e5", sessionName: "Add the step helpers.\n\nThen   wire them in." }, os.tmpdir());
+    expect(result.args).toEqual(["--session-id", "6523ae4d-67ec-4ef9-94ca-2bddac75e5e5", "--name", "Add the step helpers. Then wire them in.", "--model", "opus"]);
+  });
+});

@@ -131,9 +131,11 @@ async function fileDiff(cwd, base, current, file, git = runGit) {
   return { diff: patch, hunks: splitPatch(patch).hunks.map((hunk) => hunk.id) };
 }
 
-function insideWorktree(cwd, relative) {
-  const target = path.resolve(cwd, relative);
-  if (path.isAbsolute(relative) || (target !== cwd && !target.startsWith(cwd + path.sep))) {
+// git spells a Windows worktree D:/a/repo; path.relative compares it to D:\a\repo\x as the same folder, ignoring case.
+function insideWorktree(cwd, relative, paths = path) {
+  const target = paths.resolve(cwd, relative);
+  const within = paths.relative(paths.resolve(cwd), target);
+  if (paths.isAbsolute(relative) || within === ".." || within.startsWith(`..${paths.sep}`) || paths.isAbsolute(within)) {
     throw new Error(`${relative} is outside the worktree`);
   }
   return target;
@@ -350,4 +352,4 @@ function createLiveChanges({ storePath, git = runGit, watch = watchTree, now = D
   };
 }
 
-module.exports = { createLiveChanges, snapshot, changesBetween, fileDiff, revertFile, revertHunk, keepFile, splitPatch, watchTree };
+module.exports = { createLiveChanges, snapshot, changesBetween, fileDiff, insideWorktree, revertFile, revertHunk, keepFile, splitPatch, watchTree };

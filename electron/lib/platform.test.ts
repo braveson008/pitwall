@@ -32,7 +32,7 @@ describe("shellInvocation", () => {
 
   it("uses cmd on Windows, with AutoRun skipped and the line handed over verbatim", async () => {
     const platform = await loadFor("win32");
-    const { file, args, spawnOptions } = platform.shellInvocation("npm test", { shell: "C:\\Windows\\system32\\cmd.exe" });
+    const { file, args, spawnOptions } = platform.shellInvocation("npm test", { shell: "C:\\Windows\\system32\\cmd.exe", pathValue: "" });
     expect(file).toBe("C:\\Windows\\system32\\cmd.exe");
     // /d so a machine with a registry AutoRun entry does not inject it into
     // every command Pitwall runs; /s strips exactly the outer quotes.
@@ -127,6 +127,47 @@ describe("escaping for cmd", () => {
     expect(platform.cmdSafeArgument("one line, 100% fine")).toBe(true);
     expect(platform.cmdSafeArgument("two\nlines")).toBe(false);
     expect(platform.cmdSafeArgument("x".repeat(7000))).toBe(false);
+  });
+});
+
+describe("a batch-file CLI named at the start of a shell line", () => {
+  // cmd computes a batch file's own folder (%~dp0, which every npm shim uses) wrongly when the file was called by
+  // a quoted bare name, so the shim runs a node script that is not there.
+  it("is called by its full path on Windows, quoted or bare", async () => {
+    const platform = await loadFor("win32");
+    const { mkdtempSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const dir = mkdtempSync(`${tmpdir()}/pitwall-shim-`);
+    writeFileSync(`${dir}/claude.cmd`, "@echo off\r\n");
+    const full = platform.escapeCmdCommand(platform.resolveExecutable("claude", dir));
+    expect(platform.shellInvocation('^"claude^" --version', { pathValue: dir }).args[3]).toBe(`"${full} --version"`);
+    expect(platform.ptyShellInvocation("claude mcp list", { pathValue: dir }).args).toBe(`/d /s /c "${full} mcp list"`);
+    expect(platform.shellInvocation("git status", { pathValue: dir }).args[3]).toBe('"git status"');
+  });
+});
+
+describe("what fits on a command line", () => {
+  const shim = "C:\\Users\\n\\AppData\\Roaming\\npm\\claude.cmd";
+  const exe = "C:\\Users\\n\\.local\\bin\\claude.exe";
+
+  it("measures the line cmd will read, carets included, not the prompt alone", async () => {
+    const platform = await loadFor("win32");
+    // 4,200 characters of prose: under the old 6,000 check, but every space gains carets on the way into a shim.
+    const prose = "fix the bug in a & b ".repeat(200);
+    expect(platform.commandLineFits("claude", ["--session-id", "x", prose], { resolved: shim })).toBe(false);
+    expect(platform.commandLineFits("claude", ["--session-id", "x", "fix the login bug"], { resolved: shim })).toBe(true);
+    expect(platform.commandLineFits("claude", ["two\nlines"], { resolved: shim })).toBe(false);
+  });
+
+  it("lets a real program take a long or multi-line prompt, up to Windows' own limit", async () => {
+    const platform = await loadFor("win32");
+    expect(platform.commandLineFits("claude", ["two\nlines", "a & b ".repeat(1000)], { resolved: exe })).toBe(true);
+    expect(platform.commandLineFits("claude", ["x".repeat(33000)], { resolved: exe })).toBe(false);
+  });
+
+  it("never limits a Mac", async () => {
+    const platform = await loadFor("darwin");
+    expect(platform.commandLineFits("claude", ["x".repeat(100000)])).toBe(true);
   });
 });
 

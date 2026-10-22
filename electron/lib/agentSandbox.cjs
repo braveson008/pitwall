@@ -65,7 +65,17 @@ function configPathValue(target) {
   return `"${target.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
 
-function createAgentSandbox({ directory, homeDirectory = os.homedir() }) {
+/**
+ * Every global config git itself would read: the XDG file, then `~/.gitconfig`, where `~` is `HOME` when set
+ * (Git for Windows honours it over the user profile). GIT_CONFIG_GLOBAL replaces all of them at once.
+ */
+function globalGitConfigs(homeDirectory, variables) {
+  const base = variables.HOME || homeDirectory;
+  const xdg = variables.XDG_CONFIG_HOME || path.join(base, ".config");
+  return [...new Set([path.join(xdg, "git", "config"), path.join(base, ".gitconfig")])];
+}
+
+function createAgentSandbox({ directory, homeDirectory = os.homedir(), variables = process.env }) {
   /**
    * The variables to layer over an agent's environment.
    *
@@ -87,12 +97,14 @@ function createAgentSandbox({ directory, homeDirectory = os.homedir() }) {
     const result = {};
     try {
       fs.mkdirSync(path.dirname(gitConfig), { recursive: true, mode: 0o700 });
-      // Written once. Rewriting it on every session would throw away whatever
-      // an agent had legitimately set for the project.
-      if (!fs.existsSync(gitConfig)) {
-        const include = `[include]\n\tpath = ${configPathValue(path.join(homeDirectory, ".gitconfig"))}\n`;
-        fs.writeFileSync(gitConfig, include, { encoding: "utf8", mode: 0o600 });
-      }
+      // Never rewritten: that would throw away whatever an agent had legitimately set for the project. A file an
+      // older build wrote only gains the includes it lacks.
+      const existing = fs.existsSync(gitConfig) ? fs.readFileSync(gitConfig, "utf8") : "";
+      const missing = globalGitConfigs(homeDirectory, variables)
+        .filter((file) => !existing.includes(`path = ${configPathValue(file)}`))
+        .map((file) => `[include]\n\tpath = ${configPathValue(file)}\n`);
+      if (!existing) fs.writeFileSync(gitConfig, missing.join(""), { encoding: "utf8", mode: 0o600 });
+      else if (missing.length) fs.appendFileSync(gitConfig, `${existing.endsWith("\n") ? "" : "\n"}${missing.join("")}`);
       result.GIT_CONFIG_GLOBAL = gitConfig;
     } catch {
       // No git sandbox. The session still runs, against the real global config.

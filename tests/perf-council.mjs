@@ -14,7 +14,7 @@ import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
 const MEMBERS = Number(process.argv[2] || 4);

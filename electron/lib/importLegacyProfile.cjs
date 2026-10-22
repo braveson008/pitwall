@@ -38,8 +38,21 @@ const SKIP = new Set([
   "pitwall-account.json",
 ]);
 
-/** The old app holds its profile open while it runs; Chromium records who in SingletonLock. */
-function legacyAppRunning(from) {
+/**
+ * The old app holds its profile open while it runs. On a Mac Chromium records who in SingletonLock; on Windows it
+ * holds `lockfile` open with no sharing, so opening it fails only while the app is up.
+ */
+function legacyAppRunning(from, platform = process.platform, open = fs.openSync) {
+  if (platform === "win32") {
+    const lock = path.join(from, "lockfile");
+    if (!fs.existsSync(lock)) return false;
+    try {
+      fs.closeSync(open(lock, "r+"));
+      return false;
+    } catch (error) {
+      return ["EBUSY", "EPERM", "EACCES"].includes(error.code);
+    }
+  }
   try {
     const owner = fs.readlinkSync(path.join(from, "SingletonLock"));
     const pid = Number(owner.split("-").pop());

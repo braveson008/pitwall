@@ -8,7 +8,7 @@ import { chmod, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
@@ -214,7 +214,11 @@ try {
   // ---- review requests ----------------------------------------------------------
   await addWatch("Review requests");
   const review = card("Review", "Triple the rate");
-  await review.waitFor({ timeout: 60000 });
+  await review.waitFor({ timeout: 60000 }).catch(async (error) => {
+    console.log("watches:", JSON.stringify(await page.evaluate(() => window.pitwall.listWatches())).slice(0, 4000));
+    console.log("cards:", await page.locator(".dk-watch-card").allInnerTexts());
+    throw error;
+  });
   const reviewCall = await claudeCall(/^Review this merge request/);
   deniesCommandsAndWeb(reviewCall.args);
   assert.match(reviewCall.args, /--model\s+sonnet\b/, "reviews run on the default, Sonnet, not Opus");

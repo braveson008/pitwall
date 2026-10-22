@@ -6,7 +6,7 @@ import { chmod, mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { openProject } from "./helpers/openProject.mjs";
 
 const root = process.cwd();

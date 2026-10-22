@@ -61,7 +61,7 @@ const {
 } = require("./lib/terminalAttachments.cjs");
 const { terminateProcessTree } = require("./lib/processTree.cjs");
 const { terminateOrphanedProcesses, terminateSessionProcesses } = require("./lib/sessionProcesses.cjs");
-const { runShellCommand } = require("./lib/shellCommand.cjs");
+const { runProgramCommand, runShellCommand } = require("./lib/shellCommand.cjs");
 const { carryMovedProjects } = require("./lib/projectMoves.cjs");
 const { createLiveChanges } = require("./lib/liveChanges.cjs");
 const { atomicWriteFile, ensureClaudeTrust, ensureCodexTrust, ensureClaudeBypassAccepted } = require("./lib/projectTrust.cjs");
@@ -90,7 +90,7 @@ const {
 const { createAgentSandbox } = require("./lib/agentSandbox.cjs");
 const {
   detectCommand, firstResolvedPath, shellEscape, pathCandidates, agentInvocation,
-  commandInvocation, cmdSafeArgument, isWindows, linkPath, resolveExecutable,
+  commandInvocation, commandLineFits, isWindows, linkPath, resolveExecutable,
   versionedPathRoots, versionBinDirectories,
   geminiSystemSettingsPath: platformGeminiSettingsPath,
 } = require("./lib/platform.cjs");
@@ -449,10 +449,14 @@ const providerRuntimeCache = new Map();
 async function inspectProviderRuntime(profile, refresh = false) {
   const cached = providerRuntimeCache.get(profile.id);
   if (!refresh && cached && Date.now() - cached.cachedAt < 60_000) return cached.value;
-  const exists = await runShell(detectCommand(profile.command), { timeoutMs: 3000 });
+  // Windows looks along PATH itself: a cmd started for `where` can miss 3 seconds on a busy machine.
+  const exists = isWindows
+    ? { ok: Boolean(resolveExecutable(profile.command, resolveShellPath())) }
+    : await runShell(detectCommand(profile.command), { timeoutMs: 3000 });
   if (!exists.ok) {
     const value = { installed: false, version: null, ...getProviderCompatibility(profile.id, null, false) };
-    providerRuntimeCache.set(profile.id, { cachedAt: Date.now(), value });
+    // A lookup that ran out of time says nothing about the CLI; the next check asks again.
+    if (!exists.timedOut) providerRuntimeCache.set(profile.id, { cachedAt: Date.now(), value });
     return value;
   }
   const run = profile.id === "hermes" ? runHermes : runShell;
@@ -512,7 +516,8 @@ async function walkProjectFiles(root, directory = root, collected = []) {
   for (const entry of entries) {
     if (ignoredFileNames.has(entry.name) || entry.name.startsWith(".DS_Store")) continue;
     const absolutePath = path.join(directory, entry.name);
-    const relativePath = path.relative(root, absolutePath);
+    // Spelled as git spells it, so a file from this list and the same file from a diff are one path on Windows too.
+    const relativePath = path.relative(root, absolutePath).split(path.sep).join("/");
 
     if (entry.isDirectory()) {
       await walkProjectFiles(root, absolutePath, collected);
@@ -564,7 +569,8 @@ async function hasAnyFile(root, names) {
 }
 
 async function resolveToolCommand(root, toolName) {
-  const localBinary = path.join(root, "node_modules", ".bin", toolName);
+  // On Windows the extensionless file there is a shell script; npm's .cmd beside it is what cmd can run.
+  const localBinary = path.join(root, "node_modules", ".bin", isWindows ? `${toolName}.cmd` : toolName);
   if (await pathExists(localBinary)) return shellEscape(localBinary);
 
   const globalBinary = await runShell(detectCommand(toolName));
@@ -733,6 +739,12 @@ function runShell(command, options = {}) {
       PATH: options.env?.PATH || resolveShellPath(),
     },
   });
+}
+
+/** gh, glab and the like: run as a program with its arguments, so a multi-line body survives Windows. */
+function runTool(program, args, options = {}) {
+  const env = { ...agentEnvironment(), ...options.env, PATH: options.env?.PATH || resolveShellPath() };
+  return runProgramCommand(program, args, { ...options, cwd: options.cwd || os.homedir(), env });
 }
 
 function runShellWithInput(command, input, options = {}) {
@@ -982,13 +994,9 @@ function gitDirect(args, cwd, options = {}) {
   });
 }
 
-/**
- * Whether a prompt can ride on the agent's command line. Always on a Mac; on
- * Windows only when the CLI is a real program, or the prompt survives cmd.
- */
+/** Whether a prompt can ride on the agent's command line; when not, it is typed into the terminal instead. */
 function promptFitsCommandLine(prompt, launch) {
-  if (!isWindows) return true;
-  return !commandInvocation(launch.command, [], { pathValue: resolveShellPath() }).viaCmd || cmdSafeArgument(prompt);
+  return commandLineFits(launch.command, [...(launch.args || []), prompt], { pathValue: resolveShellPath() });
 }
 
 function runGit(args, cwd, options = {}) {
@@ -1024,7 +1032,7 @@ async function githubRemoteForProject(cwd) {
 
 async function verifyGitHubToken({ cwd, host, repository, token }) {
   const environment = githubTokenEnvironment(host, token);
-  const loginResult = await runShell(`gh api --hostname ${shellEscape(host)} user --jq .login`, {
+  const loginResult = await runTool("gh", ["api", "--hostname", host, "user", "--jq", ".login"], {
     cwd,
     env: environment,
     timeoutMs: 10000,
@@ -1075,8 +1083,8 @@ async function codeHostForProject(cwd) {
       kind = probed.kind;
     } else {
       const host = shellEscape(parsed.host);
-      if ((await runShell(`gh auth status --hostname ${host}`, { cwd, timeoutMs: 8000 })).ok) kind = "github";
-      else if ((await runShell(`glab auth status --hostname ${host}`, { cwd, timeoutMs: 8000 })).ok) kind = "gitlab";
+      if ((await runTool("gh", ["auth", "status", "--hostname", host], { cwd, timeoutMs: 8000 })).ok) kind = "github";
+      else if ((await runTool("glab", ["auth", "status", "--hostname", host], { cwd, timeoutMs: 8000 })).ok) kind = "gitlab";
       probedHostKinds.set(parsed.host, { kind, at: Date.now() });
     }
     if (!kind) {
@@ -1109,7 +1117,7 @@ async function verifyGitLabToken({ host, repository, token }) {
 
 /** The token glab holds for a host, if it is signed in there. */
 async function glabToken(host, cwd) {
-  const result = await runShell(`glab config get token --host ${shellEscape(host)}`, { cwd, timeoutMs: 10000 });
+  const result = await runTool("glab", ["config", "get", "token", "--host", host], { cwd, timeoutMs: 10000 });
   return result.ok ? result.stdout.trim() : "";
 }
 
@@ -3043,7 +3051,7 @@ async function startAgentTerminalOnce(payload, attempt) {
     const guard = await ensureHermesReviewerGuard(launch.hermesProfile);
     if (!guard.ok) return { ok: false, error: guard.error, at: new Date().toISOString() };
   }
-  if (attempt.cancelled || isQuitting) return { ok: false, error: "Terminal launch was cancelled" };
+  if (attempt.cancelled || isQuitting) return { ok: false, cancelled: true, error: "Terminal launch was cancelled" };
 
   // The reviewer gets none of the project's MCP servers: they can reach the network.
   const mcpLaunch = payload?.pairReviewer
@@ -3066,7 +3074,7 @@ async function startAgentTerminalOnce(payload, attempt) {
   }
   if (attempt.cancelled || isQuitting) {
     cleanupAgentNotificationRuntime(notificationLaunch);
-    return { ok: false, error: "Terminal launch was cancelled" };
+    return { ok: false, cancelled: true, error: "Terminal launch was cancelled" };
   }
   let processRef;
 
@@ -3153,6 +3161,11 @@ async function startAgentTerminalOnce(payload, attempt) {
     ? { id: runtimePayload.nativeSessionId || null, tail: "", read: 0, answered: new Set(), modelNoticed: false }
     : null;
   processRef.onData((data) => {
+    // Smokes on Windows: what ConPTY actually delivered, escape sequences and all.
+    if (process.env.PITWALL_SMOKE_TRACE === "1" && ((tracedChunks.get(payload.sessionId) || 0) < 3 || /\u001b\](?:9|99|777);/.test(data))) {
+      tracedChunks.set(payload.sessionId, (tracedChunks.get(payload.sessionId) || 0) + 1);
+      console.log(`[pty ${payload.sessionId}] ${JSON.stringify(String(data).slice(0, 600))}`);
+    }
     if (terminalProcesses.get(payload.sessionId) !== processRef) return;
     const metadata = terminalMetadata.get(payload.sessionId);
     if (hermesWatch && metadata) watchHermesScreen(hermesWatch, data, payload, metadata, processRef);
@@ -4101,6 +4114,7 @@ ipcMain.handle("licence:clear", async () => {
  * One Hermes sign-in at a time, for the main Hermes home: project profiles
  * have no login of their own and borrow it, so this reconnects all of them.
  */
+const tracedChunks = new Map();
 let hermesSignIn = null;
 ipcMain.handle("hermes:sign-in", async () => {
   if (hermesSignIn) return { ok: true, already: true };
@@ -4289,6 +4303,7 @@ for (const [channel, method] of Object.entries({
         ...(payload?.workspacePath ? { workspacePath: expandHome(payload.workspacePath) } : {}),
       });
     } catch (error) {
+      if (process.env.PITWALL_SMOKE_TRACE === "1") console.log(`[knowledge ${channel}] ${error.stack}`);
       return { ok: false, error: error.message || "Project knowledge is unavailable." };
     }
   });
@@ -4895,15 +4910,15 @@ async function listRequests(watch, which) {
   const codeHost = await codeHostForProject(cwd);
   const env = watchEnvironment(watch);
   if (codeHost.kind === "github") {
-    const filter = which === "reviewer" ? "--search 'review-requested:@me'" : which === "mine" ? "--author @me" : "";
+    const filter = which === "reviewer" ? ["--search", "review-requested:@me"] : which === "mine" ? ["--author", "@me"] : [];
     const fields = which === "mine" ? `${REQUEST_FIELDS},statusCheckRollup` : REQUEST_FIELDS;
-    const result = await runShell(`gh pr list ${filter} --state open --limit 50 --json ${fields}`, { cwd, timeoutMs: 30000, env });
+    const result = await runTool("gh", ["pr", "list", ...filter, "--state", "open", "--limit", "50", "--json", fields], { cwd, timeoutMs: 30000, env });
     if (!result.ok) return { ok: false, error: describePullRequestError(result.stderr, result.stdout), codeHost };
     return { ok: true, requests: which === "mine" ? parseGitHubMyRequests(result.stdout) : parseGitHubRequests(result.stdout), codeHost };
   }
   if (codeHost.kind === "gitlab") {
-    const filter = which === "reviewer" ? "--reviewer=@me" : which === "mine" ? "--author=@me" : "";
-    const result = await runShell(`glab mr list ${filter} -F json -P 50`.replace(/\s+/g, " "), { cwd, timeoutMs: 30000, env });
+    const filter = which === "reviewer" ? ["--reviewer=@me"] : which === "mine" ? ["--author=@me"] : [];
+    const result = await runTool("glab", ["mr", "list", ...filter, "-F", "json", "-P", "50"], { cwd, timeoutMs: 30000, env });
     if (!result.ok) return { ok: false, error: describeGlabError(result.stderr, result.stdout), codeHost };
     return { ok: true, requests: parseGitLabRequests(result.stdout), codeHost };
   }
@@ -4915,11 +4930,11 @@ async function gitLabFailures(watch, codeHost, request) {
   const cwd = expandHome(watch.projectPath);
   const env = watchEnvironment(watch);
   const project = encodeURIComponent(codeHost.repository);
-  const viewed = await runShell(`glab mr view ${shellEscape(String(request.number))} -F json`, { cwd, timeoutMs: 30000, env });
+  const viewed = await runTool("glab", ["mr", "view", String(request.number), "-F", "json"], { cwd, timeoutMs: 30000, env });
   let pipeline = null;
   try { pipeline = JSON.parse(viewed.stdout)?.head_pipeline || null; } catch { /* none */ }
   if (!pipeline || pipeline.status !== "failed") return { pipelineId: pipeline?.id || "", failing: [] };
-  const jobs = await runShell(`glab api ${shellEscape(`projects/${project}/pipelines/${pipeline.id}/jobs?scope[]=failed`)}`, { cwd, timeoutMs: 30000, env });
+  const jobs = await runTool("glab", ["api", `projects/${project}/pipelines/${pipeline.id}/jobs?scope[]=failed`], { cwd, timeoutMs: 30000, env });
   let failedJobs = [];
   try { failedJobs = JSON.parse(jobs.stdout); } catch { failedJobs = []; }
   const failing = (Array.isArray(failedJobs) ? failedJobs : []).slice(0, 5).map((job) => ({ name: String(job?.name || "job"), url: String(job?.web_url || ""), jobId: String(job?.id || "") }));
@@ -4935,11 +4950,11 @@ async function failureLogs(watch, codeHost, failing) {
   for (const failure of failing.slice(0, 5)) {
     let log = "";
     if (codeHost.kind === "github" && failure.runId) {
-      const result = await runShell(`gh run view ${shellEscape(failure.runId)} --log-failed`, { cwd, timeoutMs: 60000, env });
+      const result = await runTool("gh", ["run", "view", String(failure.runId), "--log-failed"], { cwd, timeoutMs: 60000, env });
       log = result.ok ? tail(result.stdout) : "";
     } else if (codeHost.kind === "gitlab" && failure.jobId) {
       const project = encodeURIComponent(codeHost.repository);
-      const result = await runShell(`glab api ${shellEscape(`projects/${project}/jobs/${failure.jobId}/trace`)}`, { cwd, timeoutMs: 60000, env });
+      const result = await runTool("glab", ["api", `projects/${project}/jobs/${failure.jobId}/trace`], { cwd, timeoutMs: 60000, env });
       log = result.ok ? tail(result.stdout) : "";
     }
     logs.push({ ...failure, log });
@@ -4953,7 +4968,7 @@ async function requestComments(watch, codeHost, request, me) {
   const env = watchEnvironment(watch);
   if (codeHost.kind === "github") {
     const base = `repos/${codeHost.repository}`;
-    const api = (endpoint) => runShell(`gh api --paginate ${shellEscape(endpoint)}`, { cwd, timeoutMs: 30000, env });
+    const api = (endpoint) => runTool("gh", ["api", "--paginate", endpoint], { cwd, timeoutMs: 30000, env });
     const [reviewComments, issueComments, reviews] = await Promise.all([
       api(`${base}/pulls/${request.number}/comments?per_page=100`),
       api(`${base}/issues/${request.number}/comments?per_page=100`),
@@ -4964,7 +4979,7 @@ async function requestComments(watch, codeHost, request, me) {
     return parseGitHubComments({ me, reviewComments: join(reviewComments.stdout), issueComments: join(issueComments.stdout), reviews: join(reviews.stdout) });
   }
   const project = encodeURIComponent(codeHost.repository);
-  const result = await runShell(`glab api ${shellEscape(`projects/${project}/merge_requests/${request.number}/discussions?per_page=100`)}`, { cwd, timeoutMs: 30000, env });
+  const result = await runTool("glab", ["api", `projects/${project}/merge_requests/${request.number}/discussions?per_page=100`], { cwd, timeoutMs: 30000, env });
   return result.ok ? parseGitLabComments(result.stdout, me) : [];
 }
 
@@ -5354,36 +5369,37 @@ async function postFindingReview(finding, review) {
   if (codeHost.kind === "gitlab") {
     const id = String(finding.number);
     if (review.verdict === "approve" && !review.summary && !review.comments.length) {
-      const approved = await runShell(`glab mr approve ${shellEscape(id)}`, { cwd, timeoutMs: 60000, env });
+      const approved = await runTool("glab", ["mr", "approve", id], { cwd, timeoutMs: 60000, env });
       return approved.ok ? { ok: true, url: finding.url } : { ok: false, error: describeGlabError(approved.stderr, approved.stdout) };
     }
     const allowed = commentableLines(diff);
     const inline = review.comments.filter((comment) => allowed.get(comment.path)?.has(comment.line));
     const folded = review.comments.filter((comment) => !inline.includes(comment));
     const summary = foldComments(review.summary, folded);
-    let note = await runShell(`glab mr note create ${shellEscape(id)} -m ${shellEscape(summary)}`, { cwd, timeoutMs: 60000, env });
+    let note = await runTool("glab", ["mr", "note", "create", id, "-m", summary], { cwd, timeoutMs: 60000, env });
     let foldAll = false;
     if (!note.ok && /unknown|accepts|invalid/i.test(`${note.stderr}${note.stdout}`)) {
       // Older glab has no "note create": one note carrying every comment.
       foldAll = true;
-      note = await runShell(`glab mr note ${shellEscape(id)} -m ${shellEscape(foldComments(review.summary, review.comments))}`, { cwd, timeoutMs: 60000, env });
+      note = await runTool("glab", ["mr", "note", id, "-m", foldComments(review.summary, review.comments)], { cwd, timeoutMs: 60000, env });
     }
     if (!note.ok) return { ok: false, error: describeGlabError(note.stderr, note.stdout) };
     const failed = [];
     if (!foldAll) {
       for (const comment of inline) {
-        const placed = await runShell(
-          `glab mr note create ${shellEscape(id)} --file ${shellEscape(comment.path)} --line ${shellEscape(String(comment.line))} -m ${shellEscape(comment.body)}`,
+        const placed = await runTool(
+          "glab",
+          ["mr", "note", "create", id, "--file", comment.path, "--line", String(comment.line), "-m", comment.body],
           { cwd, timeoutMs: 60000, env },
         );
         if (!placed.ok) failed.push(comment);
       }
       if (failed.length) {
-        await runShell(`glab mr note create ${shellEscape(id)} -m ${shellEscape(foldComments("Line comments:", failed))}`, { cwd, timeoutMs: 60000, env });
+        await runTool("glab", ["mr", "note", "create", id, "-m", foldComments("Line comments:", failed)], { cwd, timeoutMs: 60000, env });
       }
     }
     if (review.verdict === "approve") {
-      const approved = await runShell(`glab mr approve ${shellEscape(id)}`, { cwd, timeoutMs: 60000, env });
+      const approved = await runTool("glab", ["mr", "approve", id], { cwd, timeoutMs: 60000, env });
       if (!approved.ok) return { ok: true, url: finding.url, warning: `Posted, but the approval failed: ${describeGlabError(approved.stderr, approved.stdout)}` };
     }
     return { ok: true, url: finding.url };
@@ -5438,12 +5454,12 @@ async function applyFix(finding, edited) {
     let result;
     if (codeHost.kind === "github") {
       result = reply.kind === "line" && !String(reply.id).startsWith("review-")
-        ? await runShell(`gh api ${shellEscape(`repos/${codeHost.repository}/pulls/${finding.number}/comments/${reply.id}/replies`)} -f body=${shellEscape(text)}`, { cwd, timeoutMs: 60000, env })
-        : await runShell(`gh api ${shellEscape(`repos/${codeHost.repository}/issues/${finding.number}/comments`)} -f body=${shellEscape(`> ${String(reply.body || "").split("\n")[0].slice(0, 200)}\n\n${text}`)}`, { cwd, timeoutMs: 60000, env });
+        ? await runTool("gh", ["api", `repos/${codeHost.repository}/pulls/${finding.number}/comments/${reply.id}/replies`, "-f", `body=${text}`], { cwd, timeoutMs: 60000, env })
+        : await runTool("gh", ["api", `repos/${codeHost.repository}/issues/${finding.number}/comments`, "-f", `body=> ${String(reply.body || "").split("\n")[0].slice(0, 200)}\n\n${text}`], { cwd, timeoutMs: 60000, env });
     } else {
       result = reply.discussionId
-        ? await runShell(`glab mr note create ${shellEscape(String(finding.number))} --reply ${shellEscape(reply.discussionId)} -m ${shellEscape(text)}`, { cwd, timeoutMs: 60000, env })
-        : await runShell(`glab mr note create ${shellEscape(String(finding.number))} -m ${shellEscape(text)}`, { cwd, timeoutMs: 60000, env });
+        ? await runTool("glab", ["mr", "note", "create", String(finding.number), "--reply", reply.discussionId, "-m", text], { cwd, timeoutMs: 60000, env })
+        : await runTool("glab", ["mr", "note", "create", String(finding.number), "-m", text], { cwd, timeoutMs: 60000, env });
     }
     if (!result.ok) failed.push(reply.author);
   }
@@ -6175,7 +6191,7 @@ ipcMain.handle("git:open-pull-request", async (_event, payload) => {
       if (!created.ok) {
         // One already open for the branch is the request someone wanted.
         if (/already exists/i.test(`${created.stderr}${created.stdout}`)) {
-          const viewed = await runShell(`glab mr view ${shellEscape(branch)} -F json`, { cwd, timeoutMs: 15000, env: environment });
+          const viewed = await runTool("glab", ["mr", "view", branch, "-F", "json"], { cwd, timeoutMs: 15000, env: environment });
           const existing = viewed.ok ? parsePullRequest(gitlabViewAsGitHub(viewed.stdout)) : null;
           if (existing) return { ok: true, url: existing.url, existed: true, branch };
         }
@@ -7110,9 +7126,13 @@ ipcMain.handle("ollama:pull", async (event, payload) => {
         cancelled = true;
         // Ollama stops on the interrupt it would get from a terminal and
         // leaves its partial blobs behind, which the next pull resumes from.
-        try { child.kill("SIGINT"); } catch { /* already gone */ }
+        // node-pty cannot signal on Windows; Ctrl+C through ConPTY is the interrupt there.
+        try { if (isWindows) child.write("\x03"); else child.kill("SIGINT"); } catch { /* already gone */ }
         // A process that ignores the interrupt is still going to be stopped.
-        setTimeout(() => { try { child.kill("SIGKILL"); } catch { /* gone */ } }, 4000);
+        setTimeout(() => {
+          if (isWindows) void terminateProcessTree(child);
+          else try { child.kill("SIGKILL"); } catch { /* gone */ }
+        }, 4000);
       },
     });
 

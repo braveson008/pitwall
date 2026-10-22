@@ -9,7 +9,7 @@ import { createAgentSandbox, sandboxKey } from "./agentSandbox.cjs";
 
 let directory: string;
 let home: string;
-const newSandbox = () => createAgentSandbox({ directory, homeDirectory: home });
+const newSandbox = () => createAgentSandbox({ directory, homeDirectory: home, variables: {} });
 
 beforeEach(() => {
   directory = mkdtempSync(join(tmpdir(), "pitwall-sandbox-"));
@@ -41,8 +41,9 @@ describe("environment", () => {
     expect(written).toContain("[include]");
     // Git reads a quoted value with backslash escapes, so a Windows path is
     // written with its backslashes doubled.
-    const included = /path = "(.*)"/.exec(written)?.[1]?.replace(/\\\\/g, "\\");
-    expect(included).toBe(join(home, ".gitconfig"));
+    const included = [...written.matchAll(/path = "(.*)"/g)].map((match) => match[1].replace(/\\\\/g, "\\"));
+    // The XDG file first, then ~/.gitconfig, which git lets win.
+    expect(included).toEqual([join(home, ".config", "git", "config"), join(home, ".gitconfig")]);
     // Nothing else: the sandbox states no policy of its own.
     expect(written).not.toContain("[user]");
   });
@@ -104,10 +105,33 @@ describe("what git actually does with it", () => {
     rmSync(repository, { recursive: true, force: true });
   });
 
+  it("reads the XDG config and a set HOME's .gitconfig too, which GIT_CONFIG_GLOBAL would otherwise hide", () => {
+    const elsewhere = mkdtempSync(join(tmpdir(), "pitwall-set-home-"));
+    mkdirSync(join(elsewhere, ".config", "git"), { recursive: true });
+    writeFileSync(join(elsewhere, ".config", "git", "config"), "[user]\n\tname = Real Person\n");
+    writeFileSync(join(elsewhere, ".gitconfig"), "[core]\n\tautocrlf = input\n");
+    // A sandbox an older build wrote, holding only the profile's .gitconfig.
+    const old = join(directory, "p1", "git", "config");
+    mkdirSync(join(directory, "p1", "git"), { recursive: true });
+    writeFileSync(old, `[include]\n\tpath = "${join(home, ".gitconfig").replace(/\\/g, "\\\\")}"\n[alias]\n\tst = status\n`);
+    const sandbox = createAgentSandbox({ directory, homeDirectory: home, variables: { HOME: elsewhere } });
+    const environment = sandbox.environment({ projectId: "p1" });
+    const repository = mkdtempSync(join(tmpdir(), "pitwall-repo-"));
+    git(["init", "-q", "."], {}, repository);
+    expect(git(["config", "--get", "user.name"], environment, repository)).toBe("Real Person");
+    expect(git(["config", "--get", "core.autocrlf"], environment, repository)).toBe("input");
+    expect(git(["config", "--get", "pull.rebase"], environment, repository)).toBe("true");
+    expect(git(["config", "--get", "alias.st"], environment, repository)).toBe("status");
+    sandbox.environment({ projectId: "p1" });
+    expect(readFileSync(old, "utf8").match(/\[include\]/g)?.length).toBe(3);
+    rmSync(repository, { recursive: true, force: true });
+    rmSync(elsewhere, { recursive: true, force: true });
+  });
+
   it("survives a home directory with a space in it", () => {
     const spaced = mkdtempSync(join(tmpdir(), "pitwall home "));
     writeFileSync(join(spaced, ".gitconfig"), "[pull]\n\trebase = true\n");
-    const sandbox = createAgentSandbox({ directory, homeDirectory: spaced });
+    const sandbox = createAgentSandbox({ directory, homeDirectory: spaced, variables: {} });
     const environment = sandbox.environment({ projectId: "p1" });
     const repository = mkdtempSync(join(tmpdir(), "pitwall-repo-"));
     git(["init", "-q", "."], {}, repository);

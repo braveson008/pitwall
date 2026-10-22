@@ -2,7 +2,7 @@ import { Component, Suspense, lazy, memo, useCallback, useEffect, useMemo, useRe
 import { ArrowLeft, ChevronRight, ExternalLink, File, Folder, FolderOpen, MessageSquarePlus, RotateCw, X } from "lucide-react";
 import { ancestorsOf, baseName, buildTree, changedFolders, flattenTree, type TreeRow } from "../lib/fileTree";
 import type { EditorSelection } from "./CodeEditor";
-import { shortcutLabel, filesShortcutLabel } from "../lib/shortcutLabel";
+import { shortcutLabel, filesShortcutLabel, fileManagerName } from "../lib/shortcutLabel";
 
 // The editor is a few hundred kilobytes nobody pays for until they open a file.
 const CodeEditor = lazy(() => import("./CodeEditor"));
@@ -280,7 +280,7 @@ export default function FilesPanel({ root, openRequest, editorName, onOpenExtern
             <strong>{crumbs[crumbs.length - 1]}</strong>
             {dirty ? <span className="dk-files-dirty" title={shortcutLabel("Unsaved — ⌘S to save")} aria-label="Unsaved changes" /> : null}
           </span>
-          <button type="button" className="dk-icon-btn" onClick={() => onOpenExternal(open.path)} title={editorName ? `Open in ${editorName}` : "Reveal in Finder"} aria-label={editorName ? `Open in ${editorName}` : "Reveal in Finder"}>
+          <button type="button" className="dk-icon-btn" onClick={() => onOpenExternal(open.path)} title={editorName ? `Open in ${editorName}` : `Reveal in ${fileManagerName()}`} aria-label={editorName ? `Open in ${editorName}` : `Reveal in ${fileManagerName()}`}>
             <ExternalLink size={14} aria-hidden="true" />
           </button>
         </header>

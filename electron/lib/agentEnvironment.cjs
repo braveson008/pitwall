@@ -46,8 +46,10 @@ function inheritedSessionMarkers() {
  * `base` with another session's markers removed and a locale filled in.
  * Callers layer their own variables on top of the result.
  */
-function agentEnvironment(base = process.env) {
+function agentEnvironment(base = process.env, platform = process.platform) {
   const environment = { ...base, ...localeEnvironment(base) };
+  // ConPTY sets no TERM, so a CLI that looks for COLORTERM would fall back to 16 colours.
+  if (platform === "win32" && !environment.COLORTERM) environment.COLORTERM = "truecolor";
   for (const marker of INHERITED_SESSION_MARKERS) delete environment[marker];
   return environment;
 }

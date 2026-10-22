@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { isAppDocumentUrl, isExternallyOpenable } from "./navigationGuard.cjs";
 
 const DIST = "/Applications/Pitwall.app/Contents/Resources/app.asar/dist";
-const packaged = { distRoot: DIST };
+// A Mac install, read as a Mac reads it on whichever machine runs the suite.
+const packaged = { distRoot: DIST, platform: "darwin" };
 const dev = { devServer: "http://127.0.0.1:5173" };
 
 describe("isAppDocumentUrl — packaged", () => {
@@ -73,5 +74,16 @@ describe("isExternallyOpenable", () => {
     expect(isExternallyOpenable("javascript:alert(1)")).toBe(false);
     expect(isExternallyOpenable("ms-msdt:/id")).toBe(false);
     expect(isExternallyOpenable("")).toBe(false);
+  });
+});
+
+describe("isAppDocumentUrl — packaged on Windows", () => {
+  const distRoot = "C:\\Program Files\\Pitwall\\resources\\app.asar\\dist";
+  it("accepts the app's own entry point, whose URL path starts /C:/", () => {
+    expect(isAppDocumentUrl("file:///C:/Program%20Files/Pitwall/resources/app.asar/dist/index.html", { distRoot, platform: "win32" })).toBe(true);
+  });
+  it("still rejects a sibling folder and another drive", () => {
+    expect(isAppDocumentUrl("file:///C:/Program%20Files/Pitwall/resources/app.asar/dist-evil/index.html", { distRoot, platform: "win32" })).toBe(false);
+    expect(isAppDocumentUrl("file:///D:/dist/index.html", { distRoot, platform: "win32" })).toBe(false);
   });
 });

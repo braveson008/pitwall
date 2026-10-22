@@ -13,7 +13,8 @@ let realPath: string;
 const readConfig = () => JSON.parse(fs.readFileSync(path.join(home, ".claude.json"), "utf8"));
 
 beforeEach(() => {
-  home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-moves-")));
+  // native: on Windows it expands an 8.3 TEMP (RUNNER~1) as the code's realpath does.
+  home = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "pitwall-moves-")));
   knowledge = path.join(home, "knowledge");
   fs.mkdirSync(knowledge);
   realPath = path.join(home, "Desktop - Mac", "Work", "admin");
@@ -63,5 +64,15 @@ describe("carrying a moved project's state", () => {
 
     await carryMovedProjects({ projectPaths: [oldPath], home, knowledgeDirectory: knowledge });
     expect(JSON.parse(fs.readFileSync(existing, "utf8")).records).toEqual([]);
+  });
+
+  it("leaves alone a project registered in other capitals, which is the same folder, not a moved one", async () => {
+    const shouted = path.join(path.dirname(realPath), "ADMIN");
+    fs.writeFileSync(path.join(home, ".claude.json"), JSON.stringify({ projects: { [shouted]: { hasTrustDialogAccepted: true } } }));
+    fs.mkdirSync(path.join(home, ".claude", "projects", claudeProjectFolder(shouted)), { recursive: true });
+    fs.writeFileSync(path.join(home, ".claude", "projects", claudeProjectFolder(shouted), "two.jsonl"), "{}\n");
+    const before = fs.readFileSync(path.join(home, ".claude.json"), "utf8");
+    expect(await carryMovedProjects({ projectPaths: [shouted], home, knowledgeDirectory: knowledge })).toEqual([]);
+    expect(fs.readFileSync(path.join(home, ".claude.json"), "utf8")).toBe(before);
   });
 });

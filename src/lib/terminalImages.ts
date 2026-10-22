@@ -5,6 +5,8 @@ export function isImageFile(file: File) {
 }
 
 export function quoteTerminalPath(filePath: string) {
+  // A Windows path cannot hold a double quote, and double quotes are what Windows Terminal writes for a dropped file.
+  if (/^(?:[A-Za-z]:\\|\\\\)/.test(filePath)) return `"${filePath}"`;
   return `'${filePath.replace(/'/g, `'\\''`)}'`;
 }
 

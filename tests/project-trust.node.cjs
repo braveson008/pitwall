@@ -62,3 +62,26 @@ test("existing trusted config and backups from older releases are made private",
   assert.equal(fs.statSync(`${file}.pitwall.bak`).mode & 0o777, 0o600);
   assert.equal(fs.readFileSync(file, "utf8"), content);
 });
+
+test("Codex trust recognises the literal-string header Codex writes for Windows paths", async (t) => {
+  const home = fixture(t);
+  const file = path.join(home, ".codex", "config.toml");
+  fs.mkdirSync(path.dirname(file));
+  fs.writeFileSync(file, "[projects.'C:\\Users\\nika\\shop']\ntrust_level = \"untrusted\"\n");
+  assert.equal((await ensureCodexTrust("C:\\Users\\nika\\shop", home)).ok, true);
+  const config = fs.readFileSync(file, "utf8");
+  assert.equal((config.match(/^\[projects\./gm) || []).length, 1, config);
+  assert.match(config, /trust_level = "trusted"/);
+  assert.equal((await ensureCodexTrust("C:\\Users\\nika\\shop", home)).changed, false);
+});
+
+test("Claude trust on Windows finds and writes the forward-slash project key", async (t) => {
+  const home = fixture(t);
+  const file = path.join(home, ".claude.json");
+  fs.writeFileSync(file, JSON.stringify({ projects: { "C:/Users/nika/shop": { hasTrustDialogAccepted: true } } }));
+  assert.equal((await ensureClaudeTrust("C:\\Users\\nika\\shop", home, "win32")).changed, false);
+  await ensureClaudeTrust("C:\\Users\\nika\\other", home, "win32");
+  const config = JSON.parse(fs.readFileSync(file, "utf8"));
+  assert.equal(config.projects["C:/Users/nika/other"]?.hasTrustDialogAccepted, true);
+  assert.equal(config.projects["C:\\Users\\nika\\other"]?.hasTrustDialogAccepted, true);
+});

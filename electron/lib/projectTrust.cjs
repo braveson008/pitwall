@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { randomUUID } = require("node:crypto");
-const { codexProjectHeader, codexProjectTrusted } = require("./mcpParse.cjs");
+const { codexProjectHeader, codexProjectHeaderPath, codexProjectTrusted } = require("./mcpParse.cjs");
 
 const writers = new Map();
 
@@ -12,11 +12,22 @@ function withConfigLock(file, update) {
   return pending.finally(() => { if (writers.get(key) === pending) writers.delete(key); });
 }
 
+// Windows refuses to replace a file another process has open (an agent reading its config), briefly.
+async function renameWithRetry(from, to) {
+  for (let attempt = 0; ; attempt += 1) {
+    try { return await fs.promises.rename(from, to); }
+    catch (error) {
+      if (!["EPERM", "EBUSY", "EACCES"].includes(error.code) || attempt >= 9) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
+    }
+  }
+}
+
 async function atomicWriteFile(file, contents) {
   const tmp = `${file}.pitwall-${randomUUID()}.tmp`;
   try {
     await fs.promises.writeFile(tmp, contents, { encoding: "utf8", mode: 0o600, flag: "wx" });
-    await fs.promises.rename(tmp, file);
+    await renameWithRetry(tmp, file);
   } finally {
     await fs.promises.unlink(tmp).catch((error) => { if (error.code !== "ENOENT") throw error; });
   }
@@ -38,7 +49,12 @@ async function protectConfig(file) {
   });
 }
 
-function ensureClaudeTrust(cwd, home) {
+// Claude on Windows keys projects as C:/Users/x; older builds used backslashes. Both spellings are read and written.
+function claudeProjectKeys(cwd, platform = process.platform) {
+  return platform === "win32" ? [...new Set([cwd.replace(/\\/g, "/"), cwd])] : [cwd];
+}
+
+function ensureClaudeTrust(cwd, home, platform = process.platform) {
   const file = path.join(home, ".claude.json");
   return withConfigLock(file, async () => {
     const raw = await fs.promises.readFile(file, "utf8").catch((error) => {
@@ -50,12 +66,12 @@ function ensureClaudeTrust(cwd, home) {
     try { data = JSON.parse(raw); } catch { return { ok: false, trusted: false, message: "Could not parse ~/.claude.json" }; }
     if (!data || typeof data !== "object" || Array.isArray(data)) return { ok: false, trusted: false, message: "Invalid ~/.claude.json" };
     if (!data.projects || typeof data.projects !== "object" || Array.isArray(data.projects)) data.projects = {};
-    const existing = data.projects[cwd] || {};
-    if (existing.hasTrustDialogAccepted === true) {
+    const keys = claudeProjectKeys(cwd, platform);
+    if (keys.some((key) => data.projects[key]?.hasTrustDialogAccepted === true)) {
       await protectConfig(file);
       return { ok: true, trusted: true, changed: false };
     }
-    data.projects[cwd] = { ...existing, hasTrustDialogAccepted: true, hasCompletedProjectOnboarding: true };
+    for (const key of keys) data.projects[key] = { ...(data.projects[key] || {}), hasTrustDialogAccepted: true, hasCompletedProjectOnboarding: true };
     await backupOnce(file, raw);
     await atomicWriteFile(file, JSON.stringify(data, null, 2));
     return { ok: true, trusted: true, changed: true };
@@ -75,7 +91,7 @@ function ensureCodexTrust(cwd, home) {
     }
     const header = codexProjectHeader(cwd);
     const lines = original.split(/\r?\n/);
-    const start = lines.findIndex((line) => line.trim() === header);
+    const start = lines.findIndex((line) => codexProjectHeaderPath(line) === cwd);
     if (start >= 0) {
       let end = start + 1;
       while (end < lines.length && !lines[end].trim().startsWith("[")) end += 1;
@@ -109,7 +125,7 @@ function ensureClaudeBypassAccepted(cwd) {
 const CARRIED_LISTS = ["allowedTools", "enabledMcpjsonServers", "disabledMcpjsonServers", "mcpContextUris"];
 
 /** Gives `toPath` the MCP servers, tool approvals and trust Claude recorded for `fromPath`; `toPath`'s own entries win. */
-function carryClaudeProjectConfig(fromPath, toPath, home) {
+function carryClaudeProjectConfig(fromPath, toPath, home, platform = process.platform) {
   const file = path.join(home, ".claude.json");
   return withConfigLock(file, async () => {
     const raw = await fs.promises.readFile(file, "utf8").catch((error) => {
@@ -118,18 +134,20 @@ function carryClaudeProjectConfig(fromPath, toPath, home) {
     });
     if (raw === null) return { ok: true, changed: false };
     const data = JSON.parse(raw);
-    const from = data?.projects?.[fromPath];
+    const fromKey = claudeProjectKeys(fromPath, platform).find((key) => data?.projects?.[key]);
+    const from = fromKey && data.projects[fromKey];
     if (!from || typeof from !== "object") return { ok: true, changed: false };
-    const to = data.projects[toPath] || {};
+    const toKeys = claudeProjectKeys(toPath, platform);
+    const to = data.projects[toKeys.find((key) => data.projects[key])] || {};
     const next = { ...from, ...to, mcpServers: { ...(from.mcpServers || {}), ...(to.mcpServers || {}) } };
     for (const key of CARRIED_LISTS) next[key] = [...new Set([...(from[key] || []), ...(to[key] || [])])];
     if (from.hasTrustDialogAccepted === true) next.hasTrustDialogAccepted = true;
-    if (JSON.stringify(next) === JSON.stringify(data.projects[toPath])) return { ok: true, changed: false };
-    data.projects[toPath] = next;
+    if (toKeys.every((key) => JSON.stringify(next) === JSON.stringify(data.projects[key]))) return { ok: true, changed: false };
+    for (const key of toKeys) data.projects[key] = next;
     await backupOnce(file, raw);
     await atomicWriteFile(file, JSON.stringify(data, null, 2));
     return { ok: true, changed: true };
   });
 }
 
-module.exports = { atomicWriteFile, carryClaudeProjectConfig, ensureClaudeTrust, ensureCodexTrust, ensureClaudeBypassAccepted };
+module.exports = { atomicWriteFile, claudeProjectKeys, carryClaudeProjectConfig, ensureClaudeTrust, ensureCodexTrust, ensureClaudeBypassAccepted };

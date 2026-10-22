@@ -8,7 +8,7 @@ import { realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 
 const root = process.cwd();
 const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-branch-rule-"));

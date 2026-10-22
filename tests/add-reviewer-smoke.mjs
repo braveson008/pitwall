@@ -9,7 +9,7 @@ import { chmod, mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/pro
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
@@ -42,12 +42,12 @@ turn() {
   printf '%s\\n----\\n' "$1" >> '${state}/implementer-prompts.txt'
   echo "export const step$n = $n;" >> work.ts
   sleep 2
-  /usr/bin/curl -fsS --max-time 2 -X POST -H Content-Type:application/json --data-binary '{}' "$URL" >/dev/null 2>&1 || true
+  curl -fsS --max-time 2 -X POST -H Content-Type:application/json --data-binary '{}' "$URL" >/dev/null 2>&1 || true
 }
 # The task brief arrives as the launch's own prompt: that is the first turn.
 turn "launch"
-# One prompt per carriage return; the system bash's read -d cannot split on a raw tty.
-/usr/bin/perl -ne 'BEGIN { $/ = "\\r"; $| = 1 } chomp; print "$_\\0" if /\\S/' | while IFS= read -r -d '' line; do
+# One prompt per carriage return, read by node: MSYS's console layer turns a typed CR into LF for its own programs.
+'${process.execPath}' -e 'if (process.stdin.isTTY) process.stdin.setRawMode(true); process.stdin.setEncoding("utf8"); let b = ""; process.stdin.on("data", (d) => { b += d; let i; while ((i = b.indexOf("\\r")) >= 0) { const l = b.slice(0, i); b = b.slice(i + 1); if (/\\S/.test(l)) process.stdout.write(l + "\\0"); } })' | while IFS= read -r -d '' line; do
   turn "$line"
 done
 `);
@@ -74,12 +74,12 @@ review() {
     verdict='{"verdict":"approve","summary":"The change does what the task asks.","comments":[]}'
   fi
   sleep 2
-  body=$(VERDICT="$verdict" /usr/bin/python3 -c 'import json,os; print(json.dumps({"type":"agent-turn-complete","last-assistant-message":os.environ["VERDICT"]}))')
-  /usr/bin/curl -fsS --max-time 2 -X POST -H Content-Type:application/json --data-binary "$body" "$URL" >/dev/null 2>&1 || true
+  body=$(VERDICT="$verdict" '${process.execPath}' -e 'console.log(JSON.stringify({type:"agent-turn-complete","last-assistant-message":process.env.VERDICT}))')
+  curl -fsS --max-time 2 -X POST -H Content-Type:application/json --data-binary "$body" "$URL" >/dev/null 2>&1 || true
 }
 # The first brief is the last argument.
 review "\${@: -1}"
-/usr/bin/perl -ne 'BEGIN { $/ = "\\r"; $| = 1 } chomp; print "$_\\0" if /\\S/' | while IFS= read -r -d '' line; do
+'${process.execPath}' -e 'if (process.stdin.isTTY) process.stdin.setRawMode(true); process.stdin.setEncoding("utf8"); let b = ""; process.stdin.on("data", (d) => { b += d; let i; while ((i = b.indexOf("\\r")) >= 0) { const l = b.slice(0, i); b = b.slice(i + 1); if (/\\S/.test(l)) process.stdout.write(l + "\\0"); } })' | while IFS= read -r -d '' line; do
   review "$line"
 done
 `);
@@ -157,7 +157,7 @@ try {
   assert.ok(task, "the session got a task to carry the review");
   assert.equal(task.title, "Add the step helpers.", "named after the session");
   assert.equal(task.status, "review", `the work reached review: ${JSON.stringify(task.pair)}`);
-  assert.equal(task.pair.outcome, "Codex approved in round 2");
+  assert.equal(task.pair.outcome, "Codex approved in round 2", JSON.stringify(task.pair));
   console.log("PASS a reviewer added to a running session reviews now, sends it back once, and approves in round 2");
 
   const reviewerArgs = await readFile(path.join(state, "reviewer-args.txt"), "utf8");

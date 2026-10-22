@@ -1,6 +1,6 @@
 {
   "name": "pitwall",
-  "version": "0.1.36",
+  "version": "0.1.47",
   "private": true,
   "description": "Local-first multi-agent workspace for software engineering.",
   "main": "electron/main.cjs",

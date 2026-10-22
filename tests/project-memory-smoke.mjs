@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { chmod, mkdtemp, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 import { readPointedPrompt } from "./fixtures/councilPrompts.mjs";
 
@@ -82,10 +83,12 @@ if (args.includes('-p')) {
   emit({ args });
   if (process.stdin.isTTY) process.stdin.setRawMode(true);
   process.stdin.setEncoding('utf8');
-  process.stdin.on('data', (data) => { emit({ data }); if (data.includes('MEMORY_FIXTURE_EXIT')) process.exit(0); });
+  const observe = () => console.log('PITWALL_MEMORY ' + JSON.stringify({ title: ${JSON.stringify(observationTitle)}, content: 'The rounding entry point is src/totals.ts.', kind: 'area', sourcePaths: ['src/totals.ts'] }));
+  // The task arrives as the launch's argument, or typed in where the command line cannot carry it (Windows).
+  process.stdin.on('data', (data) => { emit({ data }); if (data.includes('Work on task memory-101.')) observe(); if (data.includes('MEMORY_FIXTURE_EXIT')) process.exit(0); });
   process.stdin.resume();
   console.log('${name} stub ready');
-  if (args.some((value) => value.includes('Work on task memory-101.'))) console.log('PITWALL_MEMORY ' + JSON.stringify({ title: ${JSON.stringify(observationTitle)}, content: 'The rounding entry point is src/totals.ts.', kind: 'area', sourcePaths: ['src/totals.ts'] }));
+  if (args.some((value) => value.includes('Work on task memory-101.'))) observe();
 }
 `,
   );
@@ -215,7 +218,10 @@ async function launchApp() {
     env: {
       ...process.env,
       HOME: fakeHome,
-      PATH: [fakeBin, "/usr/bin", "/bin", "/usr/sbin", "/sbin"].join(path.delimiter),
+      // No real agent CLI on PATH; on Windows that still means git, cmd and taskkill.
+      PATH: (process.platform === "win32"
+        ? [fakeBin, ...String(process.env.PATH).split(path.delimiter).filter((dir) => /\\Git\\|\\System32|\\Windows$/i.test(dir))]
+        : [fakeBin, "/usr/bin", "/bin", "/usr/sbin", "/sbin"]).join(path.delimiter),
       PITWALL_E2E: "1",
       PITWALL_USER_DATA_DIR: userDataPath,
       ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
@@ -276,8 +282,10 @@ try {
   assert.ok(!actualOrdinary.prompt.includes(privateValue), "Private notes must not reach an agent");
   assert.deepEqual(ordinary.manualEntryIds, ["public"]);
   assert.equal(ordinary.approximateChars, actualOrdinary.prompt.length);
-  assert.equal(actualOrdinary.mode, "argument");
-  assert.equal(path.resolve(actualOrdinary.cwd), path.resolve(ordinary.workspacePath));
+  // A prompt with line breaks cannot ride cmd's line, so on Windows it is typed into the terminal instead.
+  assert.equal(actualOrdinary.mode, process.platform === "win32" ? "pty" : "argument");
+  // Real paths: Windows spells one folder as RUNNER~1 or runneradmin.
+  assert.equal(realpathSync.native(actualOrdinary.cwd), realpathSync.native(ordinary.workspacePath));
   log("ordinary Codex argv contains selected notes and memory; receipt hash matches exact transported prompt");
 
   // Select the same notes for a council. Each member receives only its own
@@ -442,5 +450,5 @@ try {
   throw error;
 } finally {
   await app?.close();
-  if (process.env.PITWALL_KEEP_SMOKE_ARTIFACTS !== "1") await rm(tempRoot, { recursive: true, force: true });
+  if (process.env.PITWALL_KEEP_SMOKE_ARTIFACTS !== "1") await rm(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => undefined);
 }

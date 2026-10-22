@@ -8,7 +8,7 @@ import { existsSync, realpathSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 
 const root = process.cwd();
 const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-live-"));

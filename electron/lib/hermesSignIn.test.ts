@@ -33,8 +33,11 @@ describe("signing Hermes in", () => {
     let answered = "";
     child.stdin.on("data", (chunk: Buffer) => { answered += chunk.toString(); });
     startHermesSignIn({ env: {}, onState: (state: unknown) => states.push(state), spawnImpl });
-    expect(spawnImpl.mock.calls[0][1]).toEqual(["auth", "add", "nous", "--type", "oauth", "--timeout", "30"]);
-    expect(spawnImpl.mock.calls[0][1]).not.toContain("-p");
+    // On Windows a Hermes that is not a real program is started through cmd, with the same arguments on its line.
+    const argv: string[] = spawnImpl.mock.calls[0][1];
+    if (process.platform === "win32" && argv[0] === "/d") expect(argv[3]).toMatch(/auth\W+add\W+nous\W+--type\W+oauth\W+--timeout\W+30/);
+    else expect(argv).toEqual(["auth", "add", "nous", "--type", "oauth", "--timeout", "30"]);
+    expect(argv.join(" ")).not.toContain("-p");
     child.stdout.write("  2. If prompted, enter code: WXYZ-9876\n");
     await new Promise((resolve) => setImmediate(resolve));
     child.stdout.write('Saved nous OAuth device-code credentials: "me"\n');

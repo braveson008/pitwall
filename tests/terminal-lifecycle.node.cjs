@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
@@ -26,7 +27,8 @@ function fixture({ releaseRuntime = async () => 0, allocate = async () => ({ pre
       swept.push({ ...target, ended: options.ended });
       return { ok: true, pids: [] };
     },
-    expandHome: (value) => value,
+    // Every session here runs in a folder that exists; the missing-folder guard has its own test.
+    expandHome: (value) => value || os.tmpdir(), fs: { ...fs, existsSync: () => true }, liveChanges: () => ({ start: async () => {} }), setTimeout, clearTimeout, process, tracedChunks: new Map(),
     resolveLaunch: () => ({ command: "inert", args: [], display: "inert" }),
     pty: { spawn() {
       const child = { pid: 1000 + spawned.length, onData: (fn) => { child.data = fn; }, onExit: (fn) => { child.exit = fn; } };
@@ -34,7 +36,7 @@ function fixture({ releaseRuntime = async () => 0, allocate = async () => ({ pre
       return child;
     } },
     terminalProcesses: new Map(), terminalMetadata: new Map(), terminalStarts: new Map(), terminalStops: new Map(),
-    projectMcpLaunchOptions: () => ({ args: [], env: {} }), agentProfiles: {},
+    projectMcpLaunchOptions: () => ({ args: [], env: {}, deniedTools: [] }), agentProfiles: {},
     getProviderCompatibility: () => ({}), normalizeAgentProvider: () => "custom",
     prepareAgentNotificationLaunch: () => ({ args: [], env: {} }),
     taskRuntimeAllocator: { allocate, release: releaseRuntime }, agentEnvironment: () => ({}), githubCredentialStore: null,
@@ -84,6 +86,7 @@ test("stop during pending allocation cancels launch before a PTY is spawned", as
   let release;
   const runtime = fixture({ allocate: () => new Promise((resolve) => { release = resolve; }) });
   const starting = runtime.startAgentTerminal({ sessionId: "one" });
+  while (!release) await new Promise((resolve) => setImmediate(resolve));
   const stopping = runtime.stopAgentTerminal("one");
   release({ previewPort: 8100 });
   assert.equal((await starting).ok, false);

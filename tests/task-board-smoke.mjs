@@ -10,7 +10,7 @@ import { realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
@@ -100,6 +100,6 @@ try {
   passed = true;
 } finally {
   await app.close();
-  if (passed) await rm(temp, { recursive: true, force: true });
+  if (passed) await rm(temp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => undefined);
 }
 console.log("Pitwall task board smoke test passed.");

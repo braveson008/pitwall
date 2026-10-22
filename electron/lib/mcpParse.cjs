@@ -178,16 +178,23 @@ function codexProjectHeader(cwd) {
   return `[projects.${JSON.stringify(cwd)}]`;
 }
 
+// Codex writes Windows paths as literal strings ('C:\x'); a second, JSON-quoted table for the same path is a
+// duplicate key that stops Codex from starting.
+function codexProjectHeaderPath(line) {
+  const match = /^\[\s*projects\.(?:"((?:[^"\\]|\\.)*)"|'([^']*)')\s*\]$/.exec(String(line).trim());
+  if (!match) return null;
+  if (match[2] !== undefined) return match[2];
+  try { return JSON.parse(`"${match[1]}"`); } catch { return null; }
+}
+
 function codexProjectTrusted(toml, cwd) {
-  const header = codexProjectHeader(cwd);
   let inSection = false;
   for (const rawLine of String(toml).split(/\r?\n/)) {
     const line = rawLine.trim();
-    if (line === header) {
-      inSection = true;
+    if (line.startsWith("[")) {
+      inSection = codexProjectHeaderPath(line) === cwd;
       continue;
     }
-    if (inSection && line.startsWith("[")) inSection = false;
     if (inSection && /^trust_level\s*=\s*"trusted"/.test(line)) return true;
   }
   return false;
@@ -201,5 +208,6 @@ module.exports = {
   parseKimiMcpList,
   parseHermesMcpServers,
   codexProjectHeader,
+  codexProjectHeaderPath,
   codexProjectTrusted,
 };

@@ -139,7 +139,9 @@ function applyNativeSessionLaunch(launch, payload, cwd, homeDir = os.homedir()) 
     nativeSessionMode = nativeSessionId ? "resume" : "continue";
   } else if (nativeSessionId) {
     nativeArgs = ["--session-id", nativeSessionId];
-    if (payload?.sessionName) nativeArgs.push("--name", String(payload.sessionName));
+    // One line: under Windows' cmd a line break ends the command, and every argument after it is lost.
+    const name = String(payload?.sessionName || "").replace(/\s+/g, " ").trim();
+    if (name) nativeArgs.push("--name", name);
     nativeSessionMode = "create";
   }
 

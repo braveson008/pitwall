@@ -66,3 +66,11 @@ describe("localeEnvironment", () => {
     expect(localeEnvironment({})).toEqual({ LANG: "en_US.UTF-8", LC_CTYPE: "en_US.UTF-8" });
   });
 });
+
+describe("colour on Windows", () => {
+  it("tells a CLI under ConPTY it may use truecolor, where no TERM says so", () => {
+    expect(agentEnvironment({ PATH: "x" }, "win32").COLORTERM).toBe("truecolor");
+    expect(agentEnvironment({ PATH: "x", COLORTERM: "24bit" }, "win32").COLORTERM).toBe("24bit");
+    expect(agentEnvironment({ PATH: "x" }, "darwin").COLORTERM).toBeUndefined();
+  });
+});

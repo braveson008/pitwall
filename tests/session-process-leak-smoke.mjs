@@ -4,7 +4,7 @@ import { realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 
 // A dev server an agent starts runs in a session of its own, so stopping the
 // PTY's process group never reached it. This starts one the same way — detached,
@@ -75,5 +75,5 @@ try {
     try { process.kill(pid, "SIGKILL"); } catch { /* gone */ }
   }
   if (app) await app.close().catch(() => undefined);
-  await rm(tempRoot, { recursive: true, force: true });
+  await rm(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => undefined);
 }

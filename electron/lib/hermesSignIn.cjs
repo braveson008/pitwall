@@ -13,6 +13,7 @@
  */
 
 const { spawn } = require("node:child_process");
+const { commandInvocation } = require("./platform.cjs");
 
 /** What the login has printed so far, as one state. */
 function readSignIn(text) {
@@ -32,7 +33,10 @@ function startHermesSignIn({ command = "hermes", env, onState, spawnImpl = spawn
   let output = "";
   let last = "";
   let settled = false;
-  const child = spawnImpl(command, ["auth", "add", "nous", "--type", "oauth", "--timeout", "30"], {
+  // A real program on a Mac; on Windows a pip launcher or a .cmd shim, which only cmd can start.
+  const start = commandInvocation(command, ["auth", "add", "nous", "--type", "oauth", "--timeout", "30"], { pathValue: env?.PATH });
+  const child = spawnImpl(start.file, start.args, {
+    ...start.spawnOptions,
     env,
     stdio: ["pipe", "pipe", "pipe"],
   });

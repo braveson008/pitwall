@@ -12,7 +12,7 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
@@ -46,10 +46,10 @@ turn() {
   echo "export const step$n = $n;" >> work.ts
   sleep 2
   body='{"last_assistant_message":"Added step helper '$n'."}'
-  /usr/bin/curl -fsS --max-time 2 -X POST -H Content-Type:application/json --data-binary "$body" "$URL" >/dev/null 2>&1 || true
+  curl -fsS --max-time 2 -X POST -H Content-Type:application/json --data-binary "$body" "$URL" >/dev/null 2>&1 || true
 }
 turn "launch"
-/usr/bin/perl -ne 'BEGIN { $/ = "\\r"; $| = 1 } chomp; print "$_\\0" if /\\S/' | while IFS= read -r -d '' line; do
+'${process.execPath}' -e 'if (process.stdin.isTTY) process.stdin.setRawMode(true); process.stdin.setEncoding("utf8"); let b = ""; process.stdin.on("data", (d) => { b += d; let i; while ((i = b.indexOf("\\r")) >= 0) { const l = b.slice(0, i); b = b.slice(i + 1); if (/\\S/.test(l)) process.stdout.write(l + "\\0"); } })' | while IFS= read -r -d '' line; do
   turn "$line"
 done
 `);
@@ -84,7 +84,7 @@ case "$1" in
     exit 0 ;;
   sessions)
     # sessions export --format jsonl --session-id ID -
-    /usr/bin/python3 -c 'import json,sys; print(json.dumps({"id": sys.argv[1], "messages": [{"role": "user", "content": "review"}, {"role": "assistant", "content": open(sys.argv[2]).read()}]}))' "$6" '${state}/verdict.json'
+    '${process.execPath}' -e 'console.log(JSON.stringify({id:process.argv[1],messages:[{role:"user",content:"review"},{role:"assistant",content:require("fs").readFileSync(process.argv[2],"utf8")}]}))' "$6" '${state}/verdict.json'
     exit 0 ;;
   chat) ;;
   *) exit 0 ;;
@@ -115,8 +115,9 @@ review() {
 }
 prompt=""
 while [ $# -gt 0 ]; do if [ "$1" = "-q" ]; then prompt="$2"; fi; shift; done
-review "$prompt"
-/usr/bin/perl -ne 'BEGIN { $/ = "\\r"; $| = 1 } chomp; print "$_\\0" if /\\S/' | while IFS= read -r -d '' line; do
+# On Windows a multi-line brief cannot ride cmd's line, so it is typed in and -q carries nothing.
+if [ -n "$prompt" ]; then review "$prompt"; fi
+'${process.execPath}' -e 'if (process.stdin.isTTY) process.stdin.setRawMode(true); process.stdin.setEncoding("utf8"); let b = ""; process.stdin.on("data", (d) => { b += d; let i; while ((i = b.indexOf("\\r")) >= 0) { const l = b.slice(0, i); b = b.slice(i + 1); if (/\\S/.test(l)) process.stdout.write(l + "\\0"); } })' | while IFS= read -r -d '' line; do
   review "$line"
 done
 `);

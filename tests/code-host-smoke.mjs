@@ -7,7 +7,7 @@ import { chmod, mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
@@ -190,7 +190,8 @@ try {
   assert.equal(await dialog.getByRole("button", { name: "Commit and create merge request" }).isDisabled(), true, "the placeholder cannot be sent");
   if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
   // The written description replaces the factual draft once it arrives.
-  await dialog.getByRole("button", { name: "Write from the changes" }).waitFor({ timeout: 20000 });
+  // The app tells the person 15–40 seconds; a busy machine can take that long.
+  await dialog.getByRole("button", { name: "Write from the changes" }).waitFor({ timeout: 60000 });
   assert.equal(await dialog.getByText("Writing the description from the changes…").count(), 0);
   const drafted = await dialog.getByLabel(/Description/).inputValue();
   assert.match(drafted, /^## Summary\n\nShows each file's folder path under its name in the dataset view\./);

@@ -312,7 +312,7 @@ describe("maintenance after a project moves", () => {
     expect(git(after, "branch", "--list", "pushed").trim()).toContain("pushed");
     expect(fs.readFileSync(path.join(dirty, "a.txt"), "utf8")).toBe("changed");
     expect(fs.existsSync(path.join(dirty, "node_modules"))).toBe(false);
-    expect(await managedWorktreeOwner(userData, dirty)).toBe(fs.realpathSync(after));
+    expect(await managedWorktreeOwner(userData, dirty)).toBe(fs.realpathSync.native(after));
   });
 
   it("leaves live and recently touched worktrees alone", async () => {

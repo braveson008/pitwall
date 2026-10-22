@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { carryClaudeProjectConfig } = require("./projectTrust.cjs");
+const { linkPath } = require("./platform.cjs");
 
 // Claude Code's folder name for a project's transcripts under ~/.claude/projects.
 function claudeProjectFolder(projectPath) {
@@ -23,7 +24,9 @@ async function linkTranscripts(home, fromPath, toPath) {
   let linked = 0;
   for (const name of names) {
     try {
-      await fs.promises.symlink(path.join(from, name), path.join(to, name));
+      const source = path.join(from, name);
+      // Windows allows file symlinks only in Developer Mode; linkPath falls back to a junction or a hard link.
+      linkPath(source, path.join(to, name), (await fs.promises.stat(source)).isDirectory());
       linked += 1;
     } catch (error) {
       if (error.code !== "EEXIST") throw error;
@@ -58,7 +61,8 @@ async function carryMovedProjects({ projectPaths, home, knowledgeDirectory, log 
   const carried = [];
   for (const projectPath of new Set(projectPaths)) {
     const real = await fs.promises.realpath(projectPath).catch(() => null);
-    if (!real || real === path.resolve(projectPath)) continue;
+    // Windows and a Mac's default volume ignore case, and realpath returns the folder's own: same folder, not moved.
+    if (!real || real.toLowerCase() === path.resolve(projectPath).toLowerCase()) continue;
     try {
       const config = await carryClaudeProjectConfig(projectPath, real, home);
       const transcripts = await linkTranscripts(home, projectPath, real);

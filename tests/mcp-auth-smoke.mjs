@@ -7,7 +7,7 @@ import { chmod, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 
 const root = process.cwd();
 const temp = await mkdtemp(path.join(os.tmpdir(), "pitwall-mcp-auth-"));
@@ -29,7 +29,7 @@ await writeFile(path.join(fakeBin, "claude"), `#!/bin/sh
 case "$1 $2" in
   "mcp remove"|"mcp add") exit 0 ;;
   "mcp login")
-    echo $$ > '${pidFile}'
+    { cat /proc/$$/winpid 2>/dev/null || echo $$; } > '${pidFile}'
     printf 'Authenticating with atlassian at https://mcp.atlassian.com/v2/mcp\\r\\n'
     printf 'If your browser does not open, visit:\\r\\n\\033[36m%s\\033[39m\\r\\n' '${link}'
     exec sleep 600 ;;
@@ -55,7 +55,10 @@ try {
     void window.pitwall.connectMcpAuth(payload).then((result) => { window.__signIn.result = result; });
   }, payload);
 
-  await page.waitForFunction(() => window.__signIn.url, null, { timeout: 30000 });
+  await page.waitForFunction(() => window.__signIn.url, null, { timeout: 30000 }).catch(async (error) => {
+    console.log("sign-in:", JSON.stringify(await page.evaluate(() => window.__signIn)));
+    throw error;
+  });
   assert.equal(await page.evaluate(() => window.__signIn.url), link, "the sign-in link, not the server's own address");
   console.log("PASS the sign-in link reaches the window while the CLI waits");
 

@@ -15,7 +15,7 @@ import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 
 const PROJECTS = Number(process.argv[2] || 3);
 const PER_PROJECT = Number(process.argv[3] || 4);

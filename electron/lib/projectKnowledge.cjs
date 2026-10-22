@@ -6,7 +6,16 @@ const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
 const { OWN_DIRS } = require("./worktreeFiles.cjs");
 
-const runFile = promisify(execFile);
+// Explicit rather than promisify(execFile): Electron's own execFile need not carry the custom promisified form, and
+// then promisify resolves with stdout alone.
+function runFile(file, args, options) {
+  return new Promise((resolve, reject) => {
+    execFile(file, args, options, (error, stdout, stderr) => {
+      if (error) reject(Object.assign(error, { stdout, stderr }));
+      else resolve({ stdout, stderr });
+    });
+  });
+}
 const queues = new Map();
 const MAX_FILE_BYTES = 128 * 1024;
 const MAX_SCAN_FILES = 4000;

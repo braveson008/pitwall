@@ -1,12 +1,12 @@
 const { spawn } = require("node:child_process");
 const os = require("node:os");
 const { terminateProcessTree } = require("./processTree.cjs");
-const { isWindows, shellInvocation } = require("./platform.cjs");
+const { commandInvocation, isWindows, shellEscape, shellInvocation } = require("./platform.cjs");
 
 /** Shell jobs own their process group, including npm's test-runner children. */
 function runShellCommand(command, options = {}) {
   return new Promise((resolve) => {
-    const { file, args, spawnOptions } = shellInvocation(command, options);
+    const { file, args, spawnOptions } = options.invocation || shellInvocation(command, options);
     const child = spawn(file, args, {
       ...spawnOptions,
       cwd: options.cwd,
@@ -65,6 +65,15 @@ function runShellCommand(command, options = {}) {
 }
 
 /**
+ * One program and its arguments. On Windows it is started without cmd when it is a real program, because cmd ends
+ * a command at the first line break and a review body or reply has many. A Mac keeps the login shell for its PATH.
+ */
+function runProgramCommand(program, args = [], options = {}) {
+  if (!isWindows) return runShellCommand([program, ...args].map(shellEscape).join(" "), options);
+  return runShellCommand(null, { ...options, invocation: commandInvocation(program, args, { pathValue: options.env?.PATH }) });
+}
+
+/**
  * The last `limit` characters of a stream. Appending to one string and slicing
  * copied up to the whole limit on every chunk, which for a chatty test suite
  * held the main process for seconds; chunks are kept and joined once.
@@ -85,4 +94,4 @@ function boundedTail(limit) {
   };
 }
 
-module.exports = { runShellCommand, boundedTail };
+module.exports = { runShellCommand, runProgramCommand, boundedTail };

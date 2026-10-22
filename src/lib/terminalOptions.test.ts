@@ -42,7 +42,7 @@ describe("initialTerminalFontFamily", () => {
     expect(initialTerminalFontFamily("ui-monospace, monospace", null)).toBe("Lilex, monospace");
     expect(initialTerminalFontFamily(null, null)).toBe("Lilex, monospace");
     expect(initialTerminalFontFamily('"JetBrains Mono", monospace', null)).toBe('"JetBrains Mono", monospace');
-    expect(initialTerminalFontFamily("Menlo, monospace", TERMINAL_FONT_FAMILY_MIGRATION)).toBe("Menlo, monospace");
+    expect(initialTerminalFontFamily('"JetBrains Mono", monospace', TERMINAL_FONT_FAMILY_MIGRATION)).toBe('"JetBrains Mono", monospace');
     // "SF Mono (system)" drew Menlo in Electron, so it is no longer offered.
     expect(initialTerminalFontFamily("ui-monospace, monospace", TERMINAL_FONT_FAMILY_MIGRATION)).toBe("Lilex, monospace");
   });

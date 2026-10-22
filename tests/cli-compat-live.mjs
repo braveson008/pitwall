@@ -7,7 +7,7 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 
 const profile = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-cli-compat-"));
 // Pretend Pitwall last saw old versions, so both are checked now.

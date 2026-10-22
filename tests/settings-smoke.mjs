@@ -8,7 +8,7 @@ import { realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 
 const root = process.cwd();
 const temp = await mkdtemp(path.join(realpathSync(os.tmpdir()), "pitwall-settings-"));
@@ -163,6 +163,6 @@ try {
   console.log("Pitwall settings smoke test passed.");
 } finally {
   await app.close();
-  if (passed) await rm(temp, { recursive: true, force: true });
+  if (passed) await rm(temp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => undefined);
   else console.log(`kept ${temp} for a look`);
 }

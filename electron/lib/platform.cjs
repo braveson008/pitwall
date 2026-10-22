@@ -43,8 +43,21 @@ const isWindows = process.platform === "win32";
  * On a Mac this is the login shell it always was: `-l` because a CLI installed
  * by a version manager is only on PATH once the profile has run.
  */
+/**
+ * A line that starts with a CLI name, with that name replaced by the batch file it resolves to. cmd gives a batch
+ * file called by a quoted bare name the wrong %~dp0, and an npm shim then looks for its script in the wrong folder.
+ */
+function withResolvedBatch(command, pathValue) {
+  const match = /^(?:\^"([\w.-]+)\^"|([\w.-]+))(?=\s|$)/.exec(command);
+  if (!match) return command;
+  const resolved = resolveExecutable(match[1] || match[2], pathValue ?? getPathValue(process.env));
+  if (!/\.(?:cmd|bat)$/i.test(resolved)) return command;
+  return `${escapeCmdCommand(resolved)}${command.slice(match[0].length)}`;
+}
+
 function shellInvocation(command, options = {}) {
   if (isWindows) {
+    command = withResolvedBatch(command, options.pathValue ?? (options.env ? getPathValue(options.env) : undefined));
     const file = options.shell || process.env.COMSPEC || "cmd.exe";
     // `/s` strips exactly the outer pair of quotes and runs what is inside.
     // Node must not re-quote that line (it would escape the inner quotes with
@@ -65,6 +78,7 @@ function shellInvocation(command, options = {}) {
  */
 function ptyShellInvocation(command, options = {}) {
   if (isWindows) {
+    command = withResolvedBatch(command, options.pathValue ?? (options.env ? getPathValue(options.env) : undefined));
     const file = options.shell || process.env.COMSPEC || "cmd.exe";
     return { file, args: `/d /s /c "${command}"` };
   }
@@ -151,6 +165,20 @@ function commandInvocation(command, args = [], options = {}) {
 function cmdSafeArgument(value) {
   const text = String(value);
   return !/[\r\n\0]/.test(text) && text.length < 6000;
+}
+
+// cmd stops reading at 8191 characters; CreateProcess at 32767. Both leave a margin for the quoting Node adds.
+const CMD_LINE_LIMIT = 8000;
+const PROCESS_LINE_LIMIT = 32000;
+
+/** Whether this command and its arguments can be started as one Windows command line, measured as built. */
+function commandLineFits(command, args = [], options = {}) {
+  if (!isWindows) return true;
+  const invocation = commandInvocation(command, args, options);
+  if (invocation.viaCmd) return args.every(cmdSafeArgument) && invocation.args[3].length <= CMD_LINE_LIMIT;
+  // Node quotes each argument and escapes its quotes and the backslashes before them.
+  const length = [invocation.file, ...invocation.args].reduce((total, arg) => total + String(arg).replace(/[\\"]/g, "xx").length + 3, 0);
+  return length <= PROCESS_LINE_LIMIT;
 }
 
 /*
@@ -384,6 +412,7 @@ module.exports = {
   agentInvocation,
   commandInvocation,
   cmdSafeArgument,
+  commandLineFits,
   escapeCmdArgument,
   escapeCmdCommand,
   quoteForCmd,

@@ -13,6 +13,7 @@ import {
 import "@xterm/xterm/css/xterm.css";
 import { TERMINAL_MINIMUM_CONTRAST, currentTerminalTheme } from "../terminal/terminalTheme";
 import { isMacPlatform } from "../lib/shortcutLabel";
+import { terminalKeyAction } from "../lib/terminalKeys";
 
 /**
  * A single embedded agent terminal. Owns one xterm instance keyed by
@@ -419,6 +420,18 @@ export const AgentTerminalView = forwardRef<AgentTerminalHandle, {
     resizeFrame = window.requestAnimationFrame(fitTerminal);
 
     const inputDisposable = terminal.onData((data) => onInputRef.current(data));
+    const mac = isMacPlatform();
+    // False tells xterm to leave the key alone: a paste then reaches the browser's own paste, and an app shortcut
+    // bubbles to the window's handler.
+    terminal.attachCustomKeyEventHandler((event) => {
+      const action = terminalKeyAction(event, mac, terminal.hasSelection());
+      if (action === "copy") {
+        event.preventDefault();
+        void navigator.clipboard.writeText(terminal.getSelection()).catch(() => {});
+        terminal.clearSelection();
+      }
+      return action === "terminal";
+    });
     // Where the view is in the scrollback, for anything that needs to check it.
     const scrollDisposable = terminal.onScroll((line) => {
       if (containerRef.current) containerRef.current.dataset.viewportLine = String(line);

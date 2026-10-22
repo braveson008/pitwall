@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 
 const projectPath = process.env.PITWALL_GITHUB_PROJECT_PATH;
 if (!projectPath) throw new Error("PITWALL_GITHUB_PROJECT_PATH is required");
@@ -96,5 +96,5 @@ try {
   process.stdout.write("  OK  remote MCP exposes project-scoped native OAuth controls\n");
 } finally {
   await app?.close().catch(() => {});
-  await rm(userDataPath, { recursive: true, force: true });
+  await rm(userDataPath, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => undefined);
 }

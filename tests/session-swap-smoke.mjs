@@ -6,7 +6,7 @@ import { chmod, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { openProject } from "./helpers/openProject.mjs";
 
 const root = process.cwd();
@@ -99,7 +99,8 @@ try {
   assert.match(typed, /taking over this session from Codex.*\.pitwall\/handoff-1\.md/s);
   console.log("PASS Claude is told to read the handoff");
 
-  await page.locator(".dk-terminal.is-active").getByText("Handed from Codex to Claude").waitFor({ timeout: 10000 });
+  // On Windows ConPTY repaints over lines written into its terminal, so the handoff is a notice there.
+  await (process.platform === "win32" ? page : page.locator(".dk-terminal.is-active")).getByText("Handed from Codex to Claude").first().waitFor({ timeout: 10000 });
   console.log("PASS the terminal marks where Codex ended and Claude began");
   await page.locator(".dk-workspace").screenshot({ path: path.join(temp, "swap.png") });
   console.log(`shot ${path.join(temp, "swap.png")}`);

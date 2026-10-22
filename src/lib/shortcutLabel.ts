@@ -34,3 +34,8 @@ export function isFilesShortcut(event: { key: string; metaKey: boolean; ctrlKey:
   if (key !== "e") return false;
   return mac ? event.metaKey && !event.shiftKey : event.ctrlKey && event.shiftKey && !event.metaKey;
 }
+
+/** What the system's file browser is called, for "Reveal in …". */
+export function fileManagerName(mac: boolean = isMacPlatform()): string {
+  return mac ? "Finder" : "File Explorer";
+}

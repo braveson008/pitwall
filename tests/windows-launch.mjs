@@ -133,6 +133,29 @@ try {
   });
   assert.equal(JSON.parse(received)["last-assistant-message"], 'Done: "quotes" & 100% %PATH% !x!');
   ok("Codex completion notice reaches the endpoint with its JSON intact");
+
+  // What a program under ConPTY receives when a multi-line prompt is typed in, with and without bracketed paste.
+  for (const paste of [false, true]) {
+    const reader = path.join(root, `reader-${paste}.js`);
+    writeFileSync(reader, `process.stdin.setRawMode(true); ${paste ? 'process.stdout.write("\\x1b[?2004h");' : ""} let got = ""; process.stdin.on("data", (d) => { got += d.toString("latin1"); }); setTimeout(() => { process.stdout.write("GOT:" + JSON.stringify(got) + ":END"); process.exit(0); }, 3000); process.stdout.write("READY");`);
+    const received = await new Promise((resolve) => {
+      const term = pty.spawn(process.execPath, [reader], { cols: 200, rows: 10, cwd: root, env: process.env });
+      let out = "";
+      let typed = false;
+      term.onData((data) => {
+        out += data;
+        if (!typed && out.includes("READY")) {
+          typed = true;
+          term.write(paste ? "\x1b[200~one\ntwo\x1b[201~" : "one\ntwo");
+          setTimeout(() => term.write("\r"), 300);
+        }
+        const match = /GOT:(".*?"):END/s.exec(out.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, ""));
+        if (match) resolve(match[1]);
+      });
+      setTimeout(() => resolve("(nothing)"), 8000);
+    });
+    console.log(`  INFO  typed ${paste ? "with" : "without"} bracketed paste, the program read ${received}`);
+  }
 } catch (error) {
   console.error(error);
   process.exitCode = 1;

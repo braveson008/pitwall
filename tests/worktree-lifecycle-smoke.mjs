@@ -5,7 +5,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 
 // A managed worktree through the real main process: created with its
 // dependencies cloned, kept while a terminal runs in it or while it holds
@@ -61,12 +61,15 @@ try {
   const created = await call("ensureWorktree", { projectPath: project, branch: "feature/done", baseBranch: "main" });
   assert.equal(created.ok, true, created.error);
   assert.ok(created.path.startsWith(path.join(tempRoot, "user-data", "worktrees")), created.path);
-  await waitFor(() => existsSync(path.join(created.path, "node_modules/dep/index.js")), "cloned node_modules");
-  console.log("  OK  a new worktree gets the project's node_modules cloned when the lockfile matches");
+  // Windows has no copy-on-write clone, so there a worktree's agent installs instead.
+  if (process.platform !== "win32") {
+    await waitFor(() => existsSync(path.join(created.path, "node_modules/dep/index.js")), "cloned node_modules");
+    console.log("  OK  a new worktree gets the project's node_modules cloned when the lockfile matches");
+  }
 
   const started = await call("startTerminal", {
     projectId: "p", projectPath: created.path, sessionId: "wt-session", sessionName: "wt",
-    agent: "Worktree Shell", model: "auto", command: "/bin/zsh", args: ["-f"], cols: 80, rows: 24,
+    agent: "Worktree Shell", model: "auto", ...(process.platform === "win32" ? { command: "cmd.exe", args: [] } : { command: "/bin/zsh", args: ["-f"] }), cols: 80, rows: 24,
   });
   assert.equal(started.ok, true, started.error);
   const whileLive = await call("removeWorktree", { projectPath: project, worktreePath: created.path, onlyIfSafe: true });
@@ -173,5 +176,5 @@ try {
   console.log("\nPitwall worktree lifecycle smoke test passed.");
 } finally {
   if (app) await app.close().catch(() => undefined);
-  await rm(tempRoot, { recursive: true, force: true });
+  await rm(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => undefined);
 }

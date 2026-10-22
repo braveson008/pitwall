@@ -83,3 +83,18 @@ describe("importing the old profile", () => {
     expect(importLegacyProfile({ from: path.join(root, "nope"), to: path.join(root, "Pitwall") })).toBe("none");
   });
 });
+
+describe("is the old app running, on Windows", () => {
+  it("reads Chromium's lockfile there, where there is no SingletonLock", () => {
+    const profile = mkdtempSync(path.join(os.tmpdir(), "pitwall-legacy-lock-"));
+    try {
+      expect(importer.legacyAppRunning(profile, "win32")).toBe(false);
+      // Left behind by an app that has quit: present, and free to open.
+      writeFileSync(path.join(profile, "lockfile"), "");
+      expect(importer.legacyAppRunning(profile, "win32", () => { throw Object.assign(new Error("busy"), { code: "EBUSY" }); })).toBe(true);
+      expect(importer.legacyAppRunning(profile, "win32")).toBe(false);
+    } finally {
+      rmSync(profile, { recursive: true, force: true });
+    }
+  });
+});

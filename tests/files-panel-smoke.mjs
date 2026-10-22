@@ -7,7 +7,7 @@ import { chmod, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 import { openProject } from "./helpers/openProject.mjs";
 import { goTo } from "./helpers/goTo.mjs";
 
@@ -107,7 +107,7 @@ try {
   await page.keyboard.press("End");
   await page.keyboard.type(" // saved");
   await page.locator(".dk-files-dirty").waitFor();
-  await page.keyboard.press("Meta+s");
+  await page.keyboard.press("ControlOrMeta+s");
   await page.locator(".dk-files-dirty").waitFor({ state: "detached" });
   assert.match(await readFile(path.join(dir, "src", "app.ts"), "utf8"), /export const three = 3; \/\/ saved\n/);
   console.log("PASS ⌘S saves to the worktree");
@@ -123,7 +123,7 @@ try {
   await page.keyboard.type(" // mine");
   await writeFile(path.join(dir, "src", "app.ts"), "export const one = 100;\nexport const two = 22;\nexport const three = 3; // saved\n");
   await page.getByText("Changed on disk while you were editing.").waitFor({ timeout: 5000 });
-  await page.keyboard.press("Meta+s");
+  await page.keyboard.press("ControlOrMeta+s");
   await page.waitForTimeout(300);
   assert.match(await readFile(path.join(dir, "src", "app.ts"), "utf8"), /^export const one = 100;/, "the agent's version is not overwritten");
   await page.getByRole("button", { name: "Reload and drop my edits" }).click();

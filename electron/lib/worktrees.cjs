@@ -1,3 +1,4 @@
+const fs = require("node:fs");
 const crypto = require("node:crypto");
 const path = require("node:path");
 
@@ -62,9 +63,14 @@ function managedWorktreePath(userDataPath, projectPath, branch) {
   return path.join(managedWorktreeRoot(userDataPath, projectPath), branchSlug(branch));
 }
 
+// Windows spells one folder as C:\Users\RUNNER~1 or C:/Users/runneradmin; git prints the long form.
+function realOrResolved(target) {
+  try { return fs.realpathSync.native(target); } catch { return path.resolve(target); }
+}
+
 function isManagedWorktree(userDataPath, projectPath, targetPath) {
-  const root = path.resolve(managedWorktreeRoot(userDataPath, projectPath));
-  const target = path.resolve(targetPath);
+  const root = realOrResolved(managedWorktreeRoot(userDataPath, projectPath));
+  const target = realOrResolved(targetPath);
   const relative = path.relative(root, target);
   return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative);
 }

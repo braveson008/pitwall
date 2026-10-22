@@ -359,7 +359,7 @@ import { useMcp } from "./hooks/useMcp";
 import { writeStored, writeStoredJson } from "./lib/storage";
 import { createKeyedThrottle } from "./lib/keyedThrottle";
 import { trackerHtmlToMarkdown } from "./lib/markdown";
-import { shortcutLabel, filesShortcutLabel, isFilesShortcut } from "./lib/shortcutLabel";
+import { shortcutLabel, filesShortcutLabel, isFilesShortcut, isMacPlatform, fileManagerName } from "./lib/shortcutLabel";
 
 const statusLabel: Record<SessionStatus, string> = {
   starting: "Starting",
@@ -3410,6 +3410,17 @@ export function App() {
 
   const draftProvider = agentOptions.find((option) => option.agent === draftAgent) ?? implementerOptions[0] ?? agentOptions[0];
   const draftCheck = agentChecks[draftAgent];
+  // New work opens on Codex; on a machine without it, Start would wait on an agent that is not there. Once per
+  // opening, it moves to one that is installed, which the dialog shows and the person can change.
+  const draftAgentSettledRef = useRef(false);
+  useEffect(() => {
+    if (!createSessionOpen) { draftAgentSettledRef.current = false; return; }
+    if (draftAgentSettledRef.current || !draftCheck) return;
+    draftAgentSettledRef.current = true;
+    if (draftCheck.status !== "missing") return;
+    const installed = implementerOptions.find((option) => !option.local && !option.custom && Boolean(agentChecks[option.agent]) && agentChecks[option.agent]?.status !== "missing");
+    if (installed) setDraftAgent(installed.agent);
+  }, [createSessionOpen, draftCheck, implementerOptions, agentChecks]);
   const draftLaunch = resolveAgentLaunch(draftProvider, draftModel);
   const draftBootCommand = draftLaunch.command
     ? [draftLaunch.command, ...(draftLaunch.args ?? [])].join(" ")
@@ -4593,6 +4604,9 @@ export function App() {
       if (!hasPrimaryModifier) return;
 
       const key = event.key.toLowerCase();
+      // Inside a terminal on Windows the app's shortcuts take Shift as well, which here means nothing more.
+      const inTerminal = !isMacPlatform() && event.shiftKey && Boolean((event.target as HTMLElement | null)?.closest?.(".xterm"));
+      const shifted = event.shiftKey && !inTerminal;
       // Whatever these open would sit behind the dialog that is up, typing and all.
       if (["k", "p", "j", "n", "b", ","].includes(key) && document.querySelector("[aria-modal='true']:not(.dk-palette)")) return;
       if ((event.shiftKey && key === "p") || key === "k") {
@@ -4610,18 +4624,18 @@ export function App() {
         setAllSessionsOpen(true);
         return;
       }
-      if (key === "n" && !event.shiftKey) {
+      if (key === "n" && !shifted) {
         event.preventDefault();
         setDraftInstruction("");
         setCreateSessionOpen(true);
         return;
       }
-      if (key === "b" && !event.shiftKey) {
+      if (key === "b" && !shifted) {
         event.preventDefault();
         setWorkspaceSection("tasks");
         return;
       }
-      if (key === ",") {
+      if (key === "," || (inTerminal && key === "<")) {
         event.preventDefault();
         setConnectionsProvider(null);
         setWorkspaceSection("connections");
@@ -4646,7 +4660,7 @@ export function App() {
         rows[next].click();
         return;
       }
-      if (key === "`") {
+      if (key === "`" || (inTerminal && key === "~")) {
         event.preventDefault();
         setWorkbenchTab("terminal");
         return;
@@ -4995,6 +5009,13 @@ export function App() {
       if (!delivered) {
         skip(result?.error || "its CLI could not start");
         return;
+      }
+      // A brief the command line cannot carry (Windows' cmd and its line breaks) is typed in once the reviewer is up.
+      if (result?.initialPromptMode === "terminal") {
+        if (!(await waitForSessionSettle(reviewerSessionId)) || !(await sendTerminalPrompt(reviewerSessionId, prepared.prompt))) {
+          skip("the review brief could not be sent to it");
+          return;
+        }
       }
     }
 
@@ -6729,7 +6750,9 @@ export function App() {
         ...current.activity,
       ],
     }));
-    appendTerminalLine(session.id, handoffDivider(session.agent, nextAgent), { informational: true });
+    // ConPTY owns what its terminal shows and repaints over a line written from outside.
+    const dividerAfterStart = window.pitwall?.platform === "win32";
+    if (!dividerAfterStart) appendTerminalLine(session.id, handoffDivider(session.agent, nextAgent), { informational: true });
     if (!handoff?.ok) appendTerminalLine(session.id, `The handoff file could not be written: ${handoff?.error ?? "unknown error"}`);
     track("session_agent_swapped", { from: session.agent.toLowerCase(), to: nextAgent.toLowerCase() });
 
@@ -6740,6 +6763,8 @@ export function App() {
       appendTerminalLine(session.id, `${nextAgent} did not become ready — the handoff was not sent.`);
       return;
     }
+    // ConPTY repaints its own screen over any line written into the terminal from outside, so Windows says it here.
+    if (dividerAfterStart) setSystemNotice({ tone: "info", title: handoffDivider(session.agent, nextAgent).replace(/─/g, "").trim(), message: `${nextAgent} is reading the handoff.` });
     if (councilOutputLooksGated(session.id)) {
       appendTerminalLine(session.id, `${nextAgent} needs a sign-in or approval first. Answer it, then tell it to read the handoff.`);
       return;
@@ -10860,6 +10885,8 @@ export function App() {
       if (!result?.ok) {
         appendTerminalLine(session.id, `$ ${getBootCommand(agentOptions, session.agent, session.model) || session.agent}`);
         appendTerminalLine(session.id, result?.error ?? "PTY backend unavailable");
+        // Stopped or deleted while it was starting: what was asked for, not a failure to report.
+        if (result?.cancelled) return false;
         setSystemNotice({
           tone: "error",
           title: `${session.agent} could not start`,
@@ -12545,7 +12572,7 @@ export function App() {
                 setWorkspaceSection("connections");
               }}
               onOpenProject={() => window.pitwall?.openPath(activeProject.path)}
-              editorLabel={preferredEditor?.name ?? "Finder"}
+              editorLabel={preferredEditor?.name ?? fileManagerName()}
               previewByTask={previewByTask}
               onOpenTaskEditor={openTaskInEditor}
               onOpenTaskPullRequest={openTaskPullRequest}
@@ -13194,7 +13221,7 @@ export function App() {
                         {!activeTask ? "Create a task" : taskStartSessions.length > 0 ? "Open task session" : "Start task"}
                       </button>
                       <button type="button" className="dk-btn dk-btn--ghost" onClick={() => setWorkbenchTab("editor")}>
-                        Open project in {preferredEditor?.name ?? "Finder"}
+                        Open project in {preferredEditor?.name ?? fileManagerName()}
                         <ChevronRight size={13} aria-hidden="true" />
                       </button>
                     </div>
@@ -13380,7 +13407,7 @@ export function App() {
                     disabled={openingEditor || !editorWorkspacePath}
                   >
                     <ExternalLink size={15} aria-hidden="true" />
-                    {openingEditor ? "Opening" : preferredEditor ? `Open in ${preferredEditor.name}` : "Reveal in Finder"}
+                    {openingEditor ? "Opening" : preferredEditor ? `Open in ${preferredEditor.name}` : `Reveal in ${fileManagerName()}`}
                   </button>
 
                   {installedEditors.length > 0 && (
@@ -13392,7 +13419,7 @@ export function App() {
                         ariaLabel="Editor to open projects in"
                         options={[
                           ...installedEditors.map((editor) => ({ value: editor.id, label: editor.name })),
-                          { value: REVEAL_IN_FINDER, label: "Reveal in Finder" },
+                          { value: REVEAL_IN_FINDER, label: `Reveal in ${fileManagerName()}` },
                         ]}
                       />
                     </div>

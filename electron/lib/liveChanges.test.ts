@@ -35,6 +35,8 @@ beforeEach(() => {
   git("init", "-q", "-b", "main");
   git("config", "user.email", "t@example.com");
   git("config", "user.name", "t");
+  // Line endings as written: a runner's autocrlf would turn what git writes back into CRLF.
+  git("config", "core.autocrlf", "false");
   write(".gitignore", "node_modules\n");
   write("a.txt", "one\ntwo\nthree\nfour\nfive\nsix\nseven\neight\nnine\nten\n");
   write("b.txt", "bee\n");
@@ -208,5 +210,19 @@ describe("live changes", () => {
     } finally {
       stop();
     }
+  });
+});
+
+describe("what counts as inside the worktree, on Windows", () => {
+  const { insideWorktree } = require("./liveChanges.cjs");
+  it("takes git's forward-slash spelling of the worktree and any case for the same folder", () => {
+    expect(insideWorktree("D:/a/repo", "pkg/inner.txt", path.win32)).toBe("D:\\a\\repo\\pkg\\inner.txt");
+    expect(insideWorktree("d:\\A\\Repo", "a.txt", path.win32)).toBe("d:\\A\\Repo\\a.txt");
+    expect(insideWorktree("/repo", "..notes.txt", path.posix)).toBe("/repo/..notes.txt");
+  });
+  it("still refuses a path that climbs out or names another drive", () => {
+    expect(() => insideWorktree("D:/a/repo", "..\\other\\x.txt", path.win32)).toThrow(/outside the worktree/);
+    expect(() => insideWorktree("D:/a/repo", "C:\\x.txt", path.win32)).toThrow(/outside the worktree/);
+    expect(() => insideWorktree("D:/a/repo", "../repo2/x", path.win32)).toThrow(/outside the worktree/);
   });
 });

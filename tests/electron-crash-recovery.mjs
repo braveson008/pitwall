@@ -4,8 +4,9 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { _electron as electron } from "playwright";
+import { electron } from "./electronLaunch.mjs";
 
+const shell = process.platform === "win32" ? { command: "cmd.exe", args: [] } : { command: "/bin/zsh", args: ["-f"] };
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const tempRoot = await mkdtemp(path.join(os.tmpdir(), "pitwall-crash-recovery-"));
 const userDataPath = path.join(tempRoot, "user-data");
@@ -29,7 +30,7 @@ try {
   const firstPage = await firstApp.firstWindow({ timeout: 20_000 });
   await firstPage.waitForURL(/index\.html$/);
   await firstPage.waitForLoadState("domcontentloaded");
-  await firstPage.evaluate(({ cwd, timestamp }) => {
+  await firstPage.evaluate(({ cwd, timestamp, shell }) => {
     const sessions = ["recovery-a", "recovery-b"].map((id, index) => ({
       id,
       name: index === 0 ? "Restore prior conversation" : "Restore second session",
@@ -71,8 +72,8 @@ try {
     localStorage.setItem("pitwall-custom-agents", JSON.stringify([{
       id: "recovery-shell",
       name: "Recovery Shell",
-      command: "/bin/zsh",
-      args: "-f",
+      command: shell.command,
+      args: shell.args.join(" "),
       loginCommand: "",
       models: [],
       createdAt: timestamp,
@@ -118,11 +119,11 @@ try {
         "recovery-b": ["Second saved transcript\r\n"],
       },
     }));
-  }, { cwd: projectPath, timestamp: new Date().toISOString() });
+  }, { cwd: projectPath, timestamp: new Date().toISOString(), shell });
   await firstApp.evaluate(async ({ session }) => {
     await session.defaultSession.flushStorageData();
   });
-  const started = await firstPage.evaluate(async (cwd) => {
+  const started = await firstPage.evaluate(async ({ cwd, shell }) => {
     const terminals = await Promise.all(["recovery-a", "recovery-b"].map((sessionId) => window.pitwall.startTerminal({
       projectId: "recovery-project",
       projectPath: cwd,
@@ -130,18 +131,24 @@ try {
       sessionName: sessionId,
       agent: "Recovery Shell",
       model: "auto",
-      command: "/bin/zsh",
-      args: ["-f"],
+      command: shell.command,
+      args: shell.args,
       cols: 80,
       rows: 24,
     })));
     return { terminals };
-  }, projectPath);
+  }, { cwd: projectPath, shell });
   assert.equal(started.terminals.every((item) => item.ok), true);
 
   const crashedProcess = firstApp.process();
-  crashedProcess.kill("SIGKILL");
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  // On Windows killing the main process leaves Chromium's helpers and the terminals' consoles holding the profile;
+  // a real crash takes the tree down with it.
+  if (process.platform === "win32") {
+    try { execFileSync("taskkill", ["/pid", String(crashedProcess.pid), "/T", "/F"], { stdio: "ignore" }); } catch { /* already gone */ }
+  } else {
+    crashedProcess.kill("SIGKILL");
+  }
+  await new Promise((resolve) => setTimeout(resolve, process.platform === "win32" ? 3000 : 1000));
   firstApp = null;
 
   secondApp = await electron.launch({ args: [root], cwd: root, env, timeout: 30_000 });
@@ -184,6 +191,6 @@ try {
   if (firstApp) await firstApp.close().catch(() => undefined);
   if (secondApp) await secondApp.close().catch(() => undefined);
   if (process.env.PITWALL_KEEP_SMOKE_ARTIFACTS !== "1") {
-    await rm(tempRoot, { recursive: true, force: true });
+    await rm(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => undefined);
   }
 }

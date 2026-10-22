@@ -16,4 +16,9 @@ describe("terminal image helpers", () => {
     expect(isImageFile(new File([], "capture.HEIC"))).toBe(true);
     expect(isImageFile(new File([], "notes.txt", { type: "text/plain" }))).toBe(false);
   });
+
+  it("double-quotes a Windows path, as Windows Terminal does when a file is dropped on it", () => {
+    expect(quoteTerminalPath("C:\\Users\\Nika O'Neil\\AppData\\shot 1.png")).toBe('"C:\\Users\\Nika O\'Neil\\AppData\\shot 1.png"');
+    expect(quoteTerminalPath("\\\\server\\share\\a.png")).toBe('"\\\\server\\share\\a.png"');
+  });
 });

@@ -1,4 +1,5 @@
 const path = require("node:path");
+const { fileURLToPath } = require("node:url");
 
 /**
  * Which URLs the main window's top frame is allowed to become.
@@ -21,16 +22,19 @@ const path = require("node:path");
  * matched by path containment rather than string prefix — `startsWith` would
  * accept `/app/dist-evil/index.html` as living under `/app/dist`.
  */
-function isAppDocumentUrl(rawUrl, { devServer, distRoot } = {}) {
+function isAppDocumentUrl(rawUrl, { devServer, distRoot, platform = process.platform } = {}) {
   if (typeof rawUrl !== "string" || !rawUrl) return false;
   if (devServer) return rawUrl.startsWith(devServer);
   if (!distRoot) return false;
   try {
     const url = new URL(rawUrl);
     if (url.protocol !== "file:") return false;
-    const target = path.resolve(decodeURIComponent(url.pathname));
-    const relative = path.relative(path.resolve(distRoot), target);
-    return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+    // A Windows file URL's path is /C:/…, which only fileURLToPath turns back into C:\….
+    const windows = platform === "win32";
+    const paths = windows ? path.win32 : path.posix;
+    const target = paths.resolve(fileURLToPath(url, { windows }));
+    const relative = paths.relative(paths.resolve(distRoot), target);
+    return relative === "" || (!relative.startsWith("..") && !paths.isAbsolute(relative));
   } catch {
     // Not a parseable URL, so not our document.
     return false;

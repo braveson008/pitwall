@@ -695,6 +695,7 @@ interface PitwallApi {
     command?: string;
     cwd?: string;
     error?: string;
+    cancelled?: boolean;
     nativeSessionId?: string | null;
     nativeSessionMode?: "none" | "custom" | "create" | "resume" | "continue";
     initialPromptMode?: "none" | "argument" | "terminal";
@@ -750,6 +751,7 @@ interface PitwallApi {
     command?: string;
     cwd?: string;
     error?: string;
+    cancelled?: boolean;
     nativeSessionId?: string | null;
     nativeSessionMode?: "none" | "custom" | "create" | "resume" | "continue";
     initialPromptMode?: "none" | "argument" | "terminal";
